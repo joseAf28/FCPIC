@@ -42,7 +42,7 @@ species::species(string name_a, int *ppc_a, int *range_a, int *vec_U_a, float *v
 
 species::~species()
 {
-    cout << "destructor" << endl;
+    cout << __PRETTY_FUNCTION__ << endl;
 }
 
 int species::set_nb_part()
