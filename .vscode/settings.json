@@ -1,20 +1,6 @@
 {
   "files.associations": {
-    "KMC_02db.C": "cpp",
-    "KMC_multithread_50.C": "cpp",
-    "KMC_multithread_5.C": "cpp",
-    "KMC_db.C": "cpp",
-    "KMC_03db.C": "cpp",
-    "KMC_05db.C": "cpp",
-    "KMC_test.C": "cpp",
-    "KMC_test2.C": "cpp",
-    "test_plot_KMC.C": "cpp",
-    "multithread_KMC.C": "cpp",
-    "Array3D.C": "cpp",
-    "Array2D.C": "cpp",
     "Species.C": "cpp",
-    "KMC.C": "cpp",
-    "random.C": "cpp",
     "test.C": "cpp"
   }
 }
