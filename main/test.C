@@ -6,6 +6,7 @@ using namespace std;
 int main()
 {
     string name = "electron";
+    int testvar = 1;
 
     int ppc[2] = {2, 1};
     int range[4] = {0, 5, 0, 5}; // the latter ones are not included
