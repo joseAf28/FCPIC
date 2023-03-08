@@ -17,16 +17,16 @@ INC := $(wildcard src/*.h)
 
 test: test.exe
 
-lib: $(LIBDIR)/libKMC.a
+lib: $(LIBDIR)/libPIC.a
 
-$(LIBDIR)/libKMC.a: $(OBJ) 
+$(LIBDIR)/libPIC.a: $(OBJ) 
 	@echo make lib...
 	ar ruv $@ $^
 	ranlib $@
 
-%.exe: $(BINDIR)/%.o $(LIBDIR)/libKMC.a 
+%.exe: $(BINDIR)/%.o $(LIBDIR)/libPIC.a 
 	@echo compilink and linking... 
-	$(CC) -I src $< -o $(BINDIR)/$@ -L lib -l KMC 
+	$(CC) -I src $< -o $(BINDIR)/$@ -L lib -l PIC 
 
 $(BINDIR)/%.o: %.C | $(INC)
 	@echo compiling... $<

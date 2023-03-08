@@ -29,6 +29,9 @@ species::species(string name_a, int *ppc_a, int *range_a, int *vec_U_a, float *v
     // initializing vector with set_np_part() number: number of particles
     np = set_nb_part();
 
+    nx = (range[1] - range[0]) + 1;
+    ny = (range[3] - range[2]) + 1;
+
     // initializing the array of particles
     vec = unique_ptr<part>(new part[np]);
 
@@ -80,8 +83,8 @@ void species::set_X()
     vector<float> loccell;
 
     const int npcell = ppc[0] * ppc[1];
-    const float dpcellx = 1.0 / ppc[0];
-    const float dpcelly = 1.0 / ppc[1];
+    const float dpcellx = dx / ppc[0];
+    const float dpcelly = dy / ppc[1];
 
     loccell.reserve(np);
 
@@ -89,18 +92,17 @@ void species::set_X()
     {
         for (int i = 0; i < ppc[0]; i++)
         {
-            loccell.push_back(dpcellx * ((float)i + 0.5f)); // define axes inside grid cell
+            loccell.push_back(dpcellx * ((float)i + 0.5f)); // In the middle of each subdivision
             loccell.push_back(dpcelly * ((float)j + 0.5f));
         }
     }
 
-    for (int i = 0; i < loccell.size(); i++)
-    {
-        cout << "i: " << i << " value: " << loccell[i] << endl;
-    }
+    // debugging
+    // for (int i = 0; i < loccell.size(); i++)
+    //     cout << "i: " << i << " value: " << loccell[i] << endl;
 
     int ip = 0;
-    // Uniform Density of Particles
+    //! Uniform Density of Particles
     for (int j = range[2]; j < range[3]; j++)
     {
         for (int i = range[0]; i < range[1]; i++)
@@ -115,22 +117,76 @@ void species::set_X()
             }
         }
     }
+    loccell.clear();
 }
 
-void species::get_current(vector<float> &current_vec)
+void species::get_charge(vector<float> &charge_vec)
 {
-    current_vec.assign((range[1] * range[3]), 0.);
+    //! charge vec must has 1 guard cell at boundaries: include latter
+    //? imposing periodic boundaries: well posed Laplace Problem ?
 
-    int index = 0;
+    int row = nx + 1;
+    charge_vec.assign((nx * (ny + 1)), 0.);
     for (int i = 0; i < np; i++)
     {
-        index = vec.get()[i].ix + range[1] * vec.get()[i].iy;
-        current_vec[index] = current_vec[index] + 1.;
+        int ij = vec.get()[i].ix + (row)*vec.get()[i].iy;
+
+        float wx = vec.get()[i].x;
+        float wy = vec.get()[i].y;
+
+        // divide by dx*dy
+        charge_vec[ij] += (dx - wx) * (dy - wy) * q;
+        charge_vec[ij + 1] += wx * (dy - wy) * q;
+        charge_vec[ij + row] += (dx - wx) * wy * q;
+        charge_vec[ij + 1 + row] += wx * wy * q;
     }
+
+    // Periodic Boundaries
+    //  xx boundarie: j index
+    for (int j = 0; j < ny + 1; j++)
+        charge_vec[j * row] += charge_vec[nx + j * row];
+
+    // yy boundarie: i index
+    for (int i = 0; i < nx + 1; i++)
+        charge_vec[i] += charge_vec[i + ny * row];
 }
 
-void species::advance()
+void species::advance_cell(int counter)
 {
+    float tol = 1e-3;
+    float posx = vec.get()[counter].x;
+    float posy = vec.get()[counter].y;
+
+    float ux = vec.get()[counter].ux;
+    float uy = vec.get()[counter].uy;
+    float uz = vec.get()[counter].uz;
+
+    int checker = 0;
+    if (posx < 0.f)
+    {
+        vec.get()[counter].x = dx - posx;
+        vec.get()[counter].ix = vec.get()[counter].ix - 1;
+    }
+
+    if (posx > dx)
+    {
+        vec.get()[counter].x = posx - dx;
+        vec.get()[counter].iy = vec.get()[counter].ix + 1;
+    }
+
+    if (posy < 0.f)
+    {
+        vec.get()[counter].y = dy - posy;
+        vec.get()[counter].iy = vec.get()[counter].iy - 1;
+    }
+
+    if (posy > dy)
+    {
+        vec.get()[counter].x = posy - dy;
+        vec.get()[counter].iy = vec.get()[counter].iy + 1;
+    }
+
+    //! check boundaries to export data to mpi: later
 }
 
 void species::print()

@@ -7,7 +7,7 @@ int main()
 {
     string name = "electron";
 
-    int ppc[2] = {2, 1};
+    int ppc[2] = {1, 1};
     int range[4] = {0, 5, 0, 5}; // the latter ones are not included
     int vec_u[2] = {0, 20};
 
@@ -21,12 +21,12 @@ int main()
     cout << "********" << endl;
     // test.print();
 
-    vector<float> current;
-    test.get_current(current);
+    vector<float> charge;
+    test.get_charge(charge);
 
-    for (int i = 0; i < current.size(); i++)
+    for (int i = 0; i < charge.size(); i++)
     {
-        cout << "i: " << i << " I: " << current[i] << endl;
+        cout << "i: " << i << " I: " << charge[i] << endl;
     }
 
     return 0;
