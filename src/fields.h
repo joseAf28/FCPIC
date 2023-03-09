@@ -1,0 +1,40 @@
+#ifndef __fields__
+#define __fields__
+
+#include <vector>
+#include <string>
+#include <iostream>
+
+using namespace std;
+
+class fields
+{
+public:
+    fields(const int, const int, vector<float> &);
+    ~fields();
+    void potential_solver();
+    void field_solver();
+    void field_interpolation();
+
+private:
+    vector<float> pot_vec;
+    vector<float> charge_vec;
+
+    vector<float> Ex_vec;
+    vector<float> Ey_vec;
+
+    //! Using Jacobi Iteration Method
+
+    // simulation box info
+    int nx; // number of x grid points
+    int ny; // number of y grid points
+
+    //!! dx and dy set to 1.0 for now
+    float dx = 1.0; // x grid cell size
+    float dy = 1.0; // y grid cell size
+
+    float xbox; // size x axis of simulation box
+    float ybox; // size y axis of simulation box
+};
+
+#endif

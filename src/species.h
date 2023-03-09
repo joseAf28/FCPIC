@@ -29,12 +29,14 @@ public:
     species(string, int *, int *, int *, float *, float *);
     ~species();
 
-    int set_nb_part();
+    int set_nb();
     void set_X();
     void set_U();
 
     void get_charge(vector<float> &);
     void advance_cell(int);
+
+    void get_grid_points(int &, int &);
 
     void print();
 

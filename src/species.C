@@ -27,10 +27,13 @@ species::species(string name_a, int *ppc_a, int *range_a, int *vec_U_a, float *v
     vth[2] = vth_a[2];
 
     // initializing vector with set_np_part() number: number of particles
-    np = set_nb_part();
+    np = set_nb();
 
     nx = (range[1] - range[0]) + 1;
     ny = (range[3] - range[2]) + 1;
+
+    xbox = dx * nx;
+    ybox = dy * ny;
 
     // initializing the array of particles
     vec = unique_ptr<part>(new part[np]);
@@ -48,7 +51,7 @@ species::~species()
     cout << __PRETTY_FUNCTION__ << endl;
 }
 
-int species::set_nb_part()
+int species::set_nb()
 {
     // Assuming Uniform Density
     float nb_part = (range[1] - range[0]) * ppc[0] * (range[3] - range[2]) * ppc[1];
@@ -153,7 +156,6 @@ void species::get_charge(vector<float> &charge_vec)
 
 void species::advance_cell(int counter)
 {
-    float tol = 1e-3;
     float posx = vec.get()[counter].x;
     float posy = vec.get()[counter].y;
 
@@ -189,11 +191,17 @@ void species::advance_cell(int counter)
     //! check boundaries to export data to mpi: later
 }
 
+void species::get_grid_points(int &nx_a, int &ny_a)
+{
+    nx_a = nx;
+    ny_a = ny;
+}
+
 void species::print()
 {
     for (int i = 0; i < np; i++)
     {
-        cout << "(" << vec.get()[i].ix << ", " << vec.get()[i].iy << ")" << endl;
+        cout << "cell (" << vec.get()[i].ix << ", " << vec.get()[i].iy << ")" << endl;
         cout << "x:" << vec.get()[i].x << endl;
         cout << "y: " << vec.get()[i].y << endl;
         cout << "ux: " << vec.get()[i].ux << endl;

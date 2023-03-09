@@ -7,7 +7,8 @@
   "settings": {
     "files.associations": {
       "species.C": "cpp",
-      "test.C": "cpp"
+      "test.C": "cpp",
+      "fields.C": "cpp"
     }
   }
 }
