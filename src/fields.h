@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <iomanip>
 
 using namespace std;
 
@@ -16,14 +17,14 @@ public:
     void field_solver();
     void field_interpolation();
 
+    void print();
+
 private:
     vector<float> pot_vec;
     vector<float> charge_vec;
 
     vector<float> Ex_vec;
     vector<float> Ey_vec;
-
-    //! Using Jacobi Iteration Method
 
     // simulation box info
     int nx; // number of x grid points
@@ -35,6 +36,10 @@ private:
 
     float xbox; // size x axis of simulation box
     float ybox; // size y axis of simulation box
+
+    //! Using Jacobi Iteration Method
+    int max_iter = 10000;
+    float tol = 1e-6;
 };
 
 #endif

@@ -37,6 +37,14 @@ int main()
     test.get_grid_points(nx, ny);
 
     fields Etest(nx, ny, charge);
+    cout << "test fields" << endl;
+    Etest.print();
+
+    Etest.potential_solver();
+
+    cout << "*********************" << endl;
+
+    Etest.print();
 
     return 0;
 }
