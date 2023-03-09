@@ -8,8 +8,6 @@ int main()
 {
     string name = "electron";
 
-    int testvar = 0;
-
     int ppc[2] = {1, 1};
     int range[4] = {0, 5, 0, 5}; // the latter ones are not included
     int vec_u[2] = {0, 20};
