@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 #include <iomanip>
+#include "species.h"
 
 using namespace std;
 
@@ -13,9 +14,10 @@ class fields
 public:
     fields(const int, const int, vector<float> &);
     ~fields();
-    void potential_solver();
-    void field_solver();
-    void field_interpolation();
+
+    void potential_solver();  // uses Jacobi Method to solve the Poisson Equation
+    void field_solver();      // Uses central differences to calculate E field from Potential
+    void field_inter(part &); // Interpolates the field inside the cell at particles' position
 
     void print();
 

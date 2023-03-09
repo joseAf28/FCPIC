@@ -88,19 +88,84 @@ void fields::potential_solver()
 
 void fields::field_solver()
 {
+    int nx_bulk = nx - 1;
+    int ny_bulk = ny - 1;
+
+    int idx = 0;
+    float Ex = 0;
+    float Ey = 0;
+
+    // E calculation inside the domain
+    for (int i = 1; i < nx_bulk; i++)
+    {
+        for (int j = 1; j < ny_bulk; j++)
+        {
+            idx = i + j * nx;
+            Ex = -(pot_vec[idx + 1] - pot_vec[idx - 1]) / (2.f * dx);
+            Ey = -(pot_vec[idx + nx] - pot_vec[idx - nx]) / (2.f * dy);
+            Ex_vec[idx] = Ex;
+            Ey_vec[idx] = Ey;
+        }
+    }
+    // E calculation at the boundary conditions
+    for (int i = 0; i < nx; i++)
+    {
+        int idx0 = i * nx;
+        Ex_vec[idx0] = -(pot_vec[1 + idx0] - pot_vec[idx0]) / (2.f * dx);
+        int idx1 = nx - 1 + i * ny;
+        Ex_vec[idx1] = -(pot_vec[idx1] - pot_vec[idx1 - 1]) / (2.f * dx);
+    }
+
+    for (int i = 0; i < ny; i++)
+    {
+        int idy0 = i;
+        Ey_vec[idy0] = -(pot_vec[nx + idy0] - pot_vec[idy0]) / (2.f * dy);
+        int idy1 = i + (ny - 1) * ny;
+        Ey_vec[idy1] = -(pot_vec[idy1] - pot_vec[idy1 - nx]) / (2.f * dy);
+    }
+}
+
+void field_inter(part &A)
+{
 }
 
 void fields::print()
 {
-    cout << "**************" << endl;
     cout << "Potential Grid" << endl;
+    cout << "**************" << endl;
     for (int i = 0; i < nx; i++)
     {
         for (int j = 0; j < ny; j++)
         {
-            int idx = i + j * nx;
+            int idx = j + i * nx;
             cout << fixed << setprecision(4) << pot_vec[idx] << setw(5) << "  ";
         }
         cout << endl;
     }
+    cout << "**************" << endl;
+
+    cout << "Ex Grid" << endl;
+    cout << "**************" << endl;
+    for (int i = 0; i < nx; i++)
+    {
+        for (int j = 0; j < ny; j++)
+        {
+            int idx = j + i * nx;
+            cout << fixed << setprecision(4) << Ex_vec[idx] << setw(5) << "  ";
+        }
+        cout << endl;
+    }
+    cout << "**************" << endl;
+    cout << "Ey Grid" << endl;
+    cout << "**************" << endl;
+    for (int i = 0; i < nx; i++)
+    {
+        for (int j = 0; j < ny; j++)
+        {
+            int idx = j + i * nx;
+            cout << fixed << setprecision(4) << Ex_vec[idx] << setw(5) << "  ";
+        }
+        cout << endl;
+    }
+    cout << "**************" << endl;
 }
