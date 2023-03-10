@@ -12,6 +12,7 @@ fields::fields(const int nx_a, const int ny_a, vector<float> &charge_a)
     int counter = nx;
 
     //! remove guard cell: it could be changed later
+    //! not very efficient: copying the array again - change later
     for (int i = 0; i < charge_a.size(); i++)
     {
         if (i == counter)
@@ -125,8 +126,28 @@ void fields::field_solver()
     }
 }
 
-void field_inter(part &A)
+void fields::field_inter(part &A, float &Ex_inter, float &Ey_inter)
 {
+    int icell = A.ix;
+    int jcell = A.iy;
+    float wx = A.x;
+    float wy = A.y;
+
+    int ij = A.ix + nx * A.iy;
+    cout << "ij: " << ij << endl;
+    cout << "x: " << wx << " y: " << wy << endl;
+
+    float Aij = (dx - wx) * (dy - wy);
+    float Aiij = wx * (dy - wy);
+    float Aijj = (dx - wx) * wy;
+    float Aiijj = wx * wy;
+
+    cout << Aij << " " << Aiij << " " << Aijj << " " << Aiijj << endl;
+    cout << Ex_vec[ij] << " " << Ex_vec[ij + 1] << " " << Ex_vec[ij + nx] << " " << Ex_vec[ij + nx + 1] << endl;
+    cout << Ey_vec[ij] << " " << Ey_vec[ij + 1] << " " << Ey_vec[ij + nx] << " " << Ey_vec[ij + nx + 1] << endl;
+
+    Ex_inter = Ex_vec[ij] * Aiij + Ex_vec[ij + 1] * Aiij + Ex_vec[ij + nx] * Aijj + Ex_vec[ij + 1 + nx] / (dx * dy);
+    Ey_inter = Ey_vec[ij] * Aiij + Ey_vec[ij + 1] * Aiij + Ey_vec[ij + nx] * Aijj + Ey_vec[ij + 1 + nx] / (dx * dy);
 }
 
 void fields::print()
@@ -163,7 +184,7 @@ void fields::print()
         for (int j = 0; j < ny; j++)
         {
             int idx = j + i * nx;
-            cout << fixed << setprecision(4) << Ex_vec[idx] << setw(5) << "  ";
+            cout << fixed << setprecision(4) << Ey_vec[idx] << setw(5) << "  ";
         }
         cout << endl;
     }

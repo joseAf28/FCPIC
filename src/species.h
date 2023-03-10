@@ -40,12 +40,12 @@ public:
 
     void print();
 
+    // array of particles
+    unique_ptr<part> vec;
+
 private:
     // species name
     string name;
-
-    // array of particles
-    unique_ptr<part> vec;
 
     // mass and charge
     float m = 1; //!! to define in the constructor later

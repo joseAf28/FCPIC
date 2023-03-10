@@ -15,9 +15,9 @@ public:
     fields(const int, const int, vector<float> &);
     ~fields();
 
-    void potential_solver();  // uses Jacobi Method to solve the Poisson Equation
-    void field_solver();      // Uses central differences to calculate E field from Potential
-    void field_inter(part &); // Interpolates the field inside the cell at particles' position
+    void potential_solver();                    // uses Jacobi Method to solve the Poisson Equation
+    void field_solver();                        // Uses central differences to calculate E field from Potential
+    void field_inter(part &, float &, float &); // Interpolates the field inside the cell at particles' position
 
     void print();
 

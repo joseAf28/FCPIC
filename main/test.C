@@ -20,7 +20,7 @@ int main()
     test.set_U();
     cout << test.set_nb() << endl;
     cout << "********" << endl;
-    // test.print();
+    test.print();
 
     vector<float> charge;
     test.get_charge(charge);
@@ -36,6 +36,8 @@ int main()
 
     test.get_grid_points(nx, ny);
 
+    cout << "nx: " << nx << "  ny: " << ny << endl;
+
     fields Etest(nx, ny, charge);
     cout << "Test fields" << endl;
 
@@ -48,6 +50,22 @@ int main()
 
     cout << "End" << endl;
     Etest.print();
+
+    float Ex = 0;
+    float Ey = 0;
+    int nb = test.set_nb();
+    cout << "***************" << endl;
+    cout << "Field Interpolation" << endl;
+
+    int i = 10;
+    // for (int i = 0; i < nb; i++)
+    // {
+    Etest.field_inter(test.vec.get()[i], Ex, Ey);
+
+    cout << "ix: " << test.vec.get()[i].ix << " iy: " << test.vec.get()[i].iy << endl;
+    cout << "Ex: " << Ex << " Ey: " << Ey << endl;
+    cout << "***************" << endl;
+    // }
 
     return 0;
 }
