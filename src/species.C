@@ -1,9 +1,7 @@
 #include "species.h"
 
-using namespace std;
-
 // declare all stuff
-species::species(string name_a, int *ppc_a, int *range_a, int *vec_U_a, float *vf_a, float *vth_a)
+species::species(std::string name_a, int *ppc_a, int *range_a, int *vec_U_a, float *vf_a, float *vth_a)
 {
     // declare all variables
     name = name_a;
@@ -36,19 +34,22 @@ species::species(string name_a, int *ppc_a, int *range_a, int *vec_U_a, float *v
     ybox = dy * ny;
 
     // initializing the array of particles
-    vec = unique_ptr<part>(new part[np]);
+    vec = std::unique_ptr<part>(new part[np]);
+    charge = new simulation::field();
 
     // random number generator
-    random_device dev;
-    mt19937_64 rng_aux(dev());
-    normal_distribution<double> norm_aux(0, 1);
+    std::random_device dev;
+    std::mt19937_64 rng_aux(dev());
+    std::normal_distribution<double> norm_aux(0, 1);
     rng = rng_aux;
     rand_gauss = norm_aux;
+
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
 
 species::~species()
 {
-    cout << __PRETTY_FUNCTION__ << endl;
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
 
 int species::set_nb()
@@ -83,7 +84,7 @@ void species::set_U()
 
 void species::set_X()
 {
-    vector<float> loccell;
+    std::vector<float> loccell;
 
     const int npcell = ppc[0] * ppc[1];
     const float dpcellx = dx / ppc[0];
@@ -123,16 +124,35 @@ void species::set_X()
     loccell.clear();
 }
 
-void species::get_charge(vector<float> &charge_vec)
+void species::get_charge()
 {
-    //! charge vec must has 1 guard cell at boundaries: include latter
-    //? imposing periodic boundaries: well posed Laplace Problem ?
+    //! charge vec with no ghost cells: ghost cells are going to be taken care in Fields class
+    std::vector<double> charge_vec;
 
-    int row = nx + 1;
-    charge_vec.assign((nx * (ny + 1)), 0.);
+    // // with Guard Cells
+    // int row = nx + 2;
+    // charge_vec.assign(((nx + 2) * (ny + 2)), 0.f);
+    // for (int i = 0; i < np; i++)
+    // {
+    //     int ij = vec.get()[i].ix + (row)*vec.get()[i].iy + 1 + row;
+    //     if (ij % row == row - 1)
+    //         ij = ij + 1;
+
+    //     float wx = vec.get()[i].x;
+    //     float wy = vec.get()[i].y;
+
+    //     // divide by dx*dy
+    //     charge_vec[ij] += (dx - wx) * (dy - wy) * q;
+    //     charge_vec[ij + 1] += wx * (dy - wy) * q;
+    //     charge_vec[ij + row] += (dx - wx) * wy * q;
+    //     charge_vec[ij + 1 + row] += wx * wy * q;
+    // }
+
+    // without ghost cells
+    charge_vec.assign((nx * ny), 0.f);
     for (int i = 0; i < np; i++)
     {
-        int ij = vec.get()[i].ix + (row)*vec.get()[i].iy;
+        int ij = vec.get()[i].ix + nx * vec.get()[i].iy;
 
         float wx = vec.get()[i].x;
         float wy = vec.get()[i].y;
@@ -140,18 +160,25 @@ void species::get_charge(vector<float> &charge_vec)
         // divide by dx*dy
         charge_vec[ij] += (dx - wx) * (dy - wy) * q;
         charge_vec[ij + 1] += wx * (dy - wy) * q;
-        charge_vec[ij + row] += (dx - wx) * wy * q;
-        charge_vec[ij + 1 + row] += wx * wy * q;
+        charge_vec[ij + nx] += (dx - wx) * wy * q;
+        charge_vec[ij + 1 + nx] += wx * wy * q;
     }
 
-    // Periodic Boundaries
-    //  xx boundarie: j index
-    for (int j = 0; j < ny + 1; j++)
-        charge_vec[j * row] += charge_vec[nx + j * row];
+    // update field Charge
+    charge->val = charge_vec;
+    charge->Nx = nx;
+    charge->Ny = ny;
+    charge->N = nx * ny;
 
-    // yy boundarie: i index
-    for (int i = 0; i < nx + 1; i++)
-        charge_vec[i] += charge_vec[i + ny * row];
+    // Seems not useful
+    //  // Periodic Boundaries
+    //  //  xx boundarie: j index
+    //  for (int j = 0; j < ny + 1; j++)
+    //      charge_vec[j * row] += charge_vec[nx + j * row];
+
+    // // yy boundarie: i index
+    // for (int i = 0; i < nx + 1; i++)
+    //     charge_vec[i] += charge_vec[i + ny * row];
 }
 
 void species::advance_cell(int counter)
@@ -201,11 +228,46 @@ void species::print()
 {
     for (int i = 0; i < np; i++)
     {
-        cout << "cell (" << vec.get()[i].ix << ", " << vec.get()[i].iy << ")" << endl;
-        cout << "x:" << vec.get()[i].x << endl;
-        cout << "y: " << vec.get()[i].y << endl;
-        cout << "ux: " << vec.get()[i].ux << endl;
-        cout << "uy: " << vec.get()[i].uy << endl;
-        cout << "****************" << endl;
+        std::cout << "cell (" << vec.get()[i].ix << ", " << vec.get()[i].iy << ")" << std::endl;
+        std::cout << "x:" << vec.get()[i].x << std::endl;
+        std::cout << "y: " << vec.get()[i].y << std::endl;
+        std::cout << "ux: " << vec.get()[i].ux << std::endl;
+        std::cout << "uy: " << vec.get()[i].uy << std::endl;
+        std::cout << "****************" << std::endl;
     }
+}
+
+void species::write_output(int rank, int time)
+{
+    std::fstream Output_file;
+    std::string filename;
+
+    filename = "../outputs/grid_" + std::to_string(rank) + "__t_" + std::to_string(time) + ".txt";
+    std::string space = "   ";
+
+    Output_file.open(filename, std::ios::out);
+    Output_file << "**************Grid**************" << std::endl;
+
+    int precision = 4;
+    for (int i = 0; i < np; i++)
+    {
+        Output_file << "cell (" << vec.get()[i].ix << ", " << vec.get()[i].iy << ")" << space;
+        Output_file << "x:" << std::setw(precision) << vec.get()[i].x << space;
+        Output_file << "y: " << std::setw(precision) << vec.get()[i].y << space;
+        Output_file << "ux: " << std::setw(precision) << vec.get()[i].ux << space;
+        Output_file << "uy: " << std::setw(precision) << vec.get()[i].uy << space;
+        Output_file << std::endl;
+    }
+    Output_file << std::endl
+                << std::endl;
+    for (int i = 0; i < charge->val.size(); i++)
+    {
+        if (i % (nx) == 0)
+            Output_file << std::endl;
+
+        Output_file << std::setw(precision) << charge->val[i] << space;
+        // if (i % 4 == 0)
+    }
+
+    Output_file.close();
 }

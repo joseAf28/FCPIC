@@ -8,7 +8,10 @@
     "files.associations": {
       "species.C": "cpp",
       "test.C": "cpp",
-      "fields.C": "cpp"
+      "fields.C": "cpp",
+      "field.C": "cpp",
+      "simulation.C": "cpp",
+      "Ctest.C": "cpp"
     }
   }
 }

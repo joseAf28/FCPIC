@@ -7,8 +7,9 @@
 #include <random>
 #include <algorithm>
 #include <iostream>
-
-using namespace std;
+#include <iomanip>
+#include <fstream>
+#include "field.h"
 
 typedef struct Particle
 {
@@ -26,26 +27,28 @@ typedef struct Particle
 class species
 {
 public:
-    species(string, int *, int *, int *, float *, float *);
+    species(std::string, int *, int *, int *, float *, float *);
     ~species();
 
     int set_nb();
     void set_X();
     void set_U();
 
-    void get_charge(vector<float> &);
+    void get_charge();
     void advance_cell(int);
 
     void get_grid_points(int &, int &);
 
     void print();
+    void write_output(int, int);
 
     // array of particles
-    unique_ptr<part> vec;
+    std::unique_ptr<part> vec;
+    simulation::field *charge;
 
 private:
     // species name
-    string name;
+    std::string name;
 
     // mass and charge
     float m = 1; //!! to define in the constructor later
@@ -81,8 +84,8 @@ private:
     // ?The origin of the cell is at the top left corner of the cell.
 
     // Generator of random numbers the thermal boltzmann distribution
-    mt19937_64 rng;
-    normal_distribution<double> rand_gauss;
+    std::mt19937_64 rng;
+    std::normal_distribution<double> rand_gauss;
 };
 
 #endif
