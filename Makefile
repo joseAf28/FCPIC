@@ -16,10 +16,10 @@ INC := $(wildcard src/*.h)
 
 
 test: test.exe
-	cd bin; echo "running program... \n Output Results:" ; mpirun ./test.exe;
+	@cd bin; echo "running program... \n Output Results:" ; mpirun ./test.exe;
 
 Ctest: Ctest.exe
-	cd bin; echo 'running program... \nOutput Results:'; ./Ctest.exe;
+	@cd bin; echo 'running program...\nOutput Results:'; ./Ctest.exe;
 
 
 lib: $(LIBDIR)/libPIC.a
