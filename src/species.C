@@ -35,7 +35,7 @@ species::species(std::string name_a, int *ppc_a, int *range_a, int *vec_U_a, flo
 
     // initializing the array of particles
     vec = std::unique_ptr<part>(new part[np]);
-    charge = new simulation::field();
+    charge = new simulation::field(nx + 2, ny + 2);
 
     // random number generator
     std::random_device dev;
@@ -47,7 +47,7 @@ species::species(std::string name_a, int *ppc_a, int *range_a, int *vec_U_a, flo
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
 
-species::~species()
+species::~species() //! fix problem with deallocation of mat memory
 {
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
@@ -126,59 +126,52 @@ void species::set_X()
 
 void species::get_charge()
 {
-    //! charge vec with no ghost cells: ghost cells are going to be taken care in Fields class
-    std::vector<double> charge_vec;
+    std::vector<double> charge_vec(((nx + 2) * (ny + 2)), 0.f);
 
-    // // with Guard Cells
-    // int row = nx + 2;
-    // charge_vec.assign(((nx + 2) * (ny + 2)), 0.f);
-    // for (int i = 0; i < np; i++)
-    // {
-    //     int ij = vec.get()[i].ix + (row)*vec.get()[i].iy + 1 + row;
-    //     if (ij % row == row - 1)
-    //         ij = ij + 1;
+    // using matrices
+    mat = new float *[ny + 2];
+    for (int i = 0; i < nx + 2; i++)
+        mat[i] = new float[nx + 2]();
 
-    //     float wx = vec.get()[i].x;
-    //     float wy = vec.get()[i].y;
-
-    //     // divide by dx*dy
-    //     charge_vec[ij] += (dx - wx) * (dy - wy) * q;
-    //     charge_vec[ij + 1] += wx * (dy - wy) * q;
-    //     charge_vec[ij + row] += (dx - wx) * wy * q;
-    //     charge_vec[ij + 1 + row] += wx * wy * q;
-    // }
-
-    // without ghost cells
-    charge_vec.assign((nx * ny), 0.f);
     for (int i = 0; i < np; i++)
     {
-        int ij = vec.get()[i].ix + nx * vec.get()[i].iy;
+        int ix = vec.get()[i].ix;
+        int iy = vec.get()[i].iy;
+
+        ix = ix + 1;
+        iy = iy + 1;
 
         float wx = vec.get()[i].x;
         float wy = vec.get()[i].y;
 
-        // divide by dx*dy
-        charge_vec[ij] += (dx - wx) * (dy - wy) * q;
-        charge_vec[ij + 1] += wx * (dy - wy) * q;
-        charge_vec[ij + nx] += (dx - wx) * wy * q;
-        charge_vec[ij + 1 + nx] += wx * wy * q;
+        mat[ix][iy] += (dx - wx) * (dy - wy) * q;
+        mat[ix + 1][iy] += wx * (dy - wy) * q;
+        mat[ix][iy + 1] += (dx - wx) * wy * q;
+        mat[ix + 1][iy + 1] += wx * wy * q;
+    }
+    // fill guard cells
+    for (int j = 0; j < ny + 2; j++)
+    {
+        mat[0][j] = mat[1][j];
+        mat[nx + 1][j] = mat[nx][j];
+    }
+    for (int i = 0; i < nx + 2; i++)
+    {
+        mat[i][0] = mat[i][1];
+        mat[i][nx + 1] = mat[i][nx];
+    }
+
+    for (int i = 0; i < nx + 2; i++)
+    {
+        for (int j = 0; j < ny + 2; j++)
+        {
+            int ij = i + j * (nx + 2);
+            charge_vec[ij] = mat[i][j];
+        }
     }
 
     // update field Charge
     charge->val = charge_vec;
-    charge->Nx = nx;
-    charge->Ny = ny;
-    charge->N = nx * ny;
-
-    // Seems not useful
-    //  // Periodic Boundaries
-    //  //  xx boundarie: j index
-    //  for (int j = 0; j < ny + 1; j++)
-    //      charge_vec[j * row] += charge_vec[nx + j * row];
-
-    // // yy boundarie: i index
-    // for (int i = 0; i < nx + 1; i++)
-    //     charge_vec[i] += charge_vec[i + ny * row];
 }
 
 void species::advance_cell(int counter)
@@ -242,7 +235,7 @@ void species::write_output(int rank, int time)
     std::fstream Output_file;
     std::string filename;
 
-    filename = "../outputs/grid_" + std::to_string(rank) + "__t_" + std::to_string(time) + ".txt";
+    filename = "../results/grid_" + std::to_string(rank) + "__t_" + std::to_string(time) + ".txt";
     std::string space = "   ";
 
     Output_file.open(filename, std::ios::out);
@@ -260,13 +253,13 @@ void species::write_output(int rank, int time)
     }
     Output_file << std::endl
                 << std::endl;
-    for (int i = 0; i < charge->val.size(); i++)
+    for (int i = 0; i < ny + 2; i++)
     {
-        if (i % (nx) == 0)
-            Output_file << std::endl;
-
-        Output_file << std::setw(precision) << charge->val[i] << space;
-        // if (i % 4 == 0)
+        for (int j = 0; j < nx + 2; j++)
+        {
+            Output_file << std::setw(precision) << mat[i][j] << space;
+        }
+        Output_file << std::endl;
     }
 
     Output_file.close();

@@ -29,6 +29,7 @@ namespace simulation
         // allocates memory to the field variables equal to the number of cells in the domain
         field(int, int);
         field(int, int, std::vector<double> &);
+        field(int, int, float **);
         field();
         field(const field &);
 

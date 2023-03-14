@@ -58,7 +58,8 @@ namespace simulation
     // Jacobi solver
     void jacobi(field *, int, int, field *);
 
-    void write_output(domain &, int, int);
+    void write_output_u(domain &, int, int);
+    void write_output_charge(domain &, int, int);
 
 }
 #endif

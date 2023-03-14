@@ -83,6 +83,8 @@ private:
     // ?We define the cartesian coordinates as:
     // ?The origin of the cell is at the top left corner of the cell.
 
+    float **mat;
+
     // Generator of random numbers the thermal boltzmann distribution
     std::mt19937_64 rng;
     std::normal_distribution<double> rand_gauss;

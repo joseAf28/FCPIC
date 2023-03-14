@@ -47,7 +47,7 @@ int main(int argc, char **argv)
     std::string name = "electron";
 
     int ppc[2] = {3, 3};
-    int range[4] = {0, N_int_local_x, 0, N_int_local_y}; // the latter ones are not included
+    int range[4] = {0, N_int_local_x, 0, N_int_local_y}; // the latter ones are not included(defined with no guard cells)
     int vec_u[2] = {0, 20};
 
     float vf[3] = {0.1, 0.1, 0.1};
@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 
     std::cout << "****enter loop******" << std::endl;
     //**For Loop Simulation***********************
-    for (int counter = 0; counter < 2; counter++)
+    for (int counter = 0; counter < 1; counter++)
     {
         std::cout << "counter: " << counter << std::endl;
 
@@ -93,37 +93,41 @@ int main(int argc, char **argv)
         // initialization of local CVs in the process
         u->set_field_value(0.0);
 
-        // Assigning the ghost cells the respective boundary face values
+        // Assigning the ghost cells the respective boundary face values for the u field
         set_bc(u);
 
         // Initial condition for density charge field
+        //! print of charge.txt shows err9r: fix
         for (int i = 0; i < N_local; i++)
         {
-            if (u->bc[i] == NONE || grid_left == MPI_PROC_NULL || grid_right == MPI_PROC_NULL || grid_top == MPI_PROC_NULL || grid_bottom == MPI_PROC_NULL)
+            if (u->bc[i] == NONE)
             {
                 l = i % N_local_x;
                 m = (int)i / N_local_x;
 
-                // where all species are added to the chrage density grid
-                if (counter == 0)
-                    charge->val[i] = test->charge->val[i];
+                // where all species are added to the charge density grid
+                charge->val[i] = test->charge->val[l + m * N_local_x];
+            }
+            if (u->bc[i] == BUFFER)
+            {
+                l = i % N_local_x;
+                m = (int)i / N_local_x;
 
-                // simulate the change in the density profile as a result of the particle pusher
-                if (counter == 1)
-                {
-                    charge->val[i] = test->charge->val[i];
-                }
+                // where all species are added to the charge density grid
+                charge->val[i] = test->charge->val[l + m * N_local_x];
             }
         }
 
         // exchanging buffers of the charge field only once
-        exchange_buffers(charge, N_local_x, N_local_y);
+        // exchange_buffers(charge, N_local_x, N_local_y);
+
+        write_output_charge(subdomain, rank, counter);
 
         //? Calling jacobi solver
         jacobi(u, N_local_x, N_local_y, charge);
 
         //? Diagnostics: writes output to the file
-        write_output(subdomain, rank, counter);
+        write_output_u(subdomain, rank, counter);
         test->write_output(rank, counter);
 
         //? Field Interpolation

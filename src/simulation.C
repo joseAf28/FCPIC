@@ -74,7 +74,7 @@ namespace simulation
     //! very important - Setting flags for ghost and buffer cells
     void set_ghost_buffer_flag(domain &subdomain)
     {
-        int i, l, m;
+        int l, m;
 
         // to simplify notation
         field *u = subdomain.u;
@@ -83,7 +83,7 @@ namespace simulation
         int N_Cells_x = u->Nx;
         int N_Cells_y = u->Ny;
 
-        for (i = 0; i < N_Cells; i++) // identify in which BC we are: dirichelet, buffer, none(bulk domain)
+        for (int i = 0; i < N_Cells; i++) // identify in which BC we are: physical, buffer, none(bulk domain)
         {
             l = i % N_Cells_x;      // gives the position of the CV along x
             m = (int)i / N_Cells_x; // gives the position of the CV along y
@@ -230,7 +230,8 @@ namespace simulation
         printf("Maximum residual is %e and number of iterations are %ld and I am process %d \n", res, loop, rank);
     }
 
-    void write_output(domain &subdomain, int rank, int time)
+    // bit dumb: use bool to choose u or charge
+    void write_output_u(domain &subdomain, int rank, int time)
     {
         int l, m;
         int N_local = subdomain.u->N;
@@ -244,7 +245,7 @@ namespace simulation
         offset[X_DIR] = grid_coord[X_DIR] * (N_local_x - 2);
         offset[Y_DIR] = grid_coord[Y_DIR] * (N_local_y - 2);
 
-        filename = "../outputs/subdomain_" + std::to_string(rank) + "__t_" + std::to_string(time) + ".txt";
+        filename = "../results/subdomain_" + std::to_string(rank) + "__t_" + std::to_string(time) + ".txt";
         std::string space = "        ";
         Output_file.open(filename, std::ios::out);
         Output_file << "x position" << space << "y position" << space << "field value" << std::endl;
@@ -261,6 +262,32 @@ namespace simulation
 
                 Output_file << "    " << value_x << space << value_y << space << subdomain.u->val[i] << std::endl;
             }
+        }
+
+        Output_file.close();
+    }
+    void write_output_charge(domain &subdomain, int rank, int time)
+    {
+        std::fstream Output_file;
+        std::string filename;
+        int l, m;
+        int N_local = subdomain.u->N;
+        int N_local_x = subdomain.u->Nx;
+        int N_local_y = subdomain.u->Ny;
+
+        filename = "../results/charge_" + std::to_string(rank) + "__t_" + std::to_string(time) + ".txt";
+        std::string space = "   ";
+
+        Output_file.open(filename, std::ios::out);
+        int precision = 4;
+
+        for (int i = 0; i < N_local; i++)
+        {
+            if (i % (N_local_x) == 0)
+                Output_file << std::endl;
+
+            Output_file << std::setw(precision) << subdomain.charge->val[i] << space;
+            // if (i % 4 == 0)
         }
 
         Output_file.close();
