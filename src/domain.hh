@@ -1,9 +1,9 @@
 #ifndef _DOMAIN_
 #define _DOMAIN_
 
-#include "field.h"
+#include "field.hh"
 
-namespace simulation
+namespace FCPIC
 {
     class domain
     {

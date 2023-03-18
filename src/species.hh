@@ -9,7 +9,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include "field.h"
+#include "field.hh"
 
 typedef struct Particle
 {
@@ -33,7 +33,7 @@ public:
     int set_nb();
     void set_X();
     void set_U();
-
+    /*
     void get_charge();
     void advance_cell(int);
 
@@ -41,10 +41,10 @@ public:
 
     void print();
     void write_output(int, int);
-
+    */
     // array of particles
     std::unique_ptr<part> vec;
-    simulation::field *charge;
+    //simulation::field *charge;
 
 private:
     // species name

@@ -1,27 +1,30 @@
-#include "simulation.h"
-#include "field.h"
+#include "simulation.hh"
+#include "field.hh"
 
-namespace simulation
+namespace FCPIC
 {
     // Constructors
     // allocates memory to the field variables equal to the number of cells in the domain
-    field::field(int N_x, int N_y)
+    field::field(int Nx, int Ny)
     {
-        Nx = N_x;
-        Ny = N_y;
-        N = N_x * N_y;
+        N_int_x = Nx;
+        N_int_y = Ny;
+        N_x = Nx + 2;
+        N_y = Ny + 2;
+        N = Nx * Ny;
         val.assign(N, 0.);
-        bc = new BC_type[N];
-        std::cout << __PRETTY_FUNCTION__ << std::endl;
+        //std::cout << __PRETTY_FUNCTION__ << std::endl;
     }
-
+    /*
     field::field(int N_x, int N_y, std::vector<double> &value)
     {
         Nx = N_x;
         Ny = N_y;
         N = N_x * N_y;
-        val.reserve(N);
-        val = value;
+        phi.reserve(N);
+        phi = value;
+        Efieldx.assign(N, 0.);
+        Efieldy.assign(N, 0.);
         bc = new BC_type[N];
     }
 
@@ -30,7 +33,9 @@ namespace simulation
         Nx = 0;
         Ny = 0;
         N = Nx * Ny;
-        val.assign(N, 0.);
+        phi.assign(N, 0.);
+        Efieldx.assign(N, 0.);
+        Efieldy.assign(N, 0.);
         bc = new BC_type[N];
     }
 
@@ -39,21 +44,63 @@ namespace simulation
         Nx = obj.Nx;
         Ny = obj.Ny;
         N = obj.N;
-        val = obj.val;
+        phi = obj.phi;
+        Efieldx = obj.Efieldx;
+        Efieldy = obj.Efieldy;
         bc = new BC_type[N];
         memcpy(bc, obj.bc, sizeof(BC_type) * N);
     }
+    */
+    //Implementing Ex = - dphi/dx = (phi(WEST) - phi(EAST))/2dx
 
-    void field::set_field_value(double value)
-    {
-        for (int i = 0; i < N; i++)
-            this->val[i] = value;
+    void field::setValue(double value){
+        for(int i = 0; i<N; i++)
+            val[i] = value;
+    }
+
+    void field::getNorthBound(double* arr){
+        for(int j=0; j<N_x; j++)
+            arr[j] = val[NORTH_BOUND];
+    }
+
+    void field::getSouthBound(double* arr){
+        for(int j=0; j<N_x; j++)
+            arr[j] = val[SOUTH_BOUND];
+    }
+
+    void field::getWestBound(double* arr){
+        for(int i=1; i<=N_int_y; i++)
+            arr[i-1] = val[WEST_BOUND];
+    }
+
+    void field::getEastBound(double* arr){
+        for(int i=1; i<=N_int_y; i++)
+            arr[i-1] = val[EAST_BOUND];
+    }
+
+    void field::setNorthGuard(double* arr){
+        for(int j=0; j<N_x; j++)
+            val[NORTH_GUARD] = arr[j];
+    }
+
+    void field::setSouthGuard(double* arr){
+        for(int j=0; j<N_x; j++)
+            val[SOUTH_GUARD] = arr[j];
+    }
+
+    void field::setWestGuard(double* arr){
+        for(int i=1; i<=N_int_y; i++)
+            val[WEST_GUARD] = arr[i-1];
+    }
+
+    void field::setEastGuard(double* arr){
+        for(int i=1; i<=N_int_y; i++)
+            val[EAST_GUARD] = arr[i-1];
     }
 
     field::~field()
     {
         val.clear();
-        delete bc;
     }
 
     // change function

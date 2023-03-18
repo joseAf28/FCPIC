@@ -10,10 +10,9 @@ CC := mpic++ -std=c++14 -O2 -pedantic
 
 VPATH = main:src
 
-SRC := $(wildcard src/*.C)
-OBJ := $(patsubst %.C, $(BINDIR)/%.o, $(notdir $(SRC)))
-INC := $(wildcard src/*.h)
-
+SRC := $(wildcard src/*.cc)
+OBJ := $(patsubst %.cc, $(BINDIR)/%.o, $(notdir $(SRC)))
+INC := $(wildcard src/*.hh)
 
 test: test.exe
 	@cd bin; echo "running program... \n Output Results:" ; mpirun ./test.exe;
@@ -33,10 +32,9 @@ $(LIBDIR)/libPIC.a: $(OBJ)
 	@echo compilink and linking... 
 	$(CC) -I src $< -o $(BINDIR)/$@ -L lib -l PIC
 
-$(BINDIR)/%.o: %.C | $(INC)
+$(BINDIR)/%.o: %.cc | $(INC)
 	@echo compiling... $<
 	$(CC) -I src -c $< -o $@
-
 
 ######### clean
 

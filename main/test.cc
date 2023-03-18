@@ -1,7 +1,7 @@
-#include "simulation.h"
-#include "species.h"
+#include "simulation.hh"
+#include "species.hh"
 
-using namespace simulation;
+// Inputs: box aspect ratio, box size, no of particles, field BCs, particle BCs
 
 int main(int argc, char **argv)
 {
@@ -9,15 +9,15 @@ int main(int argc, char **argv)
     std::mt19937_64 rng(dev());
     std::normal_distribution<double> norm(3, 0.5);
 
-    MPI_Init(&argc, &argv);
+    FCPIC::simulation sim(argc, argv);
+    sim.set_Xperiodic_field_bc();
+    sim.set_Yperiodic_field_bc();
 
     double t1, t2;
     int l, m;
     t1 = MPI_Wtime();
-
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    setup_proc_grid();
+    /*
+    //setup_proc_grid();
 
     // Box Simulation Info
     //***********************************
@@ -39,9 +39,6 @@ int main(int argc, char **argv)
     int N_local_y = N_int_local_y + 2;
     int N_local = N_local_x * N_local_y;
     //*************************************
-
-    // Setting up MPI datatypes for exchange of values in buffer in x and y direction.
-    setup_MPI_datatypes(N_int_local_x, N_int_local_y, N_local_x);
 
     // Create Particles Grid
     std::string name = "electron";
@@ -66,9 +63,6 @@ int main(int argc, char **argv)
 
     // subdomain: to organize the objects: links th Potential Field and the Charge Density Field
     domain subdomain(u, charge);
-
-    // Assigning different flags to different boundary conditions
-    set_ghost_buffer_flag(subdomain);
 
     std::cout << "****enter loop******" << std::endl;
     //**For Loop Simulation***********************
@@ -146,6 +140,7 @@ int main(int argc, char **argv)
     delete u;
     delete charge;
     delete test;
+    */
     MPI_Finalize();
 
     return 0;

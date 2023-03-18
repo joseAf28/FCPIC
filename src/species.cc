@@ -1,4 +1,4 @@
-#include "species.h"
+#include "species.hh"
 
 // declare all stuff
 species::species(std::string name_a, int *ppc_a, int *range_a, int *vec_U_a, float *vf_a, float *vth_a)
@@ -35,7 +35,7 @@ species::species(std::string name_a, int *ppc_a, int *range_a, int *vec_U_a, flo
 
     // initializing the array of particles
     vec = std::unique_ptr<part>(new part[np]);
-    charge = new simulation::field(nx + 2, ny + 2);
+    //charge = new simulation::field(nx + 2, ny + 2);
 
     // random number generator
     std::random_device dev;
@@ -123,7 +123,7 @@ void species::set_X()
     }
     loccell.clear();
 }
-
+/*
 void species::get_charge()
 {
     std::vector<double> charge_vec(((nx + 2) * (ny + 2)), 0.f);
@@ -264,3 +264,4 @@ void species::write_output(int rank, int time)
 
     Output_file.close();
 }
+*/
