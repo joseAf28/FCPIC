@@ -17,11 +17,11 @@ namespace FCPIC
 
 
     simulation::simulation(int argc, char **argv){
-        aspect = 1; // (INPUT) y_len = aspect (x_len always norm to 1)
-        Npart = 1000; // (INPUT)
+        aspect = .5; // (INPUT) y_len = aspect (x_len always norm to 1)
+        Npart = 500; // (INPUT)
         N= Npart/10;
-        N_int_x= (int) (std::sqrt(N/aspect));
-        N_int_y= (int) aspect*N_int_x;
+        N_int_x= std::sqrt((double) N/ aspect);
+        N_int_y= aspect*(double) N_int_x;
         N= N_int_x * N_int_y;
         N_x = N_int_x +2;
         N_y = N_int_y +2;
@@ -77,6 +77,22 @@ namespace FCPIC
         // calculate ranks of neighboring processes in the grid
         MPI_Cart_shift(grid_comm, 1, 1, &grid_left, &grid_right);
         MPI_Cart_shift(grid_comm, 0, 1, &grid_bottom, &grid_top);
+
+        //---TESTES---
+        //PARA TESTAR COISAS USAR ESTE SÍTIO
+        /*
+        std::cout << "Grid rank: " << grid_rank << std::endl;
+        std::cout << "N_int_x: " << N_int_x << "   N_int_y: " << N_int_y << std::endl;
+        std::cout << "N_x: " << N_x << "   N_y: " << N_y << std::endl;
+        field phi(N_int_x, N_int_y);
+        phi.setValue((double) grid_rank);
+        exchange_phi_buffers(&phi);
+        phi.print_field(std::cout);
+        if(grid_rank == -1){
+            phi.print_field(std::cout);
+        }
+        */
+
     }
 
     void simulation::set_Xperiodic_field_bc()
@@ -118,6 +134,44 @@ namespace FCPIC
     // communication between the processes
     void simulation::exchange_phi_buffers(field *phi)
     {
+        if(grid_left != MPI_PROC_NULL){
+            phi->getWestBound(west_send);
+
+            MPI_Sendrecv(west_send, N_int_y, MPI_DOUBLE, grid_left, 0, 
+                        west_recv, N_int_y, MPI_DOUBLE, grid_left, 0, 
+                        grid_comm, &status);
+
+            phi->setWestGuard(west_recv);
+        }
+        else{
+            if(bc[Y_DIR] == CONDUCTIVE)
+            {
+                for(int j = 0; j<N_int_y; j++)
+                    west_send[j] = 0;
+
+                phi->setWestGuard(west_send);
+            }
+        }
+
+        if(grid_right != MPI_PROC_NULL){
+            phi->getEastBound(east_send);
+
+            MPI_Sendrecv(east_send, N_int_y, MPI_DOUBLE, grid_right, 0, 
+                        east_recv, N_int_y, MPI_DOUBLE, grid_right, 0, 
+                        grid_comm, &status);
+
+            phi->setEastGuard(east_recv);
+        }
+        else{
+            if(bc[Y_DIR] == CONDUCTIVE)
+            {
+                for(int j = 0; j<N_int_y; j++)
+                    east_send[j] = 0;
+
+                phi->setEastGuard(east_send);
+            }
+        }
+
         if(grid_top != MPI_PROC_NULL){
             phi->getNorthBound(north_send);
 
@@ -152,45 +206,7 @@ namespace FCPIC
                 for(int j = 0; j<N_x; j++)
                     south_send[j] = 0;
 
-                phi->setNorthGuard(south_send);
-            }
-        }
-
-        if(grid_left != MPI_PROC_NULL){
-            phi->getWestBound(west_send);
-
-            MPI_Sendrecv(west_send, N_int_y, MPI_DOUBLE, grid_left, 0, 
-                        west_recv, N_int_y, MPI_DOUBLE, grid_left, 0, 
-                        grid_comm, &status);
-
-            phi->setWestGuard(west_recv);
-        }
-        else{
-            if(bc[Y_DIR] == CONDUCTIVE)
-            {
-                for(int j = 0; j<N_int_y; j++)
-                    west_send[j] = 0;
-
-                phi->setNorthGuard(west_send);
-            }
-        }
-
-        if(grid_right != MPI_PROC_NULL){
-            phi->getEastBound(east_send);
-
-            MPI_Sendrecv(east_send, N_int_y, MPI_DOUBLE, grid_right, 0, 
-                        east_recv, N_int_y, MPI_DOUBLE, grid_right, 0, 
-                        grid_comm, &status);
-
-            phi->setEastGuard(east_recv);
-        }
-        else{
-            if(bc[Y_DIR] == CONDUCTIVE)
-            {
-                for(int j = 0; j<N_int_y; j++)
-                    east_send[j] = 0;
-
-                phi->setNorthGuard(east_send);
+                phi->setSouthGuard(south_send);
             }
         }
     }

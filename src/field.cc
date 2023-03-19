@@ -11,7 +11,7 @@ namespace FCPIC
         N_int_y = Ny;
         N_x = Nx + 2;
         N_y = Ny + 2;
-        N = Nx * Ny;
+        N = N_x * N_y;
         val.assign(N, 0.);
         //std::cout << __PRETTY_FUNCTION__ << std::endl;
     }
@@ -101,6 +101,18 @@ namespace FCPIC
     field::~field()
     {
         val.clear();
+    }
+
+    void field::print_field(std::ostream &stream){
+        for(int i=0; i<N_y; i++){
+            for(int j=0; j<N_x; j++){
+                if(i==0 || i==N_y-1 || j == 0 || j==N_x-1)
+                    stream << " (" << this->val[POSITION] << ") ";
+                else
+                    stream << "  " << this->val[POSITION] << "  ";
+            }
+            stream << "\n";
+        }
     }
 
     // change function
