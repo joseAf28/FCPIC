@@ -10,8 +10,7 @@ int main(int argc, char **argv)
     std::normal_distribution<double> norm(3, 0.5);
 
     FCPIC::simulation sim(argc, argv);
-    sim.set_Xconductive_field_bc();
-    sim.set_Yconductive_field_bc();
+    sim.set_conductive_field_bc();
 
     double t1, t2;
     int l, m;

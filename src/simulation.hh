@@ -29,10 +29,8 @@ class simulation{
     // Creates a virtual cartesian topology
     void setup_proc_grid();
 
-    void set_Xperiodic_field_bc();
-    void set_Yperiodic_field_bc();
-    void set_Xconductive_field_bc();
-    void set_Yconductive_field_bc();
+    void set_periodic_field_bc();
+    void set_conductive_field_bc();
 
     // Packs data for communication across processes
     void setup_MPI_datatypes(int, int, int);

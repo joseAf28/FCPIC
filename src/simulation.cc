@@ -49,10 +49,10 @@ namespace FCPIC
     }
 
     simulation::~simulation(){
-        delete north_recv, north_send,
-               south_recv, south_send,
-               west_recv, west_send,
-               east_recv, east_send;
+        delete[] north_recv, north_send,
+                 south_recv, south_send,
+                 west_recv, west_send,
+                 east_recv, east_send;
     }
     
     // Creating a virtual cartesian topology
@@ -95,39 +95,24 @@ namespace FCPIC
 
     }
 
-    void simulation::set_Xperiodic_field_bc()
+    void simulation::set_periodic_field_bc()
     {
         bc[X_DIR] = PERIODIC;
-        wrap_around[X_DIR] = 1;
-
-        if(bc[Y_DIR] != TBD)
-            setup_proc_grid();
-    }
-
-    void simulation::set_Yperiodic_field_bc()
-    {
         bc[Y_DIR] = PERIODIC;
+        wrap_around[X_DIR] = 1;
         wrap_around[Y_DIR] = 1;
 
-        if(bc[X_DIR] != TBD)
-            setup_proc_grid();
+        setup_proc_grid();
     }
 
-    void simulation::set_Xconductive_field_bc()
+    void simulation::set_conductive_field_bc()
     {
         bc[X_DIR] = CONDUCTIVE;
-        wrap_around[X_DIR] = 0;
-
-        if(bc[Y_DIR] != TBD)
-            setup_proc_grid();
-    }
-
-    void simulation::set_Yconductive_field_bc()
-    {
         bc[Y_DIR] = CONDUCTIVE;
+        wrap_around[X_DIR] = 0;
         wrap_around[Y_DIR] = 0;
 
-        if(bc[X_DIR] != TBD)
+        if(bc[Y_DIR] != TBD)
             setup_proc_grid();
     }
 
@@ -215,7 +200,6 @@ namespace FCPIC
     void simulation::jacobi(field *phi, field *charge)
     {
         double res, e;
-        int l, m;
         double global_res = 1.0;
         double tol = 1e-7;
 
