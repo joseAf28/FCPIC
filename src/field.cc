@@ -58,26 +58,6 @@ namespace FCPIC
             val[i] = value;
     }
 
-    void field::getNorthBound(double* arr){
-        for(int j=0; j<N_x; j++)
-            arr[j] = val[NORTH_BOUND];
-    }
-
-    void field::getSouthBound(double* arr){
-        for(int j=0; j<N_x; j++)
-            arr[j] = val[SOUTH_BOUND];
-    }
-
-    void field::getWestBound(double* arr){
-        for(int i=1; i<=N_int_y; i++)
-            arr[i-1] = val[WEST_BOUND];
-    }
-
-    void field::getEastBound(double* arr){
-        for(int i=1; i<=N_int_y; i++)
-            arr[i-1] = val[EAST_BOUND];
-    }
-
     void field::setNorthGuard(double* arr){
         for(int j=0; j<N_x; j++)
             val[NORTH_GUARD] = arr[j];
@@ -96,6 +76,26 @@ namespace FCPIC
     void field::setEastGuard(double* arr){
         for(int i=1; i<=N_int_y; i++)
             val[EAST_GUARD] = arr[i-1];
+    }
+
+    void field::reduceNorthBound(double* arr){
+        for(int j=0; j<N_x; j++)
+            val[NORTH_BOUND] += arr[j];
+    }
+
+    void field::reduceSouthBound(double* arr){
+        for(int j=0; j<N_x; j++)
+            val[SOUTH_BOUND] += arr[j];
+    }
+
+    void field::reduceWestBound(double* arr){
+        for(int i=1; i<=N_int_y; i++)
+            val[WEST_BOUND] += arr[i-1];
+    }
+
+    void field::reduceEastBound(double* arr){
+        for(int i=1; i<=N_int_y; i++)
+            val[EAST_BOUND] += arr[i-1];
     }
 
     field::~field()

@@ -49,6 +49,13 @@ namespace FCPIC
         Y_DIR,
     } Direction;
 
+    // Direction
+    typedef enum
+    {
+        REPLACE,
+        ADD,
+    } Operation;
+
     // Field class
     class field {
     public:
@@ -63,17 +70,16 @@ namespace FCPIC
         ~field(); // Destructor
 
         void setValue(double);
-    
-
-        void getNorthBound(double*);
-        void getSouthBound(double*);
-        void getEastBound(double*);
-        void getWestBound(double*);
 
         void setNorthGuard(double*);
         void setSouthGuard(double*);
         void setEastGuard(double*);
         void setWestGuard(double*);
+
+        void reduceNorthBound(double*);
+        void reduceSouthBound(double*);
+        void reduceWestBound(double*);
+        void reduceEastBound(double*);
 
         void print_field(std::ostream&);
 
