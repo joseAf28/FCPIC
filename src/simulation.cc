@@ -15,19 +15,19 @@ namespace FCPIC
      Nx and Ny are the number of CVs in x and y direction respectively_
     ***********************************************************/
 
-
-    simulation::simulation(int argc, char **argv){
+    simulation::simulation(int argc, char **argv)
+    {
         aspect = .5; // (INPUT) y_len = aspect (x_len always norm to 1)
         Npart = 500; // (INPUT)
-        N= Npart/10;
-        N_int_x= std::sqrt((double) N/ aspect);
-        N_int_y= aspect*(double) N_int_x;
-        N= N_int_x * N_int_y;
-        N_x = N_int_x +2;
-        N_y = N_int_y +2;
+        N = Npart / 10;
+        N_int_x = std::sqrt((double)N / aspect);
+        N_int_y = aspect * (double)N_int_x;
+        N = N_int_x * N_int_y;
+        N_x = N_int_x + 2;
+        N_y = N_int_y + 2;
 
-        dx = 1/(double) N_x;
-        dy = aspect/(double) N_y;
+        dx = 1 / (double)N_x;
+        dy = aspect / (double)N_y;
 
         MPI_Init(&argc, &argv);
 
@@ -44,17 +44,18 @@ namespace FCPIC
         east_recv = new double[N_int_y];
         east_send = new double[N_int_y];
 
-        bc[X_DIR]= TBD;
-        bc[Y_DIR]= TBD;
+        bc[X_DIR] = TBD;
+        bc[Y_DIR] = TBD;
     }
 
-    simulation::~simulation(){
+    simulation::~simulation()
+    {
         delete[] north_recv, north_send,
-                 south_recv, south_send,
-                 west_recv, west_send,
-                 east_recv, east_send;
+            south_recv, south_send,
+            west_recv, west_send,
+            east_recv, east_send;
     }
-    
+
     // Creating a virtual cartesian topology
     void simulation::setup_proc_grid()
     {
@@ -65,7 +66,7 @@ namespace FCPIC
         if (grid[X_DIR] * grid[Y_DIR] != n_Procs)
             std::cout << "Error MPI: Mismatch of number of processes and process grid" << std::endl;
 
-        int reorder = 1;            // reorder process ranks
+        int reorder = 1; // reorder process ranks
 
         // creates a new communicator, grid_comm
         MPI_Cart_create(MPI_COMM_WORLD, 2, grid, wrap_around, reorder, &grid_comm);
@@ -79,20 +80,19 @@ namespace FCPIC
         MPI_Cart_shift(grid_comm, 0, 1, &grid_bottom, &grid_top);
 
         //---TESTES---
-        //PARA TESTAR COISAS USAR ESTE SÍTIO
-        /*
+        // PARA TESTAR COISAS USAR ESTE SÍTIO
+
         std::cout << "Grid rank: " << grid_rank << std::endl;
         std::cout << "N_int_x: " << N_int_x << "   N_int_y: " << N_int_y << std::endl;
         std::cout << "N_x: " << N_x << "   N_y: " << N_y << std::endl;
         field phi(N_int_x, N_int_y);
-        phi.setValue((double) grid_rank);
+        phi.setValue((double)grid_rank);
         exchange_phi_buffers(&phi);
         phi.print_field(std::cout);
-        if(grid_rank == -1){
+        if (grid_rank == -1)
+        {
             phi.print_field(std::cout);
         }
-        */
-
     }
 
     void simulation::set_periodic_field_bc()
@@ -112,83 +112,91 @@ namespace FCPIC
         wrap_around[X_DIR] = 0;
         wrap_around[Y_DIR] = 0;
 
-        if(bc[Y_DIR] != TBD)
+        if (bc[Y_DIR] != TBD)
             setup_proc_grid();
     }
 
     // communication between the processes
     void simulation::exchange_phi_buffers(field *phi)
     {
-        if(grid_left != MPI_PROC_NULL){
+        if (grid_left != MPI_PROC_NULL)
+        {
             phi->getWestBound(west_send);
 
-            MPI_Sendrecv(west_send, N_int_y, MPI_DOUBLE, grid_left, 0, 
-                        west_recv, N_int_y, MPI_DOUBLE, grid_left, 0, 
-                        grid_comm, &status);
+            MPI_Sendrecv(west_send, N_int_y, MPI_DOUBLE, grid_left, 0,
+                         west_recv, N_int_y, MPI_DOUBLE, grid_left, 0,
+                         grid_comm, &status);
 
             phi->setWestGuard(west_recv);
         }
-        else{
-            if(bc[Y_DIR] == CONDUCTIVE)
+        else
+        {
+            if (bc[Y_DIR] == CONDUCTIVE)
             {
-                for(int j = 0; j<N_int_y; j++)
+                for (int j = 0; j < N_int_y; j++)
                     west_send[j] = 0;
 
                 phi->setWestGuard(west_send);
             }
         }
 
-        if(grid_right != MPI_PROC_NULL){
+        if (grid_right != MPI_PROC_NULL)
+        {
             phi->getEastBound(east_send);
 
-            MPI_Sendrecv(east_send, N_int_y, MPI_DOUBLE, grid_right, 0, 
-                        east_recv, N_int_y, MPI_DOUBLE, grid_right, 0, 
-                        grid_comm, &status);
+            MPI_Sendrecv(east_send, N_int_y, MPI_DOUBLE, grid_right, 0,
+                         east_recv, N_int_y, MPI_DOUBLE, grid_right, 0,
+                         grid_comm, &status);
 
             phi->setEastGuard(east_recv);
         }
-        else{
-            if(bc[Y_DIR] == CONDUCTIVE)
+        else
+        {
+            if (bc[Y_DIR] == CONDUCTIVE)
             {
-                for(int j = 0; j<N_int_y; j++)
+                for (int j = 0; j < N_int_y; j++)
                     east_send[j] = 0;
 
                 phi->setEastGuard(east_send);
             }
         }
 
-        if(grid_top != MPI_PROC_NULL){
+        if (grid_top != MPI_PROC_NULL)
+        {
             phi->getNorthBound(north_send);
 
-            MPI_Sendrecv(north_send, N_x, MPI_DOUBLE, grid_top, 0, 
-                        north_recv, N_x, MPI_DOUBLE, grid_top, 0, 
-                        grid_comm, &status);
+            MPI_Sendrecv(north_send, N_x, MPI_DOUBLE, grid_top, 0,
+                         north_recv, N_x, MPI_DOUBLE, grid_top, 0,
+                         grid_comm, &status);
 
             phi->setNorthGuard(north_recv);
         }
-        else{
-            if(bc[X_DIR] == CONDUCTIVE)
+        else
+        {
+            if (bc[X_DIR] == CONDUCTIVE)
             {
-                for(int j = 0; j<N_x; j++)
+                for (int j = 0; j < N_x; j++)
                     north_send[j] = 0;
 
                 phi->setNorthGuard(north_send);
             }
         }
 
-        if(grid_bottom != MPI_PROC_NULL){
+        if (grid_bottom != MPI_PROC_NULL)
+        {
             phi->getSouthBound(south_send);
 
-            MPI_Sendrecv(south_send, N_x, MPI_DOUBLE, grid_bottom, 0, 
-                        south_recv, N_x, MPI_DOUBLE, grid_bottom, 0, 
-                        grid_comm, &status);
+            MPI_Sendrecv(south_send, N_x, MPI_DOUBLE, grid_bottom, 0,
+                         south_recv, N_x, MPI_DOUBLE, grid_bottom, 0,
+                         grid_comm, &status);
 
             phi->setSouthGuard(south_recv);
         }
-        else{
-            if(bc[X_DIR] == CONDUCTIVE)
+        else
+        {
+            if (bc[X_DIR] == CONDUCTIVE)
             {
-                for(int j = 0; j<N_x; j++)
+                for (int j = 0; j < N_x; j++)
                     south_send[j] = 0;
 
                 phi->setSouthGuard(south_send);
@@ -220,23 +228,22 @@ namespace FCPIC
             // exchanges buffer cells
             exchange_phi_buffers(phi);
 
-            for(int i=1; i<=N_int_y; i++)
-                for(int j=1; j<=N_int_x; j++)
+            for (int i = 1; i <= N_int_y; i++)
+                for (int j = 1; j <= N_int_x; j++)
                 {
-                    temp.val[POSITION] = .25*(phi->val[NORTH] + phi->val[SOUTH] +
-                                              phi->val[EAST] + phi->val[WEST] -
-                                              charge->val[POSITION]);
-                    
+                    temp.val[POSITION] = .25 * (phi->val[NORTH] + phi->val[SOUTH] +
+                                                phi->val[EAST] + phi->val[WEST] -
+                                                charge->val[POSITION]);
+
                     e = temp.val[POSITION] - phi->val[POSITION];
                     if (e > res) // norm infty: supremo
                         res = e;
                 }
-            
-            // Transferring values from temp to u
-            for(int i=1; i<=N_int_y; i++)
-                for(int j=1; j<=N_int_x; j++)
-                    phi->val[POSITION] = temp.val[POSITION];
 
+            // Transferring values from temp to u
+            for (int i = 1; i <= N_int_y; i++)
+                for (int j = 1; j <= N_int_x; j++)
+                    phi->val[POSITION] = temp.val[POSITION];
 
             if (loop % 10 == 0) // balance to be found...
                 MPI_Allreduce(&res, &global_res, 1, MPI_DOUBLE, MPI_MAX, grid_comm);
@@ -247,11 +254,13 @@ namespace FCPIC
         printf("Maximum residual is %e and number of iterations are %ld and I am process %d \n", res, loop, grid_rank);
     }
 
-    void simulation::set_E_value(field *phi, field *Ex_field, field *Ey_field){
-        for(int i=1; i<=N_int_y; i++)
-            for(int j=1; j<=N_int_x; j++){
-                Ex_field->val[POSITION] = (phi->val[WEST]-phi->val[EAST])/(2.f*dx);
-                Ey_field->val[POSITION] = (phi->val[NORTH]-phi->val[SOUTH])/(2.f*dy);
+    void simulation::set_E_value(field *phi, field *Ex_field, field *Ey_field)
+    {
+        for (int i = 1; i <= N_int_y; i++)
+            for (int j = 1; j <= N_int_x; j++)
+            {
+                Ex_field->val[POSITION] = (phi->val[WEST] - phi->val[EAST]) / (2.f * dx);
+                Ey_field->val[POSITION] = (phi->val[NORTH] - phi->val[SOUTH]) / (2.f * dy);
             }
     }
 

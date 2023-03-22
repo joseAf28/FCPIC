@@ -18,7 +18,7 @@ test: test.exe
 	@cd bin; echo "running program... \n Output Results:" ; mpirun ./test.exe;
 
 Ctest: Ctest.exe
-	@cd bin; echo 'running program...\nOutput Results:'; ./Ctest.exe;
+	@cd bin; echo 'running program...\nOutput Results:'; mpirun -np 4 ./Ctest.exe;
 
 
 lib: $(LIBDIR)/libPIC.a
