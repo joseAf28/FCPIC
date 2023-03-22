@@ -16,19 +16,19 @@ namespace FCPIC
      Nx and Ny are the number of CVs in x and y direction respectively_
     ***********************************************************/
 
-
-    simulation::simulation(int argc, char **argv){
+    simulation::simulation(int argc, char **argv)
+    {
         aspect = .5; // (INPUT) y_len = aspect (x_len always norm to 1)
         Npart = 500; // (INPUT)
-        N= Npart/10;
-        N_int_x= std::sqrt((double) N/ aspect);
-        N_int_y= aspect*(double) N_int_x;
-        N= N_int_x * N_int_y;
-        N_x = N_int_x +2;
-        N_y = N_int_y +2;
+        N = Npart / 10;
+        N_int_x = std::sqrt((double)N / aspect);
+        N_int_y = aspect * (double)N_int_x;
+        N = N_int_x * N_int_y;
+        N_x = N_int_x + 2;
+        N_y = N_int_y + 2;
 
-        dx = 1/(double) N_x;
-        dy = aspect/(double) N_y;
+        dx = 1 / (double)N_x;
+        dy = aspect / (double)N_y;
 
         MPI_Init(&argc, &argv);
 
@@ -44,8 +44,8 @@ namespace FCPIC
         X_guard_data2 = new double[N_int_y]();
         
 
-        bc[X_DIR]= TBD;
-        bc[Y_DIR]= TBD;
+        bc[X_DIR] = TBD;
+        bc[Y_DIR] = TBD;
     }
 
     simulation::~simulation(){
@@ -53,7 +53,7 @@ namespace FCPIC
                  Y_guard_data1, X_guard_data1,
                  Y_guard_data2, X_guard_data2;
     }
-    
+
     // Creating a virtual cartesian topology
     void simulation::setup_proc_grid()
     {
@@ -64,7 +64,7 @@ namespace FCPIC
         if (grid[X_DIR] * grid[Y_DIR] != n_Procs)
             std::cout << "Error MPI: Mismatch of number of processes and process grid" << std::endl;
 
-        int reorder = 1;            // reorder process ranks
+        int reorder = 1; // reorder process ranks
 
         // creates a new communicator, grid_comm
         MPI_Cart_create(MPI_COMM_WORLD, 2, grid, wrap_around, reorder, &grid_comm);
@@ -283,23 +283,22 @@ namespace FCPIC
             // exchanges buffer cells
             exchange_phi_buffers(phi);
 
-            for(int i=1; i<=N_int_y; i++)
-                for(int j=1; j<=N_int_x; j++)
+            for (int i = 1; i <= N_int_y; i++)
+                for (int j = 1; j <= N_int_x; j++)
                 {
-                    temp.val[POSITION] = .25*(phi->val[NORTH] + phi->val[SOUTH] +
-                                              phi->val[EAST] + phi->val[WEST] -
-                                              charge->val[POSITION]);
-                    
+                    temp.val[POSITION] = .25 * (phi->val[NORTH] + phi->val[SOUTH] +
+                                                phi->val[EAST] + phi->val[WEST] -
+                                                charge->val[POSITION]);
+
                     e = temp.val[POSITION] - phi->val[POSITION];
                     if (e > res) // norm infty: supremo
                         res = e;
                 }
-            
-            // Transferring values from temp to u
-            for(int i=1; i<=N_int_y; i++)
-                for(int j=1; j<=N_int_x; j++)
-                    phi->val[POSITION] = temp.val[POSITION];
 
+            // Transferring values from temp to u
+            for (int i = 1; i <= N_int_y; i++)
+                for (int j = 1; j <= N_int_x; j++)
+                    phi->val[POSITION] = temp.val[POSITION];
 
             if (loop % 10 == 0) // balance to be found...
                 MPI_Allreduce(&res, &global_res, 1, MPI_DOUBLE, MPI_MAX, grid_comm);
@@ -310,11 +309,13 @@ namespace FCPIC
         printf("Maximum residual is %e and number of iterations are %ld and I am process %d \n", res, loop, grid_rank);
     }
 
-    void simulation::set_E_value(field *phi, field *Ex_field, field *Ey_field){
-        for(int i=1; i<=N_int_y; i++)
-            for(int j=1; j<=N_int_x; j++){
-                Ex_field->val[POSITION] = (phi->val[WEST]-phi->val[EAST])/(2.f*dx);
-                Ey_field->val[POSITION] = (phi->val[NORTH]-phi->val[SOUTH])/(2.f*dy);
+    void simulation::set_E_value(field *phi, field *Ex_field, field *Ey_field)
+    {
+        for (int i = 1; i <= N_int_y; i++)
+            for (int j = 1; j <= N_int_x; j++)
+            {
+                Ex_field->val[POSITION] = (phi->val[WEST] - phi->val[EAST]) / (2.f * dx);
+                Ey_field->val[POSITION] = (phi->val[NORTH] - phi->val[SOUTH]) / (2.f * dy);
             }
     }
 
