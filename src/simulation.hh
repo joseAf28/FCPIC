@@ -44,6 +44,7 @@ namespace FCPIC
 
         // exchanges data between processes
         void exchange_phi_buffers(field *);
+        void exchange_charge_buffers(field *);
 
         // Jacobi solver
         void jacobi(field *, field *);
@@ -60,7 +61,7 @@ namespace FCPIC
         int grid_top, grid_bottom, grid_left, grid_right; // ranks of the neighbouring processes
         int n_Procs;                                      // total number of processes
         int grid[2];                                      // virtual grid dimensions
-        MPI_Datatype exchange_buffer_type[2];             // MPI_datatype for exchange of buffer cell data
+        MPI_Datatype exchange_field_type[2];              // MPI_datatype for exchange of buffer cell data
         MPI_Comm grid_comm;                               // grid COMMUNICATOR
         int offset[2];                                    // offset for cell numbering for subdomains
         int grid_coord[2];                                // coordinates of the process in the virtual grid
@@ -72,8 +73,9 @@ namespace FCPIC
         double aspect, dx, dy;
         int N_int_x, N_int_y;
         int N_x, N_y, N;
-        double *north_recv, *south_recv, *west_recv, *east_recv;
-        double *north_send, *south_send, *west_send, *east_send;
+        double *X_guard_data, *Y_guard_data;
+        double *X_guard_data1, *Y_guard_data1;
+        double *X_guard_data2, *Y_guard_data2;
         int bc[2];
     };
 }

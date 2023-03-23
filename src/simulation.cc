@@ -4,6 +4,7 @@
 #include <cmath>
 #include <string>
 #include <iomanip>
+#include <unistd.h>
 
 namespace FCPIC
 {
@@ -34,26 +35,23 @@ namespace FCPIC
         // retrieve the number of processes
         MPI_Comm_size(MPI_COMM_WORLD, &n_Procs);
 
-        north_recv = new double[N_x];
-        north_send = new double[N_x];
-        south_recv = new double[N_x];
-        south_send = new double[N_x];
+        Y_guard_data = new double[N_x];
+        X_guard_data = new double[N_int_y];
 
-        west_recv = new double[N_int_y];
-        west_send = new double[N_int_y];
-        east_recv = new double[N_int_y];
-        east_send = new double[N_int_y];
+        Y_guard_data1 = new double[N_x]();
+        X_guard_data1 = new double[N_int_y]();
+        Y_guard_data2 = new double[N_x]();
+        X_guard_data2 = new double[N_int_y]();
+        
 
         bc[X_DIR] = TBD;
         bc[Y_DIR] = TBD;
     }
 
-    simulation::~simulation()
-    {
-        delete[] north_recv, north_send,
-            south_recv, south_send,
-            west_recv, west_send,
-            east_recv, east_send;
+    simulation::~simulation(){
+        delete[] Y_guard_data, X_guard_data,
+                 Y_guard_data1, X_guard_data1,
+                 Y_guard_data2, X_guard_data2;
     }
 
     // Creating a virtual cartesian topology
@@ -79,20 +77,28 @@ namespace FCPIC
         MPI_Cart_shift(grid_comm, 1, 1, &grid_left, &grid_right);
         MPI_Cart_shift(grid_comm, 0, 1, &grid_bottom, &grid_top);
 
-        //---TESTES---
-        // PARA TESTAR COISAS USAR ESTE SÍTIO
+        //Datatype for horizontal data exchange
+        MPI_Type_vector(N_int_y, 1, N_x, MPI_DOUBLE, &exchange_field_type[X_DIR]);
+        MPI_Type_commit(&exchange_field_type[X_DIR]);
 
+        // Datatype for vertical data exchange
+        MPI_Type_vector(N_x, 1, 1, MPI_DOUBLE, &exchange_field_type[Y_DIR]);
+        MPI_Type_commit(&exchange_field_type[Y_DIR]);
+
+        //---TESTES---
+        //PARA TESTAR COISAS USAR ESTE SÍTIO
+        /*
         std::cout << "Grid rank: " << grid_rank << std::endl;
         std::cout << "N_int_x: " << N_int_x << "   N_int_y: " << N_int_y << std::endl;
         std::cout << "N_x: " << N_x << "   N_y: " << N_y << std::endl;
         field phi(N_int_x, N_int_y);
-        phi.setValue((double)grid_rank);
-        exchange_phi_buffers(&phi);
+        phi.setValue((double) grid_rank);
+        sleep(grid_rank);
         phi.print_field(std::cout);
-        if (grid_rank == -1)
-        {
-            phi.print_field(std::cout);
-        }
+        exchange_charge_buffers(&phi);
+        sleep(grid_rank);
+        phi.print_field(std::cout);
+        */
     }
 
     void simulation::set_periodic_field_bc()
@@ -112,96 +118,102 @@ namespace FCPIC
         wrap_around[X_DIR] = 0;
         wrap_around[Y_DIR] = 0;
 
-        if (bc[Y_DIR] != TBD)
-            setup_proc_grid();
+        setup_proc_grid();
     }
 
-    // communication between the processes
     void simulation::exchange_phi_buffers(field *phi)
     {
-        if (grid_left != MPI_PROC_NULL)
-        {
-            phi->getWestBound(west_send);
+        int i, j;
 
-            MPI_Sendrecv(west_send, N_int_y, MPI_DOUBLE, grid_left, 0,
-                         west_recv, N_int_y, MPI_DOUBLE, grid_left, 0,
-                         grid_comm, &status);
-
-            phi->setWestGuard(west_recv);
-        }
-        else
-        {
-            if (bc[Y_DIR] == CONDUCTIVE)
+        //Boundary conditions
+        if(grid_left == MPI_PROC_NULL){
+            if(bc[Y_DIR] == CONDUCTIVE)
             {
-                for (int j = 0; j < N_int_y; j++)
-                    west_send[j] = 0;
+                for(j = 0; j<N_int_y; j++)
+                    X_guard_data[j] = 0;
 
-                phi->setWestGuard(west_send);
+                phi->setWestGuard(X_guard_data);
             }
         }
 
-        if (grid_right != MPI_PROC_NULL)
-        {
-            phi->getEastBound(east_send);
-
-            MPI_Sendrecv(east_send, N_int_y, MPI_DOUBLE, grid_right, 0,
-                         east_recv, N_int_y, MPI_DOUBLE, grid_right, 0,
-                         grid_comm, &status);
-
-            phi->setEastGuard(east_recv);
-        }
-        else
-        {
-            if (bc[Y_DIR] == CONDUCTIVE)
+        if(grid_right == MPI_PROC_NULL){
+            if(bc[Y_DIR] == CONDUCTIVE)
             {
-                for (int j = 0; j < N_int_y; j++)
-                    east_send[j] = 0;
+                for(j = 0; j<N_int_y; j++)
+                    X_guard_data[j] = 0;
 
-                phi->setEastGuard(east_send);
+                phi->setEastGuard(X_guard_data);
             }
         }
 
-        if (grid_top != MPI_PROC_NULL)
-        {
-            phi->getNorthBound(north_send);
-
-            MPI_Sendrecv(north_send, N_x, MPI_DOUBLE, grid_top, 0,
-                         north_recv, N_x, MPI_DOUBLE, grid_top, 0,
-                         grid_comm, &status);
-
-            phi->setNorthGuard(north_recv);
-        }
-        else
-        {
-            if (bc[X_DIR] == CONDUCTIVE)
+        if(grid_top == MPI_PROC_NULL){
+            if(bc[X_DIR] == CONDUCTIVE)
             {
-                for (int j = 0; j < N_x; j++)
-                    north_send[j] = 0;
+                for(int j = 0; j<N_x; j++)
+                    Y_guard_data[j] = 0;
 
-                phi->setNorthGuard(north_send);
+                phi->setNorthGuard(Y_guard_data);
             }
         }
 
-        if (grid_bottom != MPI_PROC_NULL)
-        {
-            phi->getSouthBound(south_send);
-
-            MPI_Sendrecv(south_send, N_x, MPI_DOUBLE, grid_bottom, 0,
-                         south_recv, N_x, MPI_DOUBLE, grid_bottom, 0,
-                         grid_comm, &status);
-
-            phi->setSouthGuard(south_recv);
-        }
-        else
-        {
-            if (bc[X_DIR] == CONDUCTIVE)
+        if(grid_bottom == MPI_PROC_NULL){
+            if(bc[X_DIR] == CONDUCTIVE)
             {
-                for (int j = 0; j < N_x; j++)
-                    south_send[j] = 0;
+                for(int j = 0; j<N_x; j++)
+                    Y_guard_data[j] = 0;
 
-                phi->setSouthGuard(south_send);
+                phi->setSouthGuard(Y_guard_data);
             }
         }
+
+        i = 1;
+        j = 0;
+
+        //Communication stream leftward
+        MPI_Sendrecv(&phi->val[WEST_BOUND], 1, exchange_field_type[X_DIR], grid_left, 0, 
+                     &phi->val[EAST_GUARD], 1, exchange_field_type[X_DIR], grid_right, 0, 
+                     grid_comm, &status);
+        
+        //Communication stream rightward
+        MPI_Sendrecv(&phi->val[EAST_BOUND], 1, exchange_field_type[X_DIR], grid_right, 0, 
+                     &phi->val[WEST_GUARD], 1, exchange_field_type[X_DIR], grid_left, 0, 
+                     grid_comm, &status);
+
+        //Communication stream upward
+        MPI_Sendrecv(&phi->val[NORTH_BOUND], 1, exchange_field_type[Y_DIR], grid_top, 0, 
+                     &phi->val[SOUTH_GUARD], 1, exchange_field_type[Y_DIR], grid_bottom, 0, 
+                     grid_comm, &status);
+        
+        //Communication stream downward
+        MPI_Sendrecv(&phi->val[SOUTH_BOUND], 1, exchange_field_type[Y_DIR], grid_bottom, 0, 
+                     &phi->val[NORTH_GUARD], 1, exchange_field_type[Y_DIR], grid_top, 0, 
+                     grid_comm, &status);
+    }
+
+    void simulation::exchange_charge_buffers(field *charge)
+    {
+        int i = 1;
+        int j = 0;
+
+        MPI_Sendrecv(&charge->val[NORTH_GUARD], 1, exchange_field_type[Y_DIR], grid_top, 0,  
+                     &Y_guard_data[0], N_x, MPI_DOUBLE, grid_bottom, 0, grid_comm, &status);
+        if(grid_bottom != MPI_PROC_NULL)
+            charge->reduceSouthBound(Y_guard_data);
+                     
+        MPI_Sendrecv(&charge->val[SOUTH_GUARD], 1, exchange_field_type[Y_DIR], grid_bottom, 0,
+                     &Y_guard_data[0], N_x, MPI_DOUBLE, grid_top, 0, grid_comm, &status);
+        if(grid_top != MPI_PROC_NULL)
+            charge->reduceNorthBound(Y_guard_data);
+
+        MPI_Sendrecv(&charge->val[WEST_GUARD], 1, exchange_field_type[X_DIR], grid_left, 0, 
+                     &X_guard_data[0], N_int_y, MPI_DOUBLE, grid_right, 0, grid_comm, &status);
+        if(grid_right != MPI_PROC_NULL)
+            charge->reduceEastBound(X_guard_data);
+
+        MPI_Sendrecv(&charge->val[EAST_GUARD], 1, exchange_field_type[X_DIR], grid_right, 0, 
+                     &X_guard_data[0], N_int_y, MPI_DOUBLE, grid_left, 0, grid_comm, &status);
+        if(grid_left != MPI_PROC_NULL)
+            charge->reduceWestBound(X_guard_data);
     }
 
     // Jacobi solver
