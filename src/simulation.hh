@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string>
 #include <iostream>
+#include "species.hh"
 #include "field.hh"
 #include "domain.hh"
 
@@ -45,6 +46,7 @@ namespace FCPIC
         // exchanges data between processes
         void exchange_phi_buffers(field *);
         void exchange_charge_buffers(field *);
+        void exchange_particles_buffers(species *lepton);
 
         // Jacobi solver
         void jacobi(field *, field *);
@@ -67,6 +69,11 @@ namespace FCPIC
         int grid_coord[2];                                // coordinates of the process in the virtual grid
         int wrap_around[2];
         MPI_Status status;
+
+        MPI_Datatype exchange_part_type;
+        MPI_Aint offsets[7]; // it evaluates to the offset (in bytes) of a given member within a struct or union type
+        const int nitems = 7;
+
         // Simulation variables
         int Npart;
         double aspect, dx, dy;

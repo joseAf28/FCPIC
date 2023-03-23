@@ -55,11 +55,12 @@ public:
     // !Integrate these methods with the particle pusher
     void to_buffer();
     void update_part();
-    void advance_cell(int);
-
+    void advance_cell(int, int);
     // leap frog method
-    void init_pusher(vector<float> &, vector<float> &);
-    void particle_pusher(vector<float> &, vector<float> &);
+
+    // particle pusher
+    void init_pusher(const float, const float, const int);
+    void particle_pusher(const float, const float, const int);
 
     // for debugging
     void print();
@@ -77,10 +78,20 @@ public:
     std::vector<part> send_buffer_east;
     std::vector<part> send_buffer_west;
 
+    std::vector<part> send_buffer_ne;
+    std::vector<part> send_buffer_se;
+    std::vector<part> send_buffer_nw;
+    std::vector<part> send_buffer_sw;
+
     std::vector<part> recv_buffer_north;
     std::vector<part> recv_buffer_south;
     std::vector<part> recv_buffer_east;
     std::vector<part> recv_buffer_west;
+
+    std::vector<part> recv_buffer_ne;
+    std::vector<part> recv_buffer_se;
+    std::vector<part> recv_buffer_nw;
+    std::vector<part> recv_buffer_sw;
 
     // define sizes after the particle pusher
     int buffer_north_len = 10;
