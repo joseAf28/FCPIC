@@ -57,6 +57,10 @@ public:
     void update_part();
     void advance_cell(int);
 
+    // leap frog method
+    void init_pusher(vector<float> &, vector<float> &);
+    void particle_pusher(vector<float> &, vector<float> &);
+
     // for debugging
     void print();
     void write_output_vec(int, int);
@@ -112,6 +116,8 @@ private:
     //!! dx and dy set to 1.0 for now
     float dx = 1.0; // x grid cell size
     float dy = 1.0; // y grid cell size
+
+    float dt = 0.1; // time-step - change later
 
     float xbox; // x length axis of simulation box
     float ybox; // y length axis of simulation box

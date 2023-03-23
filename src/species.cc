@@ -54,18 +54,18 @@ species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, floa
 
 species::~species()
 {
-    // vec.clear();
-    // send_buffer_north.clear();
-    // send_buffer_south.clear();
-    // send_buffer_east.clear();
-    // send_buffer_west.clear();
+    vec.clear();
+    send_buffer_north.clear();
+    send_buffer_south.clear();
+    send_buffer_east.clear();
+    send_buffer_west.clear();
 
-    // recv_buffer_north.clear();
-    // recv_buffer_south.clear();
-    // recv_buffer_east.clear();
-    // recv_buffer_west.clear();
+    recv_buffer_north.clear();
+    recv_buffer_south.clear();
+    recv_buffer_east.clear();
+    recv_buffer_west.clear();
 
-    // delete charge;
+    delete charge;
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
 
@@ -144,12 +144,12 @@ void species::get_charge()
     }
 
     // update Field Charge
-    // charge->val = charge_vec;
-    // charge->N_x = N_x;
-    // charge->N_y = N_y;
-    // charge->N = N_x * N_y;
+    charge->val = charge_vec;
+    charge->N_x = N_x;
+    charge->N_y = N_y;
+    charge->N = N_x * N_y;
 
-    // charge_vec.clear();
+    charge_vec.clear();
 }
 
 // dummy method to simulate the change of particles
@@ -197,7 +197,7 @@ void species::to_buffer()
         send_buffer_west.push_back(vec[w_aux]);
         // std::cout << vec[w_aux].ix << "  " << vec[w_aux].iy << std::endl;
     }
-    //! just an assumptoion to test....
+    //! just an assumption to test....
 
     // erase elements out of box dimension
     vec.erase(std::remove_if(vec.begin(), vec.end(), [this](const part o)
@@ -260,19 +260,16 @@ void species::advance_cell(int counter) // to integrate with the particle pusher
         vec[counter].x = dx - posx;
         vec[counter].ix = vec[counter].ix - 1;
     }
-
     if (posx > dx)
     {
         vec[counter].x = posx - dx;
         vec[counter].iy = vec[counter].ix + 1;
     }
-
     if (posy < 0.f)
     {
         vec[counter].y = dy - posy;
         vec[counter].iy = vec[counter].iy - 1;
     }
-
     if (posy > dy)
     {
         vec[counter].x = posy - dy;
