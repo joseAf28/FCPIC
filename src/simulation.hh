@@ -67,7 +67,6 @@ namespace FCPIC
         int grid_coord[2];                                // coordinates of the process in the virtual grid
         int wrap_around[2];
         MPI_Status status;
-
         // Simulation variables
         int Npart;
         double aspect, dx, dy;
