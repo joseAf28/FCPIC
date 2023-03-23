@@ -5,16 +5,16 @@
 #include <vector>
 
 // Cycle in j from 0 to N_x (NOT INCLUDING) for(int j=0; j<N_x; j++)
-#define NORTH_GUARD j
-#define SOUTH_GUARD N_x *(N_y - 1) + j
+#define SOUTH_GUARD j
+#define NORTH_GUARD N_x *(N_y - 1) + j
 
 // Cycle in i from 1 to N_int_y (INCLUDING) for(int i=1; i<=N_int_y; i++)
 #define WEST_GUARD N_x *i
 #define EAST_GUARD N_x *i + N_x - 1
 
 // Cycle in j from 0 to N_x (NOT INCLUDING) for(int j=0; j<N_x; j++)
-#define NORTH_BOUND j + N_x
-#define SOUTH_BOUND N_x *(N_y - 2) + j
+#define SOUTH_BOUND j + N_x
+#define NORTH_BOUND N_x *(N_y - 2) + j
 
 // Cycle in i from 1 to N_int_y (INCLUDING) for(int i=1; i<=N_int_y; i++)
 #define WEST_BOUND N_x *i + 1
@@ -27,8 +27,8 @@
 // Cycle in i from 0 to N_y (NOT INCLUDING) for(int i=0; i<N_y; i++)
 // Cycle in j from 0 to N_x (NOT INCLUDING) for(int j=0; j<N_x; j++)
 #define POSITION i *N_x + j
-#define NORTH i *N_x + j - N_x
-#define SOUTH i *N_x + j + N_x
+#define SOUTH i *N_x + j - N_x
+#define NORTH i *N_x + j + N_x
 #define WEST i *N_x + j - 1
 #define EAST i *N_x + j + 1
 

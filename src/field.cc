@@ -5,8 +5,7 @@ namespace FCPIC
 {
     // Constructors
     // allocates memory to the field variables equal to the number of cells in the domain
-    field::field(int Nx, int Ny)
-    {
+    field::field(int Nx, int Ny){
         N_int_x = Nx;
         N_int_y = Ny;
         N_x = Nx + 2;
@@ -28,8 +27,7 @@ namespace FCPIC
     //     bc = new BC_type[N];
     // }
 
-    field::field()
-    {
+    field::field(){
         N_x = 0;
         N_y = 0;
         N = N_x * N_y;
@@ -50,10 +48,7 @@ namespace FCPIC
     //     memcpy(bc, obj.bc, sizeof(BC_type) * N);
     // }
 
-    // Implementing Ex = - dphi/dx = (phi(WEST) - phi(EAST))/2dx
-
-    void field::setValue(double value)
-    {
+    void field::setValue(double value){
         for (int i = 0; i < N; i++)
             val[i] = value;
     }
@@ -63,20 +58,17 @@ namespace FCPIC
             val[NORTH_GUARD] = arr[j];
     }
 
-    void field::setSouthGuard(double *arr)
-    {
+    void field::setSouthGuard(double *arr){
         for (int j = 0; j < N_x; j++)
             val[SOUTH_GUARD] = arr[j];
     }
 
-    void field::setWestGuard(double *arr)
-    {
+    void field::setWestGuard(double *arr){
         for (int i = 1; i <= N_int_y; i++)
             val[WEST_GUARD] = arr[i - 1];
     }
 
-    void field::setEastGuard(double *arr)
-    {
+    void field::setEastGuard(double *arr){
         for (int i = 1; i <= N_int_y; i++)
             val[EAST_GUARD] = arr[i - 1];
     }
@@ -101,15 +93,13 @@ namespace FCPIC
             val[EAST_BOUND] += arr[i-1];
     }
 
-    field::~field()
-    {
+    field::~field(){
         val.clear();
     }
 
     void field::print_field(std::ostream &stream)
     {
-        for (int i = 0; i < N_y; i++)
-        {
+        for (int i = N_y-1; i >= 0; i--){
             for (int j = 0; j < N_x; j++)
             {
                 if (i == 0 || i == N_y - 1 || j == 0 || j == N_x - 1)
