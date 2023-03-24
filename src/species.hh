@@ -24,8 +24,13 @@
 //  0 ------------------------------> x
 ////////////////////////////////////////////////////////
 
-//! NO guard cell in the domain of the particles. We only need guard cells in the domain of the charge fields
+typedef enum // flag to check which particles are going be deleted after MPI communication
+{
+    BULK,
+    SEND
+} Info_part;
 
+//! NO guard cell in the domain of the particles. We only need guard cells in the domain of the charge fields
 typedef struct Particle
 {
     int ix; // Particle cell index
@@ -37,6 +42,8 @@ typedef struct Particle
     float ux;
     float uy;
     float uz;
+
+    bool flag;
 
 } part;
 
@@ -53,19 +60,23 @@ public:
 
     // methods used for MPI communication
     // !Integrate these methods with the particle pusher
-    void to_buffer();
-    void update_part();
-    void advance_cell(int, int);
-    // leap frog method
+    void prepare_to_buffer();
+    void update_part_list();
+    void advance_cell(int *);
 
-    // particle pusher
-    void init_pusher(const float, const float, const int);
-    void particle_pusher(const float, const float, const int);
+    // particle pusher - leap frog method
+    void init_pusher(const float, const float);
+    void particle_pusher(const float, const float);
 
-    // for debugging
+    //!!!!!!!!!!!!!!!! methods for debugging
     void print();
-    void write_output_vec(int, int);
-    void write_output_buffer(int, int);
+    void write_output_vec(const int, const int);
+    void write_output_buffer(const int, const int);
+    void write_input_buffer(const int, const int);
+
+    //!!! dummy
+    void update_part();
+    void to_buffer();
 
     // array of particles
     std::vector<part> vec;
@@ -73,6 +84,7 @@ public:
     // charge field: Used for the jacobi iteration
     FCPIC::field *charge;
 
+    // buffers to send data from MPI's data exchange
     std::vector<part> send_buffer_north;
     std::vector<part> send_buffer_south;
     std::vector<part> send_buffer_east;
@@ -83,6 +95,7 @@ public:
     std::vector<part> send_buffer_nw;
     std::vector<part> send_buffer_sw;
 
+    // buffers to receive data from MPI's data exchange
     std::vector<part> recv_buffer_north;
     std::vector<part> recv_buffer_south;
     std::vector<part> recv_buffer_east;
@@ -93,11 +106,7 @@ public:
     std::vector<part> recv_buffer_nw;
     std::vector<part> recv_buffer_sw;
 
-    // define sizes after the particle pusher
-    int buffer_north_len = 10;
-    int buffer_south_len = 7;
-    int buffer_east_len = 2;
-    int buffer_west_len = 9;
+    int np; // total number of particles in the simulation
 
     // simulation box info
     int N_x; // number of x grid points
@@ -114,8 +123,6 @@ private:
     // number of particles per cell
     int ppc[2];
 
-    int np; // total number of particles in the simulation
-
     // number of cells in each direction
     int range[2]; // range[0] -> nb cells in x direction
                   // range[1] -> nb cells in y direction
@@ -128,10 +135,7 @@ private:
     float dx = 1.0; // x grid cell size
     float dy = 1.0; // y grid cell size
 
-    float dt = 0.1; // time-step - change later
-
-    float xbox; // x length axis of simulation box
-    float ybox; // y length axis of simulation box
+    float dt = 1.; // time-step - change later
 
     // Generator of random numbers the thermal boltzmann distribution
     std::mt19937_64 rng;

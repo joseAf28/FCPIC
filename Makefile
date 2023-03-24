@@ -14,15 +14,18 @@ SRC := $(wildcard src/*.cc)
 OBJ := $(patsubst %.cc, $(BINDIR)/%.o, $(notdir $(SRC)))
 INC := $(wildcard src/*.hh)
 
+
+mpiAd: MPIAdvance.exe
+	@cd bin; echo 'running program...\n \nOutput Results:'; mpirun ./MPIAdvance.exe;
+
+Advance: Advancetest.exe
+	@cd bin; echo 'running program...\n \nOutput Results:'; ./Advancetest.exe;
+
 test: test.exe
 	@cd bin; echo "running program... \n Output Results:" ; mpirun ./test.exe;
 
 Ctest: Ctest.exe
 	@cd bin; echo 'running program...\nOutput Results:'; mpirun -np 4 ./Ctest.exe;
-
-Advance: Advancetest.exe
-	@cd bin; echo 'running program...\n \nOutput Results:'; ./Advancetest.exe;
-
 
 lib: $(LIBDIR)/libPIC.a
 

@@ -117,47 +117,76 @@ int main(int argc, char **argv)
     MPI_Type_commit(&mpi_part);
     ///!MPI COMMUNICATION**************************
 
-    // Initialize the Soecies Class
+    // declaring species object
     std::string name = "electron";
-
-    int ppc[2] = {2, 2};
+    int ppc[2] = {1, 1};
     int range[2] = {10, 10}; // number of cells in each direction
 
     float *vf = new float[3];
     float vth[3] = {0.0, 0.0, 0.0};
 
-    // differentiate vectors
-    if (proc_rank == 0) // 0
-    {
-        vf[0] = 0;
-        vf[1] = 0;
-        vf[2] = 0;
-    }
-    if (proc_rank == 1) // 1
-    {
-        vf[0] = 1;
-        vf[1] = 1;
-        vf[2] = 1;
-    }
-    if (proc_rank == 2) // 2
-    {
-        vf[0] = 2;
-        vf[1] = 2;
-        vf[2] = 2;
-    }
-    if (proc_rank == 3) // 3
-    {
-        vf[0] = 3;
-        vf[1] = 3;
-        vf[2] = 3;
-    }
+    vf[0] = 0.7;
+    vf[1] = 100.3;
+    vf[2] = 0;
+
+    float Ex = 0.;
+    float Ey = 0.;
+    int counter = 1;
 
     species test(name, ppc, range, vf, vth);
     test.set_x();
     test.set_u();
-    test.get_charge();
-    test.write_output_vec(2, P_grid_rank);
-    test.to_buffer();
+
+    test.init_pusher(Ex, Ey);
+
+    for (int i = 0; i < 10; i++)
+    {
+        // std::cout << "pusher " << std::to_string(i) << std::endl;
+        // for (counter = 0; counter < test.np; counter++)
+        // {
+        // std::cout << "pusher " << std::to_string(i) << std::endl;
+        // print(&test, counter);
+        test.particle_pusher(Ex, Ey);
+        // print(&test, counter);
+        // std::cout << "advance" << std::endl;
+        test.advance_cell(3);
+        test.prepare_to_buffer(3);
+        int west_len_mpi = test.buffer_west_len;
+        int east_len_mpi = test.buffer_east_len;
+        int north_len_mpi = test.buffer_north_len;
+        int south_len_mpi = test.buffer_south_len;
+
+        int vert_len_mpi = std::max(north_len_mpi, south_len_mpi);
+        int hor_len_mpi = std::max(east_len_mpi, west_len_mpi);
+
+        // int vert_len_mpi = 200;
+        // int hor_len_mpi = 200;
+
+        std::cout << "north: " << north_len_mpi << " south: " << south_len_mpi << " east: " << east_len_mpi << " west: " << west_len_mpi << std::endl;
+
+        //!! Send Data among ranks
+        // All traffic in direction "top"
+        MPI_Sendrecv(&(test.send_buffer_north[0]), north_len_mpi, mpi_part, P_grid_top, 0, &(test.recv_buffer_south[0]), vert_len_mpi, mpi_part, P_grid_bottom, 0, grid_comm, &status);
+
+        // All traffic in direction "top"
+        MPI_Sendrecv(&(test.send_buffer_south[0]), south_len_mpi, mpi_part, P_grid_bottom, 0, &(test.recv_buffer_north[0]), vert_len_mpi, mpi_part, P_grid_top, 0, grid_comm, &status);
+
+        // All traffic in direction "left"
+        MPI_Sendrecv(&(test.send_buffer_west[0]), west_len_mpi, mpi_part, P_grid_left, 0, &(test.recv_buffer_east[0]), hor_len_mpi, mpi_part, P_grid_right, 0, grid_comm, &status);
+
+        // All traffic in direction "right"
+        MPI_Sendrecv(&(test.send_buffer_east[0]), east_len_mpi, mpi_part, P_grid_right, 0, &(test.recv_buffer_west[0]), hor_len_mpi, mpi_part, P_grid_left, 0, grid_comm, &status);
+
+        std::cout << "send: " << test.send_buffer_north[0].ix << "  " << test.send_buffer_north[0].iy << std::endl;
+        std::cout << "receive: " << test.recv_buffer_west[0].ix << "  " << test.recv_buffer_west[0].iy << std::endl;
+        test.update_part_list();
+        test.write_input_buffer(15, P_grid_rank);
+        test.write_output_buffer(15, P_grid_rank);
+        // test.update_part_list();
+        // print(&test, counter);
+        // std::cout << "****************" << std::endl;
+    }
+    // test.write_output_vec(15, i);
 
     if (P_grid_rank == 2)
     {
@@ -166,34 +195,54 @@ int main(int argc, char **argv)
             std::cout << "i: " << i << " ix: " << test.send_buffer_north[i].ix << " iy: " << test.send_buffer_north[i].iy << std::endl;
     }
     // int len_mpi = test.send_buffer_north.size();
-    int west_len_mpi = test.buffer_west_len;
-    int east_len_mpi = test.buffer_east_len;
-    int north_len_mpi = test.buffer_north_len;
-    int south_len_mpi = test.buffer_south_len;
 
-    int vert_len_mpi = std::max(north_len_mpi, south_len_mpi);
-    int hor_len_mpi = std::max(east_len_mpi, west_len_mpi);
-
-    std::cout << "north: " << north_len_mpi << " south: " << south_len_mpi << " east: " << east_len_mpi << " west: " << west_len_mpi << std::endl;
-
-    //!! Send Data among ranks
-    // All traffic in direction "top"
-    MPI_Sendrecv(&(test.send_buffer_north[0]), north_len_mpi, mpi_part, P_grid_top, 0, &(test.recv_buffer_south[0]), vert_len_mpi, mpi_part, P_grid_bottom, 0, grid_comm, &status);
-
-    // All traffic in direction "top"
-    MPI_Sendrecv(&(test.send_buffer_south[0]), south_len_mpi, mpi_part, P_grid_bottom, 0, &(test.recv_buffer_north[0]), vert_len_mpi, mpi_part, P_grid_top, 0, grid_comm, &status);
-
-    // All traffic in direction "left"
-    MPI_Sendrecv(&(test.send_buffer_west[0]), west_len_mpi, mpi_part, P_grid_left, 0, &(test.recv_buffer_east[0]), hor_len_mpi, mpi_part, P_grid_right, 0, grid_comm, &status);
-
-    // All traffic in direction "right"
-    MPI_Sendrecv(&(test.send_buffer_east[0]), east_len_mpi, mpi_part, P_grid_right, 0, &(test.recv_buffer_west[0]), hor_len_mpi, mpi_part, P_grid_left, 0, grid_comm, &status);
-
-    test.write_output_buffer(3, P_grid_rank);
-    test.update_part();
-    test.write_output_vec(3, P_grid_rank);
+    // test.write_output_buffer(3, P_grid_rank);
+    // test.update_part();
+    // test.write_output_vec(3, P_grid_rank);
 
     MPI_Finalize();
 
     return 0;
 }
+
+// // Initialize the Soecies Class
+// std::string name = "electron";
+
+// int ppc[2] = {2, 2};
+// int range[2] = {10, 10}; // number of cells in each direction
+
+// float *vf = new float[3];
+// float vth[3] = {0.0, 0.0, 0.0};
+
+// // differentiate vectors
+// if (proc_rank == 0) // 0
+// {
+//     vf[0] = 0;
+//     vf[1] = 0;
+//     vf[2] = 0;
+// }
+// if (proc_rank == 1) // 1
+// {
+//     vf[0] = 1;
+//     vf[1] = 1;
+//     vf[2] = 1;
+// }
+// if (proc_rank == 2) // 2
+// {
+//     vf[0] = 2;
+//     vf[1] = 2;
+//     vf[2] = 2;
+// }
+// if (proc_rank == 3) // 3
+// {
+//     vf[0] = 3;
+//     vf[1] = 3;
+//     vf[2] = 3;
+// }
+
+// species test(name, ppc, range, vf, vth);
+// test.set_x();
+// test.set_u();
+// test.get_charge();
+// test.write_output_vec(2, P_grid_rank);
+// test.to_buffer();

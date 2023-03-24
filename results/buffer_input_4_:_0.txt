@@ -1,0 +1,30 @@
+**************Real Buffer North**************
+cell (0, 0)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+cell (1, 0)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+cell (2, 0)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+cell (3, 0)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+cell (4, 0)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+cell (5, 0)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+cell (6, 0)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+cell (7, 0)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+cell (8, 0)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+cell (9, 0)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+cell (0, 1)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+cell (1, 1)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+cell (2, 1)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+cell (3, 1)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+cell (4, 1)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+cell (5, 1)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+cell (6, 1)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+cell (7, 1)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+cell (8, 1)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+cell (9, 1)   x: 0.5   y:  0.2   ux:    0   uy:  1.7   flag:    0   
+**************Real Buffer South**************
+**************Real Buffer East**************
+**************Real Buffer West**************
+**************Real Buffer NW**************
+**************Real Buffer SW**************
+**************Real Buffer SE**************
+**************Real Buffer NE**************
+
+

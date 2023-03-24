@@ -49,6 +49,8 @@ namespace FCPIC
 
     simulation::~simulation()
     {
+        MPI_Finalize();
+
         delete[] Y_guard_data, X_guard_data,
             Y_guard_data1, X_guard_data1,
             Y_guard_data2, X_guard_data2;
@@ -88,8 +90,8 @@ namespace FCPIC
         /////////////////////////////////////
 
         // Datatype for Species's communication
-        int blocklengths[7] = {1, 1, 1, 1, 1, 1, 1};
-        MPI_Datatype types[7] = {MPI_INT, MPI_INT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT};
+        int blocklengths[8] = {1, 1, 1, 1, 1, 1, 1, 1};
+        MPI_Datatype types[8] = {MPI_INT, MPI_INT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_CXX_BOOL};
 
         offsets[0] = offsetof(part, ix);
         offsets[1] = offsetof(part, iy);
@@ -98,9 +100,24 @@ namespace FCPIC
         offsets[4] = offsetof(part, ux);
         offsets[5] = offsetof(part, uy);
         offsets[6] = offsetof(part, uz);
+        offsets[7] = offsetof(part, flag);
 
         MPI_Type_create_struct(nitems, blocklengths, offsets, types, &exchange_part_type);
         MPI_Type_commit(&exchange_part_type);
+
+        // obtaing the coordinates of the diagonal processes
+        int coords_ne[2] = {grid_coord[X_DIR] + 1, grid_coord[Y_DIR] + 1};
+        int coords_se[2] = {grid_coord[X_DIR] - 1, grid_coord[Y_DIR] + 1};
+        int coords_nw[2] = {grid_coord[X_DIR] + 1, grid_coord[Y_DIR] - 1};
+        int coords_sw[2] = {grid_coord[X_DIR] - 1, grid_coord[Y_DIR] - 1};
+
+        get_diagonal_rank(coords_ne, grid_ne);
+        get_diagonal_rank(coords_se, grid_se);
+        get_diagonal_rank(coords_nw, grid_nw);
+        get_diagonal_rank(coords_sw, grid_sw);
+
+        std::cout << "grid_rank: " << grid_rank << " ne: " << grid_ne << " se: " << grid_se << " sw: " << grid_sw << " nw: " << grid_nw << std::endl;
+
         /////////////////////777////////////
 
         //---TESTES---
@@ -117,6 +134,15 @@ namespace FCPIC
         sleep(grid_rank);
         phi.print_field(std::cout);
         */
+    }
+
+    void simulation::get_diagonal_rank(int *coords, int &id_proc)
+    {
+        // both wrap around in X_DIR and Y_DIR must be 0 or 1 at the same time
+        if (!wrap_around[X_DIR] && !wrap_around[Y_DIR] && (coords[0] >= grid[0] || coords[1] >= grid[1] || coords[0] < 0 || coords[1] < 0))
+            id_proc = MPI_PROC_NULL;
+        else
+            MPI_Cart_rank(grid_comm, coords, &id_proc);
     }
 
     void simulation::set_periodic_field_bc()
@@ -240,26 +266,59 @@ namespace FCPIC
 
     void simulation::exchange_particles_buffers(species *lepton)
     {
-        int west_len_mpi = lepton->buffer_west_len;
-        int east_len_mpi = lepton->buffer_east_len;
-        int north_len_mpi = lepton->buffer_north_len;
-        int south_len_mpi = lepton->buffer_south_len;
+        part recv_dummy;
+        recv_dummy.ix = -1;
+        recv_dummy.iy = -1;
+        lepton->recv_buffer_east.assign(lepton->send_buffer_west.size(), recv_dummy);
+        lepton->recv_buffer_west.assign(lepton->send_buffer_east.size(), recv_dummy);
+        lepton->recv_buffer_north.assign(lepton->send_buffer_south.size(), recv_dummy);
+        lepton->recv_buffer_south.assign(lepton->send_buffer_north.size(), recv_dummy);
 
-        // MPI_RECV - maximum communication size
-        int vert_len_mpi = std::max(north_len_mpi, south_len_mpi);
-        int hor_len_mpi = std::max(east_len_mpi, west_len_mpi);
+        lepton->recv_buffer_ne.assign(lepton->send_buffer_sw.size(), recv_dummy);
+        lepton->recv_buffer_nw.assign(lepton->send_buffer_se.size(), recv_dummy);
+        lepton->recv_buffer_se.assign(lepton->send_buffer_nw.size(), recv_dummy);
+        lepton->recv_buffer_sw.assign(lepton->send_buffer_ne.size(), recv_dummy);
+
+        int hor_len_mpi = std::max(lepton->send_buffer_north.size(), lepton->send_buffer_south.size());
+        int ver_len_mpi = std::max(lepton->send_buffer_east.size(), lepton->send_buffer_west.size());
 
         // All traffic in direction "top"
-        MPI_Sendrecv(&(lepton->send_buffer_north[0]), north_len_mpi, exchange_part_type, grid_top, 0, &(lepton->recv_buffer_south[0]), vert_len_mpi, exchange_part_type, grid_bottom, 0, grid_comm, &status);
+        MPI_Sendrecv(&(lepton->send_buffer_north[0]), lepton->send_buffer_north.size(), exchange_part_type, grid_top, 0, &(lepton->recv_buffer_south[0]), lepton->send_buffer_north.size(), exchange_part_type, grid_bottom, 0, grid_comm, &status);
 
-        // All traffic in direction "top"
-        MPI_Sendrecv(&(lepton->send_buffer_south[0]), south_len_mpi, exchange_part_type, grid_bottom, 0, &(lepton->recv_buffer_north[0]), vert_len_mpi, exchange_part_type, grid_top, 0, grid_comm, &status);
+        // All traffic in direction "bottom"
+        MPI_Sendrecv(&(lepton->send_buffer_south[0]), lepton->send_buffer_south.size(), exchange_part_type, grid_bottom, 0, &(lepton->recv_buffer_north[0]), lepton->send_buffer_north.size(), exchange_part_type, grid_top, 0, grid_comm, &status);
 
         // All traffic in direction "left"
-        MPI_Sendrecv(&(lepton->send_buffer_west[0]), west_len_mpi, exchange_part_type, grid_left, 0, &(lepton->recv_buffer_east[0]), hor_len_mpi, exchange_part_type, grid_right, 0, grid_comm, &status);
+        MPI_Sendrecv(&(lepton->send_buffer_west[0]), lepton->send_buffer_west.size(), exchange_part_type, grid_left, 0, &(lepton->recv_buffer_east[0]), lepton->send_buffer_west.size(), exchange_part_type, grid_right, 0, grid_comm, &status);
 
+        std::cout << "chega aqui" << std::endl;
         // All traffic in direction "right"
-        MPI_Sendrecv(&(lepton->send_buffer_east[0]), east_len_mpi, exchange_part_type, grid_right, 0, &(lepton->recv_buffer_west[0]), hor_len_mpi, exchange_part_type, grid_left, 0, grid_comm, &status);
+        MPI_Sendrecv(&(lepton->send_buffer_east[0]), lepton->send_buffer_east.size(), exchange_part_type, grid_right, 0, &(lepton->recv_buffer_west[0]), lepton->send_buffer_east.size(), exchange_part_type, grid_left, 0, grid_comm, &status);
+
+        // std::cout << "chega ne-sw" << std::endl;
+        // // All traffic in direction "ne-sw"
+        // MPI_Sendrecv(&(lepton->send_buffer_ne[0]), lepton->send_buffer_ne.size(), exchange_part_type, grid_ne, 0, &(lepton->recv_buffer_sw[0]), lepton->send_buffer_ne.size(), exchange_part_type, grid_sw, 0, grid_comm, &status);
+
+        // // All traffic in direction "sw-ne"
+        // MPI_Sendrecv(&(lepton->send_buffer_sw[0]), lepton->send_buffer_sw.size(), exchange_part_type, grid_sw, 0, &(lepton->recv_buffer_ne[0]), lepton->send_buffer_sw.size(), exchange_part_type, grid_ne, 0, grid_comm, &status);
+
+        // // All traffic in direction "nw-se"
+        // MPI_Sendrecv(&(lepton->send_buffer_nw[0]), lepton->send_buffer_nw.size(), exchange_part_type, grid_nw, 0, &(lepton->recv_buffer_se[0]), lepton->send_buffer_nw.size(), exchange_part_type, grid_se, 0, grid_comm, &status);
+
+        // // All traffic in direction "se-nw"
+        // MPI_Sendrecv(&(lepton->send_buffer_se[0]), lepton->send_buffer_se.size(), exchange_part_type, grid_se, 0, &(lepton->recv_buffer_nw[0]), lepton->send_buffer_se.size(), exchange_part_type, grid_nw, 0, grid_comm, &status);
+
+        // std::cout << "buffer south" << std::endl;
+        // for (int i = 0; i < lepton->recv_buffer_north.size(); i++)
+        // {
+        //     std::cout << "recvix: " << lepton->recv_buffer_north[i].ix << std::endl;
+        //     std::cout << "recviy: " << lepton->recv_buffer_north[i].iy << std::endl;
+        //     std::cout << "recvx: " << lepton->recv_buffer_north[i].x << std::endl;
+        //     std::cout << "redcvhy: " << lepton->recv_buffer_north[i].y << std::endl;
+        //     std::cout << "recvhux: " << lepton->recv_buffer_north[i].ux << std::endl;
+        //     std::cout << "recvuy: " << lepton->recv_buffer_north[i].uy << std::endl;
+        //     std::cout << "****************" << std::endl;
+        // }
     }
 
     // Jacobi solver

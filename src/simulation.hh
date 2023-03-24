@@ -35,44 +35,48 @@ namespace FCPIC
         void set_conductive_field_bc();
 
         // Packs data for communication across processes
-        void setup_MPI_datatypes(int, int, int);
+        // void setup_MPI_datatypes(int, int, int);
 
         // sets flags for ghost and buffer cells
-        void set_ghost_buffer_flag(domain &);
+        // void set_ghost_buffer_flag(domain &);
+
+        void get_diagonal_rank(int *, int &);
 
         // Sets boundary condition values to boundary cells
-        void set_bc(field *);
+        // void set_bc(field *);
 
         // exchanges data between processes
         void exchange_phi_buffers(field *);
         void exchange_charge_buffers(field *);
-        void exchange_particles_buffers(species *lepton);
+        void exchange_particles_buffers(species *);
 
         // Jacobi solver
         void jacobi(field *, field *);
 
         void set_E_value(field *, field *, field *);
 
-        void write_output_u(domain &, int, int);
-        void write_output_charge(domain &, int, int);
+        // void write_output_u(domain &, int, int);
+        // void write_output_charge(domain &, int, int);
 
-    private:
         // MPI variables
-        // int rank;                                         // rank of the current process
         int grid_rank;                                    // rank of the current proces in the virtual grid
         int grid_top, grid_bottom, grid_left, grid_right; // ranks of the neighbouring processes
-        int n_Procs;                                      // total number of processes
-        int grid[2];                                      // virtual grid dimensions
-        MPI_Datatype exchange_field_type[2];              // MPI_datatype for exchange of buffer cell data
-        MPI_Comm grid_comm;                               // grid COMMUNICATOR
-        int offset[2];                                    // offset for cell numbering for subdomains
-        int grid_coord[2];                                // coordinates of the process in the virtual grid
+        int grid_ne, grid_se, grid_nw, grid_sw;           // ranks of diagonal processes: NE, SE, NW, SW
+
+    private:
+        int n_Procs;                         // total number of processes
+        int grid[2];                         // virtual grid dimensions
+        MPI_Datatype exchange_field_type[2]; // MPI_datatype for exchange of buffer cell data
+        MPI_Comm grid_comm;                  // grid COMMUNICATOR
+        int offset[2];                       // offset for cell numbering for subdomains
+        int grid_coord[2];                   // coordinates of the process in the virtual grid
         int wrap_around[2];
         MPI_Status status;
 
+        // MPI_Datatype exchange_part_type;
+        MPI_Aint offsets[8]; // it evaluates to the offset (in bytes) of a given member within a struct or union type
+        const int nitems = 8;
         MPI_Datatype exchange_part_type;
-        MPI_Aint offsets[7]; // it evaluates to the offset (in bytes) of a given member within a struct or union type
-        const int nitems = 7;
 
         // Simulation variables
         int Npart;
