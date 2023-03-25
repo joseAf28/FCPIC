@@ -2,7 +2,7 @@
 #include "math.h"
 #include "mpi.h"
 
-species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, float *vth_a) : name(name_a)
+species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, float *vth_a) : name(name_a), charge(nullptr)
 {
     ppc[0] = ppc_a[0];
     ppc[1] = ppc_a[1];
@@ -49,9 +49,6 @@ species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, floa
     recv_buffer_nw.reserve(np);
     recv_buffer_sw.reserve(np);
 
-    // charge field initialization
-    charge = new FCPIC::field();
-
     // random number generator
     std::random_device dev;
     std::mt19937_64 rng_aux(dev());
@@ -86,7 +83,7 @@ species::~species()
     recv_buffer_sw.clear();
     recv_buffer_nw.clear();
 
-    // delete charge;
+    delete charge;
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
 
@@ -141,9 +138,12 @@ void species::set_x()
 void species::get_charge()
 {
     //! charge vec with no ghost cells: ghost cells are going to be taken care in Fields class
-    std::vector<double> charge_vec;
-    charge_vec.assign(((N_x) * (N_y)), 0.f);
-    for (int i = 0; i < np; i++)
+    if (charge != nullptr)
+        delete charge;
+
+    std::vector<double> charge_vec((N_x) * (N_y), 0.f);
+
+    for (int i = 0; i < vec.size(); i++)
     {
         int ij = vec[i].ix + N_x * vec[i].iy;
 
@@ -156,37 +156,31 @@ void species::get_charge()
         charge_vec[ij + N_x] += (dx - wx) * wy * q;
         charge_vec[ij + 1 + N_x] += wx * wy * q;
     }
-
     // update Field Charge
-    // charge->val = charge_vec;
-    // charge->N_x = N_x;
-    // charge->N_y = N_y;
-    // charge->N = N_x * N_y;
-
+    charge = new FCPIC::field(N_x, N_y, charge_vec);
     charge_vec.clear();
 }
 
-//??????????? particle motion in the cell and grid
+//!! Define the Efield in each particle: missing feature
 void species::init_pusher(const float Ex, const float Ey)
 {
     int N_part = vec.size();
 
     for (int counter = 0; counter < vec.size(); counter++)
     {
-        // float Ex_field = 0.f;
-        // float Ey_field = 0.f;
-
         // get E field in the particle position
-        //  E_field->get_field(vec[counter], Ex_field, Ey_field);
+
         vec[counter].ux = vec[counter].ux - 0.5 * q / m * Ex * dt;
         vec[counter].uy = vec[counter].uy - 0.5 * q / m * Ey * dt;
     }
 }
 
+//!! Define the Efield in each particle: missing feature
 void species::particle_pusher(const float Ex, const float Ey)
 {
     for (int counter = 0; counter < vec.size(); counter++)
     {
+        // get E field in the particle position
         vec[counter].ux = vec[counter].ux + q / m * Ex * dt;
         vec[counter].uy = vec[counter].uy + q / m * Ey * dt;
 
@@ -211,7 +205,7 @@ void species::advance_cell(int *ranks_mpi)
         bool ymin_cond = posy < 0.f;
         bool ymax_cond = posy > dy;
 
-        // // ! Debugging motion
+        // // Debugging motion
         // std::cout << "Init ****************" << std::endl;
         // std::cout << "cell (" << vec[counter].ix << ", " << vec[counter].iy << ")" << std::endl;
         // std::cout << "x:" << vec[counter].x << std::endl;
@@ -251,7 +245,7 @@ void species::advance_cell(int *ranks_mpi)
             ymax_cond = posy > dy;
         }
 
-        // //!! debugging the particles' motions inside the cell
+        // // debugging the particles' motions inside the cell
         // std::cout << "mid  ****************" << std::endl;
         // std::cout << "cell (" << vec[counter].ix << ", " << vec[counter].iy << ")" << std::endl;
         // std::cout << "x:" << vec[counter].x << std::endl;
@@ -265,6 +259,8 @@ void species::advance_cell(int *ranks_mpi)
         bool flag_right = ranks_mpi[3] == MPI_PROC_NULL;
         bool flag_left = ranks_mpi[4] == MPI_PROC_NULL;
 
+        int reflection = false; // check if we have reflection or not
+
         if (flag_top || flag_bottom || flag_right || flag_left) // non periodic - physical - boundaries
         {
             // std::cout << "grid_rank: " << ranks_mpi[0] << " reflection" << std::endl;
@@ -275,7 +271,7 @@ void species::advance_cell(int *ranks_mpi)
                 vec[counter].ix = 0;
                 vec[counter].x = 0.;
                 vec[counter].flag = BULK;
-                continue;
+                reflection = true;
             }
 
             if (flag_right && vec[counter].ix >= range[0])
@@ -284,7 +280,7 @@ void species::advance_cell(int *ranks_mpi)
                 vec[counter].ix = range[0] - 1;
                 vec[counter].x = dx;
                 vec[counter].flag = BULK;
-                continue;
+                reflection = true;
             }
 
             if (flag_bottom && vec[counter].iy < 0)
@@ -293,7 +289,7 @@ void species::advance_cell(int *ranks_mpi)
                 vec[counter].iy = 0;
                 vec[counter].y = 0.;
                 vec[counter].flag = BULK;
-                continue;
+                reflection = true;
             }
 
             if (flag_top && vec[counter].iy >= range[1])
@@ -302,8 +298,24 @@ void species::advance_cell(int *ranks_mpi)
                 vec[counter].iy = range[1] - 1;
                 vec[counter].y = dx;
                 vec[counter].flag = BULK;
-                continue;
+                reflection = true;
             }
+
+            // assunption: reflection takes priority over exchange particles with MPI
+            if (vec[counter].ix < 0 && reflection == true)
+                vec[counter].ix = 0;
+
+            if (vec[counter].iy < 0 && reflection == true)
+                vec[counter].iy = 0;
+
+            if (vec[counter].ix >= range[0] && reflection == true)
+                vec[counter].ix = range[0] - 1;
+
+            if (vec[counter].iy >= range[1] && reflection == true)
+                vec[counter].iy = vec[counter].iy - range[1];
+
+            if (reflection == true)
+                continue;
         }
 
         // std::cout << "end ****************" << std::endl;
@@ -517,14 +529,18 @@ void species::write_output_vec(const int rank, const int time)
     }
     Output_file << std::endl
                 << std::endl;
-    // for (int i = 0; i < charge->val.size(); i++)
-    // {
-    //     if (i % (N_x) == 0)
-    //         Output_file << std::endl;
 
-    //     Output_file << std::setw(precision) << charge->val[i] << space;
-    //     // if (i % 4 == 0)
-    // }
+    if (charge != nullptr)
+    {
+        for (int i = 0; i < charge->val.size(); i++)
+        {
+            if (i % (N_x) == 0)
+                Output_file << std::endl;
+
+            Output_file << std::setw(precision) << charge->val[i] << space;
+            // if (i % 4 == 0)
+        }
+    }
 
     Output_file.close();
 }

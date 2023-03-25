@@ -5,6 +5,10 @@ namespace FCPIC
 {
     // Constructors
     // allocates memory to the field variables equal to the number of cells in the domain
+    field::field()
+    {
+    }
+
     field::field(int Nx, int Ny)
     {
         N_int_x = Nx;
@@ -14,18 +18,6 @@ namespace FCPIC
         N = N_x * N_y;
         val.assign(N, 0.);
         // std::cout << __PRETTY_FUNCTION__ << std::endl;
-    }
-
-    field::field()
-    {
-        // N_int_x = Nx;
-        // N_int_y = Ny;
-        // N_x = Nx + 2;
-        // N_y = Ny + 2;
-        // N = N_x * N_y;
-        int N_aux = 100; //!!!change later
-        val.reserve(N_aux * N_aux);
-        // val = value;
     }
 
     field::field(int Nx, int Ny, double *arr)
@@ -40,17 +32,16 @@ namespace FCPIC
             val[i] = arr[i];
     }
 
-    // field::field(const field &obj)
-    // {
-    //     Nx = obj.Nx;
-    //     Ny = obj.Ny;
-    //     N = obj.N;
-    //     phi = obj.phi;
-    //     Efieldx = obj.Efieldx;
-    //     Efieldy = obj.Efieldy;
-    //     bc = new BC_type[N];
-    //     memcpy(bc, obj.bc, sizeof(BC_type) * N);
-    // }
+    field::field(int Nx, int Ny, std::vector<double> &arr)
+    {
+        N_int_x = Nx;
+        N_int_y = Ny;
+        N_x = Nx + 2;
+        N_y = Ny + 2;
+        N = N_x * N_y;
+        val.reserve(N);
+        val = arr;
+    }
 
     void field::setValue(double value)
     {

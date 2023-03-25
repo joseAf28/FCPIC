@@ -57,6 +57,7 @@ int main(int argc, char **argv)
     species test(name, ppc, range, vf, vth);
     test.set_x();
     test.set_u();
+    test.get_charge();
 
     // getting initial charge field
     // getting first electric field
@@ -66,23 +67,23 @@ int main(int argc, char **argv)
     {
         int flags_coords_mpi[5] = {sim.grid_rank, sim.grid_top, sim.grid_bottom, sim.grid_right, sim.grid_left};
 
-        // getting charge distribution
         // compute de potential field with the jacobi iteration
         // getting the E field interpolation
 
         test.particle_pusher(Ex, Ey);
         test.advance_cell(flags_coords_mpi);
 
-        test.write_output_vec(counter, sim.grid_rank); // debugging species list
+        // test.write_output_vec(counter, sim.grid_rank); // debugging species list
 
         test.prepare_buffer();
-        // std::cout << "Init grid_rank: " << sim.grid_rank << std::endl;
         sim.exchange_particles_buffers(&test);
 
         test.write_input_buffer(counter, sim.grid_rank);  // debugging communication
         test.write_output_buffer(counter, sim.grid_rank); // debugging
 
-        test.update_part_list();                       // update the list of particles of each ptocess because of the MPI exchange
+        test.update_part_list(); // update the list of particles of each ptocess because of the MPI exchange
+        test.get_charge();       // getting charge distribution
+
         test.write_output_vec(counter, sim.grid_rank); // debugging
         // std::cout << "End grid_rank: " << sim.grid_rank << std::endl;
     }

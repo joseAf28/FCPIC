@@ -1,0 +1,38 @@
+**************Real Buffer North**************
+**************Real Buffer South**************
+cell (0, 8)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (1, 8)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (2, 8)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (3, 8)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (4, 8)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (5, 8)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (6, 8)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (7, 8)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (8, 8)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (0, 9)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (1, 9)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (2, 9)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (3, 9)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (4, 9)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (5, 9)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (6, 9)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (7, 9)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (8, 9)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+**************Real Buffer East**************
+**************Real Buffer West**************
+cell (9, 0)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (9, 1)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (9, 2)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (9, 3)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (9, 4)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (9, 5)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (9, 6)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (9, 7)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+**************Real Buffer NW**************
+**************Real Buffer SW**************
+cell (9, 8)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+cell (9, 9)   x:   0   y:  0.8   ux: -1.5   uy: -1.7   flag:    0   
+**************Real Buffer SE**************
+**************Real Buffer NE**************
+
+

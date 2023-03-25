@@ -62,11 +62,10 @@ namespace FCPIC
     public:
         // Constructors
         // allocates memory to the field variables equal to the number of cells in the domain
-        field(int, int);
         field();
+        field(int, int);
         field(int, int, double *);
-        // field(int, int, float **);
-        // field(const field &);
+        field(int, int, std::vector<double> &);
 
         ~field(); // Destructor
 
