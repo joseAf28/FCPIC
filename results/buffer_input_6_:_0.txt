@@ -1,0 +1,17 @@
+**************Real Buffer North**************
+**************Real Buffer South**************
+**************Real Buffer East**************
+cell (0, 2)   x: 0.6   y:  0.8   ux:  1.3   uy: -1.1   flag:    0   
+cell (0, 3)   x: 0.6   y:  0.8   ux:  1.3   uy: -1.1   flag:    0   
+cell (0, 4)   x: 0.6   y:  0.8   ux:  1.3   uy: -1.1   flag:    0   
+cell (0, 5)   x: 0.6   y:  0.8   ux:  1.3   uy: -1.1   flag:    0   
+cell (0, 6)   x: 0.6   y:  0.8   ux:  1.3   uy: -1.1   flag:    0   
+cell (0, 7)   x: 0.6   y:  0.8   ux:  1.3   uy: -1.1   flag:    0   
+cell (0, 8)   x: 0.6   y:  0.8   ux:  1.3   uy: -1.1   flag:    0   
+**************Real Buffer West**************
+**************Real Buffer NW**************
+**************Real Buffer SW**************
+**************Real Buffer SE**************
+**************Real Buffer NE**************
+
+

@@ -60,7 +60,7 @@ public:
 
     // methods used for MPI communication
     // !Integrate these methods with the particle pusher
-    void prepare_to_buffer();
+    void prepare_buffer();
     void update_part_list();
     void advance_cell(int *);
 
@@ -105,6 +105,28 @@ public:
     std::vector<part> recv_buffer_se;
     std::vector<part> recv_buffer_nw;
     std::vector<part> recv_buffer_sw;
+
+    // variables to define the size of the arrays for the MPI communication
+    int size_send_north = 0;
+    int size_send_south = 0;
+    int size_send_east = 0;
+    int size_send_west = 0;
+
+    int size_send_ne = 0;
+    int size_send_se = 0;
+    int size_send_nw = 0;
+    int size_send_sw = 0;
+
+    int size_recv_north = 0;
+    int size_recv_south = 0;
+    int size_recv_east = 0;
+    int size_recv_west = 0;
+
+    int size_recv_ne = 0;
+    int size_recv_se = 0;
+    int size_recv_nw = 0;
+    int size_recv_sw = 0;
+    ///
 
     int np; // total number of particles in the simulation
 

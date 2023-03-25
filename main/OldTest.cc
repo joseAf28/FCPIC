@@ -10,7 +10,6 @@ typedef enum
 
 int main(int argc, char **argv)
 {
-
     ///!MPI COMMUNICATION**************************
     MPI_Init(&argc, &argv);
 
@@ -79,7 +78,7 @@ int main(int argc, char **argv)
     MPI_Type_commit(&mpi_part);
     ///!MPI COMMUNICATION**************************
 
-    // Initialize the Soecies Class
+    // Initialize the Species Class
     std::string name = "electron";
 
     int ppc[2] = {1, 1};
@@ -91,26 +90,26 @@ int main(int argc, char **argv)
     // differentiate vectors
     if (proc_rank == 0) // 0
     {
-        vf[0] = 0;
-        vf[1] = 1.5;
+        vf[0] = 1.8;
+        vf[1] = 1.3;
         vf[2] = 0;
     }
     if (proc_rank == 1) // 1
     {
-        vf[0] = 0;
-        vf[1] = 1.6;
+        vf[0] = -1.5;
+        vf[1] = -1.6;
         vf[2] = 0.;
     }
     if (proc_rank == 2) // 2
     {
-        vf[0] = 0;
-        vf[1] = 1.7;
+        vf[0] = 1.3;
+        vf[1] = -1.1;
         vf[2] = 0.;
     }
     if (proc_rank == 3) // 3
     {
-        vf[0] = 0.;
-        vf[1] = 1.8;
+        vf[0] = -1.5;
+        vf[1] = -1.7;
         vf[2] = 0.;
     }
 
@@ -125,42 +124,54 @@ int main(int argc, char **argv)
     test.set_u();
 
     //
-    test.init_pusher(Ex, Ey);
-    test.particle_pusher(Ex, Ey);
-    test.advance_cell(flags_coords_mpi);
+    for (int i = 0; i < 20; i++)
+    {
+        test.init_pusher(Ex, Ey);
+        test.particle_pusher(Ex, Ey);
+        test.advance_cell(flags_coords_mpi);
+        std::cout << "+++*+***+**+**+*+******++*+*+++++++++" << std::endl;
 
-    //
+        //
 
-    test.write_output_vec(2, P_grid_rank);
-    test.prepare_to_buffer();
+        test.write_output_vec(i, P_grid_rank);
+        test.prepare_buffer();
 
-    part recv_dummy;
-    recv_dummy.ix = -1;
-    recv_dummy.iy = -1;
-    test.recv_buffer_east.assign(test.send_buffer_west.size(), recv_dummy);
-    test.recv_buffer_west.assign(test.send_buffer_east.size(), recv_dummy);
-    test.recv_buffer_north.assign(test.send_buffer_south.size(), recv_dummy);
-    test.recv_buffer_south.assign(test.send_buffer_north.size(), recv_dummy);
+        //!!! Size of the arrays to send
+        MPI_Sendrecv(&(test.size_send_north), 1, MPI_INT, P_grid_top, 0, &(test.size_recv_south), 1, MPI_INT, P_grid_bottom, 0, grid_comm, &status);
+        MPI_Sendrecv(&(test.size_send_south), 1, MPI_INT, P_grid_bottom, 0, &(test.size_recv_north), 1, MPI_INT, P_grid_top, 0, grid_comm, &status);
+        MPI_Sendrecv(&(test.size_send_west), 1, MPI_INT, P_grid_left, 0, &(test.size_recv_east), 1, MPI_INT, P_grid_right, 0, grid_comm, &status);
+        MPI_Sendrecv(&(test.size_send_east), 1, MPI_INT, P_grid_right, 0, &(test.size_recv_west), 1, MPI_INT, P_grid_left, 0, grid_comm, &status);
 
-    test.recv_buffer_ne.assign(test.send_buffer_sw.size(), recv_dummy);
-    test.recv_buffer_nw.assign(test.send_buffer_se.size(), recv_dummy);
-    test.recv_buffer_se.assign(test.send_buffer_nw.size(), recv_dummy);
-    test.recv_buffer_sw.assign(test.send_buffer_ne.size(), recv_dummy);
+        part recv_dummy;
+        recv_dummy.ix = -1;
+        recv_dummy.iy = -1;
 
-    MPI_Sendrecv(&(test.send_buffer_north[0]), test.send_buffer_north.size(), mpi_part, P_grid_top, 0, &(test.recv_buffer_south[0]), test.send_buffer_north.size(), mpi_part, P_grid_bottom, 0, grid_comm, &status);
+        test.recv_buffer_east.assign(test.size_recv_east, recv_dummy);
+        test.recv_buffer_west.assign(test.size_recv_west, recv_dummy);
+        test.recv_buffer_north.assign(test.size_recv_north, recv_dummy);
+        test.recv_buffer_south.assign(test.size_recv_south, recv_dummy);
 
-    // All traffic in direction "top"
-    MPI_Sendrecv(&(test.send_buffer_south[0]), test.send_buffer_south.size(), mpi_part, P_grid_bottom, 0, &(test.recv_buffer_north[0]), test.send_buffer_north.size(), mpi_part, P_grid_top, 0, grid_comm, &status);
+        test.write_input_buffer(i, P_grid_rank);
+        test.write_output_buffer(i, P_grid_rank);
 
-    MPI_Sendrecv(&(test.send_buffer_west[0]), test.send_buffer_west.size(), mpi_part, P_grid_left, 0, &(test.recv_buffer_east[0]), test.send_buffer_west.size(), mpi_part, P_grid_right, 0, grid_comm, &status);
+        //! Buffers Communication
+        MPI_Sendrecv(&(test.send_buffer_north[0]), test.send_buffer_north.size(), mpi_part, P_grid_top, 0, &(test.recv_buffer_south[0]), test.size_recv_south, mpi_part, P_grid_bottom, 0, grid_comm, &status);
 
-    // All traffic in direction "right"
-    MPI_Sendrecv(&(test.send_buffer_east[0]), test.send_buffer_east.size(), mpi_part, P_grid_right, 0, &(test.recv_buffer_west[0]), test.send_buffer_east.size(), mpi_part, P_grid_left, 0, grid_comm, &status);
+        // All traf\fic in direction "top"
+        MPI_Sendrecv(&(test.send_buffer_south[0]), test.send_buffer_south.size(), mpi_part, P_grid_bottom, 0, &(test.recv_buffer_north[0]), test.size_recv_north, mpi_part, P_grid_top, 0, grid_comm, &status);
 
-    test.write_input_buffer(3, P_grid_rank);
-    test.write_output_buffer(3, P_grid_rank);
-    test.update_part_list();
-    test.write_output_vec(3, P_grid_rank);
+        MPI_Sendrecv(&(test.send_buffer_west[0]), test.send_buffer_west.size(), mpi_part, P_grid_left, 0, &(test.recv_buffer_east[0]), test.size_recv_east, mpi_part, P_grid_right, 0, grid_comm, &status);
+
+        // All traffic in direction "right"
+        MPI_Sendrecv(&(test.send_buffer_east[0]), test.send_buffer_east.size(), mpi_part, P_grid_right, 0, &(test.recv_buffer_west[0]), test.size_recv_west, mpi_part, P_grid_left, 0, grid_comm, &status);
+
+        std::cout << "size north: " << test.send_buffer_north.size() << std::endl;
+
+        // test.write_input_buffer(8, P_grid_rank);
+        test.write_output_buffer(i, P_grid_rank);
+        test.update_part_list();
+        test.write_output_vec(i, P_grid_rank);
+    }
 
     MPI_Finalize();
 

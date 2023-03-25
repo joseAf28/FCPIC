@@ -22,29 +22,29 @@ int main(int argc, char **argv)
     vf[1] = 1.3;
     vf[2] = 0;
 
-    // differentiate vector of  each rank
+    // differentiate vectors
     if (sim.grid_rank == 0) // 0
     {
-        vf[0] = 0.;
-        vf[1] = 1.7;
+        vf[0] = 1.8;
+        vf[1] = 1.3;
         vf[2] = 0;
     }
     if (sim.grid_rank == 1) // 1
     {
-        vf[0] = 0;
-        vf[1] = 1.6;
+        vf[0] = -1.5;
+        vf[1] = -1.6;
         vf[2] = 0.;
     }
     if (sim.grid_rank == 2) // 2
     {
-        vf[0] = 0;
-        vf[1] = 1.7;
+        vf[0] = 1.3;
+        vf[1] = -1.1;
         vf[2] = 0.;
     }
     if (sim.grid_rank == 3) // 3
     {
-        vf[0] = 0.;
-        vf[1] = 1.8;
+        vf[0] = -1.5;
+        vf[1] = -1.7;
         vf[2] = 0.;
     }
 
@@ -52,27 +52,33 @@ int main(int argc, char **argv)
     float Ex = 0.;
     float Ey = 0.;
 
-    int flags_coords_mpi[5] = {sim.grid_rank, sim.grid_top, sim.grid_bottom, sim.grid_right, sim.grid_left};
-
     species test(name, ppc, range, vf, vth);
     test.set_x();
     test.set_u();
-
-    // first iteration of the whole domain
     test.init_pusher(Ex, Ey);
-    test.particle_pusher(Ex, Ey);
-    test.advance_cell(flags_coords_mpi);
 
-    //
-    test.write_output_vec(3.5, sim.grid_rank);
-    test.prepare_to_buffer();
+    for (int counter = 0; counter < 5; counter++)
+    {
+        int flags_coords_mpi[5] = {sim.grid_rank, sim.grid_top, sim.grid_bottom, sim.grid_right, sim.grid_left};
 
-    sim.exchange_particles_buffers(&test);
+        test.particle_pusher(Ex, Ey);
+        test.advance_cell(flags_coords_mpi);
 
-    test.write_input_buffer(4, sim.grid_rank);
-    test.write_output_buffer(4, sim.grid_rank);
-    test.update_part_list();
-    test.write_output_vec(4, sim.grid_rank);
+        test.write_output_vec(counter, sim.grid_rank);
+        test.prepare_buffer();
+
+        // std::cout << "Init grid_rank: " << sim.grid_rank << std::endl;
+
+        sim.exchange_particles_buffers(&test);
+
+        test.write_input_buffer(counter, sim.grid_rank);
+        test.write_output_buffer(counter, sim.grid_rank);
+        test.update_part_list();
+        test.write_output_vec(counter, sim.grid_rank);
+
+        // std::cout << "End grid_rank: " << sim.grid_rank << std::endl;
+    }
+    std::cout << "End Loop" << std::endl;
 
     return 0;
 }

@@ -1,0 +1,28 @@
+**************Buffer North**************
+cell (9, 9)   x: 0.9   y:  0.7   ux:  1.3   uy: -1.1   flag:    0   
+cell (7, 9)   x: 0.9   y:  0.7   ux:  1.3   uy: -1.1   flag:    0   
+cell (8, 9)   x: 0.9   y:  0.7   ux:  1.3   uy: -1.1   flag:    0   
+cell (6, 9)   x: 0.9   y:  0.7   ux:  1.3   uy: -1.1   flag:    0   
+cell (5, 9)   x: 0.9   y:  0.7   ux:  1.3   uy: -1.1   flag:    0   
+cell (4, 9)   x: 0.9   y:  0.7   ux:  1.3   uy: -1.1   flag:    0   
+cell (2, 9)   x: 0.9   y:  0.7   ux:  1.3   uy: -1.1   flag:    0   
+cell (3, 9)   x: 0.9   y:  0.7   ux:  1.3   uy: -1.1   flag:    0   
+cell (1, 9)   x: 0.9   y:  0.7   ux:  1.3   uy: -1.1   flag:    0   
+**************Buffer South**************
+**************Buffer East**************
+**************Buffer West**************
+cell (0, 1)   x: 0.9   y:  0.7   ux:  1.3   uy: -1.1   flag:    0   
+cell (0, 2)   x: 0.9   y:  0.7   ux:  1.3   uy: -1.1   flag:    0   
+cell (0, 3)   x: 0.9   y:  0.7   ux:  1.3   uy: -1.1   flag:    0   
+cell (0, 4)   x: 0.9   y:  0.7   ux:  1.3   uy: -1.1   flag:    0   
+cell (0, 5)   x: 0.9   y:  0.7   ux:  1.3   uy: -1.1   flag:    0   
+cell (0, 6)   x: 0.9   y:  0.7   ux:  1.3   uy: -1.1   flag:    0   
+cell (0, 7)   x: 0.9   y:  0.7   ux:  1.3   uy: -1.1   flag:    0   
+cell (0, 8)   x: 0.9   y:  0.7   ux:  1.3   uy: -1.1   flag:    0   
+**************Buffer NW**************
+cell (0, 9)   x: 0.9   y:  0.7   ux:  1.3   uy: -1.1   flag:    0   
+**************Buffer SW**************
+**************Buffer SE**************
+**************Buffer NE**************
+
+

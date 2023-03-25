@@ -171,16 +171,17 @@ void species::init_pusher(const float Ex, const float Ey)
 {
     int N_part = vec.size();
 
-    for (int counter = 0; counter < N_part; counter++)
-    {
-        // float Ex_field = 0.f;
-        // float Ey_field = 0.f;
+    // for (int counter = 0; counter < N_part; counter++)
+    // {
+    int counter = 1;
+    // float Ex_field = 0.f;
+    // float Ey_field = 0.f;
 
-        // get E field in the particle position
-        //  E_field->get_field(vec[counter], Ex_field, Ey_field);
-        vec[counter].ux = vec[counter].ux - 0.5 * q / m * Ex * dt;
-        vec[counter].uy = vec[counter].uy - 0.5 * q / m * Ey * dt;
-    }
+    // get E field in the particle position
+    //  E_field->get_field(vec[counter], Ex_field, Ey_field);
+    vec[counter].ux = vec[counter].ux - 0.5 * q / m * Ex * dt;
+    vec[counter].uy = vec[counter].uy - 0.5 * q / m * Ey * dt;
+    // }
 }
 
 void species::particle_pusher(const float Ex, const float Ey)
@@ -197,7 +198,7 @@ void species::particle_pusher(const float Ex, const float Ey)
 
 void species::advance_cell(int *ranks_mpi)
 { // ranks_mpi[0] - rank, ranks_mpi[1] - top, ranks_mpi[2] - bottom,
-  //  ranks_mpi[3] - right, ranks_mpi[4] - left
+    //  ranks_mpi[3] - right, ranks_mpi[4] - left
     for (int counter = 0; counter < vec.size(); counter++)
     {
         float dx = 1.f;
@@ -210,6 +211,15 @@ void species::advance_cell(int *ranks_mpi)
         bool xmax_cond = posx > dx;
         bool ymin_cond = posy < 0.f;
         bool ymax_cond = posy > dy;
+
+        // // ! Debugging motion
+        // std::cout << "Init ****************" << std::endl;
+        // std::cout << "cell (" << vec[counter].ix << ", " << vec[counter].iy << ")" << std::endl;
+        // std::cout << "x:" << vec[counter].x << std::endl;
+        // std::cout << "y: " << vec[counter].y << std::endl;
+        // std::cout << "ux: " << vec[counter].ux << std::endl;
+        // std::cout << "uy: " << vec[counter].uy << std::endl;
+        // std::cout << "---------- ****************" << std::endl;
 
         while ((xmin_cond || xmax_cond || ymin_cond || ymax_cond))
         {
@@ -242,8 +252,62 @@ void species::advance_cell(int *ranks_mpi)
             ymax_cond = posy > dy;
         }
 
-        //!! debugging the particles' motions inside the cell
-        // std::cout << "mid advance ****************" << std::endl;
+        // //!! debugging the particles' motions inside the cell
+        // std::cout << "mid  ****************" << std::endl;
+        // std::cout << "cell (" << vec[counter].ix << ", " << vec[counter].iy << ")" << std::endl;
+        // std::cout << "x:" << vec[counter].x << std::endl;
+        // std::cout << "y: " << vec[counter].y << std::endl;
+        // std::cout << "ux: " << vec[counter].ux << std::endl;
+        // std::cout << "uy: " << vec[counter].uy << std::endl;
+        // std::cout << "---------- ****************" << std::endl;
+
+        bool flag_top = ranks_mpi[1] == MPI_PROC_NULL;
+        bool flag_bottom = ranks_mpi[2] == MPI_PROC_NULL;
+        bool flag_right = ranks_mpi[3] == MPI_PROC_NULL;
+        bool flag_left = ranks_mpi[4] == MPI_PROC_NULL;
+
+        if (flag_top || flag_bottom || flag_right || flag_left) // non periodic - physical - boundaries
+        {
+            // std::cout << "grid_rank: " << ranks_mpi[0] << " reflection" << std::endl;
+            // reflection of the particles
+            if (flag_left && vec[counter].ix < 0)
+            {
+                vec[counter].ux = fabs(vec[counter].ux);
+                vec[counter].ix = 0;
+                vec[counter].x = 0.;
+                vec[counter].flag = BULK;
+                continue;
+            }
+
+            if (flag_right && vec[counter].ix >= range[0])
+            {
+                vec[counter].ux = -fabs(vec[counter].ux);
+                vec[counter].ix = range[0] - 1;
+                vec[counter].x = dx;
+                vec[counter].flag = BULK;
+                continue;
+            }
+
+            if (flag_bottom && vec[counter].iy < 0)
+            {
+                vec[counter].uy = fabs(vec[counter].uy);
+                vec[counter].iy = 0;
+                vec[counter].y = 0.;
+                vec[counter].flag = BULK;
+                continue;
+            }
+
+            if (flag_top && vec[counter].iy >= range[1])
+            {
+                vec[counter].uy = -fabs(vec[counter].uy);
+                vec[counter].iy = range[1] - 1;
+                vec[counter].y = dx;
+                vec[counter].flag = BULK;
+                continue;
+            }
+        }
+
+        // std::cout << "end ****************" << std::endl;
         // std::cout << "cell (" << vec[counter].ix << ", " << vec[counter].iy << ")" << std::endl;
         // std::cout << "x:" << vec[counter].x << std::endl;
         // std::cout << "y: " << vec[counter].y << std::endl;
@@ -256,11 +320,6 @@ void species::advance_cell(int *ranks_mpi)
         bool ixmax_cond = vec[counter].ix >= range[0];
         bool iymin_cond = vec[counter].iy <= -1;
         bool iymax_cond = vec[counter].iy >= range[1];
-
-        bool flag_top = ranks_mpi[1] == MPI_PROC_NULL;
-        bool flag_bottom = ranks_mpi[2] == MPI_PROC_NULL;
-        bool flag_right = ranks_mpi[3] == MPI_PROC_NULL;
-        bool flag_left = ranks_mpi[4] == MPI_PROC_NULL;
 
         if (ranks_mpi[0] != MPI_PROC_NULL) // periodic
         {
@@ -281,128 +340,77 @@ void species::advance_cell(int *ranks_mpi)
             {
                 // std::cout << "north" << std::endl;
                 send_buffer_north.push_back(vec[counter]);
-
-                if (!flag_top)
-                    vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
-            }                                 // ne buffer
+                vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
+            }                             // ne buffer
             else if (ixmax_cond && iymax_cond)
             {
                 // std::cout << "ne" << std::endl;
                 send_buffer_ne.push_back(vec[counter]);
-
-                if (!flag_top)
-                    vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
-            }                                 // nw buffer
+                vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
+            }                             // nw buffer
             else if (ixmin_cond && iymax_cond)
             {
                 // std::cout << "nw" << std::endl;
                 send_buffer_nw.push_back(vec[counter]);
-
-                if (!flag_top)
-                    vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
+                vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
             }
             // south buffer
             else if ((!ixmin_cond) && (!ixmax_cond) && iymin_cond)
             {
                 // std::cout << "south" << std::endl;
                 send_buffer_south.push_back(vec[counter]);
-
-                if (!flag_bottom)
-                    vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
-            }                                 // se buffer
+                vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
+            }                             // se buffer
             else if (ixmax_cond && iymin_cond)
             {
                 // std::cout << "se" << std::endl;
                 send_buffer_se.push_back(vec[counter]);
-
-                if (!flag_bottom)
-                    vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
-            }                                 // sw buffer
+                vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
+            }                             // sw buffer
             else if (ixmin_cond && iymin_cond)
             {
                 // std::cout << "sw" << std::endl;
                 send_buffer_sw.push_back(vec[counter]);
-
-                if (!flag_bottom)
-                    vec[counter].flag = SEND; //!!!!mark to delete
+                vec[counter].flag = SEND; //!!!!mark to delete
             }
             // east buffer
             else if (ixmax_cond && (!iymin_cond) && (!iymax_cond))
             {
                 // std::cout << "east" << std::endl;
                 send_buffer_east.push_back(vec[counter]);
-
-                if (!flag_right)
-                    vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
+                vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
             }
             // west
             else if (ixmin_cond && (!iymin_cond) && (!iymax_cond))
             {
                 // std::cout << "west" << std::endl;
                 send_buffer_west.push_back(vec[counter]);
-
-                if (!flag_left)
-                    vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
+                vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
             }
             else
             {
                 // std::cout << "Nothing happens" << std::endl;
             }
         }
-
-        if (flag_top || flag_bottom || flag_right || flag_left) // non periodic - physical - boundaries
-        {
-            // reflection of the particles
-            if (vec[counter].ix < 0)
-            {
-                vec[counter].ux = fabs(vec[counter].ux);
-                vec[counter].ix = 0;
-                vec[counter].x = 0.;
-                vec[counter].flag = BULK;
-            }
-
-            if (vec[counter].ix >= range[0])
-            {
-                vec[counter].ux = -fabs(vec[counter].ux);
-                vec[counter].ix = range[0] - 1;
-                vec[counter].x = dx;
-                vec[counter].flag = BULK;
-            }
-
-            if (vec[counter].iy < 0)
-            {
-                vec[counter].uy = fabs(vec[counter].uy);
-                vec[counter].iy = 0;
-                vec[counter].y = 0.;
-                vec[counter].flag = BULK;
-            }
-
-            if (vec[counter].iy >= range[1])
-            {
-                vec[counter].uy = -fabs(vec[counter].uy);
-                vec[counter].iy = range[1] - 1;
-                vec[counter].y = dx;
-                vec[counter].flag = BULK;
-            }
-        }
     }
 }
 
-void species::prepare_to_buffer()
+void species::prepare_buffer()
 {
+    size_send_north = send_buffer_north.size();
+    size_send_south = send_buffer_south.size();
+    size_send_east = send_buffer_east.size();
+    size_send_west = send_buffer_west.size();
+
+    size_send_ne = send_buffer_ne.size();
+    size_send_se = send_buffer_se.size();
+    size_send_nw = send_buffer_nw.size();
+    size_send_sw = send_buffer_sw.size();
+
     // clean all particles that are going to be send to buffers
     vec.erase(std::remove_if(vec.begin(), vec.end(), [this](const part obj)
                              { return (obj.flag == SEND); }),
               vec.end());
-
-    // part recv_dummy; //! ix, iy = -1 : used as a check if there was "actual" MPI communication
-    // recv_dummy.ix = -1;
-    // recv_dummy.iy = -1;
-    // recv_dummy.x = 0.;
-    // recv_dummy.y = 0.;
-    // recv_dummy.ux = 0.;
-    // recv_dummy.uy = 0.;
-    // recv_dummy.uz = 0.;
 }
 
 void species::update_part_list()
@@ -410,7 +418,7 @@ void species::update_part_list()
     // update the position of particles after the MPI data exchange
     for (int i = 0; i < recv_buffer_north.size(); i++)
     {
-        if (recv_buffer_north[i].ix != -1) // checking if there was "meaningful" comunication
+        if (recv_buffer_north[i].ix != -1) // checking if there was real MPI communication
             vec.push_back(recv_buffer_north[i]);
     }
     for (int i = 0; i < recv_buffer_south.size(); i++)

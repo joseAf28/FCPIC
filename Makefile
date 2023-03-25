@@ -49,6 +49,12 @@ exe := $(wildcard */*.exe) $(wildcard *.exe)
 obj := $(wildcard */*.o) $(wildcard *.o)  $(wildcard */*.pcm) $(wildcard */*.d)
 mylibs := $(wildcard */*.so) $(wildcard */*.a)
 
+txtOut := $(wildcard results/*.txt)
+
 clean:
 	@echo cleaning dir...
 	rm -f $(exe) $(obj) $(tilde) $(mylibs)
+
+OutClean:
+	@echo cleaning results...
+	@rm -f $(txtOut)$
