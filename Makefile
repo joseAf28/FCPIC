@@ -14,12 +14,18 @@ SRC := $(wildcard src/*.cc)
 OBJ := $(patsubst %.cc, $(BINDIR)/%.o, $(notdir $(SRC)))
 INC := $(wildcard src/*.hh)
 
+
+mpiAd: MPIAdvance.exe
+	@cd bin; echo 'running program...\n \nOutput Results:'; mpirun ./MPIAdvance.exe;
+
+Advance: Advancetest.exe
+	@cd bin; echo 'running program...\n \nOutput Results:'; ./Advancetest.exe;
+
 test: test.exe
 	@cd bin; echo "running program... \n Output Results:" ; mpirun ./test.exe;
 
 Ctest: Ctest.exe
 	@cd bin; echo 'running program...\nOutput Results:'; mpirun -np 4 ./Ctest.exe;
-
 
 lib: $(LIBDIR)/libPIC.a
 
@@ -43,6 +49,12 @@ exe := $(wildcard */*.exe) $(wildcard *.exe)
 obj := $(wildcard */*.o) $(wildcard *.o)  $(wildcard */*.pcm) $(wildcard */*.d)
 mylibs := $(wildcard */*.so) $(wildcard */*.a)
 
+txtOut := $(wildcard results/*.txt)
+
 clean:
 	@echo cleaning dir...
 	rm -f $(exe) $(obj) $(tilde) $(mylibs)
+
+OutClean:
+	@echo cleaning results...
+	@rm -f $(txtOut)$

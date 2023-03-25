@@ -140,7 +140,7 @@ int main(int argc, char **argv)
     delete charge;
     delete test;
     */
-    MPI_Finalize();
+    // MPI_Finalize(); //Inside the simulation destructor
 
     return 0;
 }
