@@ -412,7 +412,7 @@ void species::prepare_buffer()
 
 void species::update_part_list()
 {
-    // update the position of particles after the MPI data exchange
+    // include the new particles after the MPI data exchange
     for (int i = 0; i < recv_buffer_north.size(); i++)
     {
         if (recv_buffer_north[i].ix != -1) // checking if there was real MPI communication
