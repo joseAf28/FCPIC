@@ -49,6 +49,10 @@ namespace FCPIC
 
     simulation::~simulation()
     {
+        MPI_Type_free(&exchange_field_type[X_DIR]);
+        MPI_Type_free(&exchange_field_type[Y_DIR]);
+        MPI_Type_free(&exchange_part_type);
+
         MPI_Finalize();
 
         delete[] Y_guard_data, X_guard_data,
@@ -87,7 +91,6 @@ namespace FCPIC
         // Datatype for vertical data exchange
         MPI_Type_vector(N_x, 1, 1, MPI_DOUBLE, &exchange_field_type[Y_DIR]);
         MPI_Type_commit(&exchange_field_type[Y_DIR]);
-        /////////////////////////////////////
 
         // Datatype for Species's communication
         int blocklengths[8] = {1, 1, 1, 1, 1, 1, 1, 1};
@@ -290,9 +293,6 @@ namespace FCPIC
         lepton->recv_buffer_nw.assign(lepton->size_recv_nw, recv_dummy);
         lepton->recv_buffer_se.assign(lepton->size_recv_se, recv_dummy);
         lepton->recv_buffer_sw.assign(lepton->size_recv_sw, recv_dummy);
-
-        // test.write_input_buffer(i, P_grid_rank);
-        // test.write_output_buffer(i, P_grid_rank);
 
         //! Buffers Communication
         // All traffic in direction "top"

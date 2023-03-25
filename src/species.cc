@@ -27,7 +27,7 @@ species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, floa
     // reserve space for the arrays of particles
     part A;
     A.flag = BULK;
-    vec.reserve(3 * np);
+    vec.reserve(3 * np); // assumotion for the minimum reserved space
     vec.assign(np, A);
     send_buffer_north.reserve(np); // assumption for the space
     send_buffer_south.reserve(np); // ! Think about it later
@@ -171,17 +171,16 @@ void species::init_pusher(const float Ex, const float Ey)
 {
     int N_part = vec.size();
 
-    // for (int counter = 0; counter < N_part; counter++)
-    // {
-    int counter = 1;
-    // float Ex_field = 0.f;
-    // float Ey_field = 0.f;
+    for (int counter = 0; counter < vec.size(); counter++)
+    {
+        // float Ex_field = 0.f;
+        // float Ey_field = 0.f;
 
-    // get E field in the particle position
-    //  E_field->get_field(vec[counter], Ex_field, Ey_field);
-    vec[counter].ux = vec[counter].ux - 0.5 * q / m * Ex * dt;
-    vec[counter].uy = vec[counter].uy - 0.5 * q / m * Ey * dt;
-    // }
+        // get E field in the particle position
+        //  E_field->get_field(vec[counter], Ex_field, Ey_field);
+        vec[counter].ux = vec[counter].ux - 0.5 * q / m * Ex * dt;
+        vec[counter].uy = vec[counter].uy - 0.5 * q / m * Ey * dt;
+    }
 }
 
 void species::particle_pusher(const float Ex, const float Ey)
@@ -346,46 +345,43 @@ void species::advance_cell(int *ranks_mpi)
             {
                 // std::cout << "ne" << std::endl;
                 send_buffer_ne.push_back(vec[counter]);
-                vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
-            }                             // nw buffer
+                vec[counter].flag = SEND;
+            } // nw buffer
             else if (ixmin_cond && iymax_cond)
             {
                 // std::cout << "nw" << std::endl;
                 send_buffer_nw.push_back(vec[counter]);
-                vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
-            }
-            // south buffer
+                vec[counter].flag = SEND;
+            } // south buffer
             else if ((!ixmin_cond) && (!ixmax_cond) && iymin_cond)
             {
                 // std::cout << "south" << std::endl;
                 send_buffer_south.push_back(vec[counter]);
-                vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
-            }                             // se buffer
+                vec[counter].flag = SEND;
+            } // se buffer
             else if (ixmax_cond && iymin_cond)
             {
                 // std::cout << "se" << std::endl;
                 send_buffer_se.push_back(vec[counter]);
-                vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
-            }                             // sw buffer
+                vec[counter].flag = SEND;
+            } // sw buffer
             else if (ixmin_cond && iymin_cond)
             {
                 // std::cout << "sw" << std::endl;
                 send_buffer_sw.push_back(vec[counter]);
-                vec[counter].flag = SEND; //!!!!mark to delete
-            }
-            // east buffer
+                vec[counter].flag = SEND;
+            } // east buffer
             else if (ixmax_cond && (!iymin_cond) && (!iymax_cond))
             {
                 // std::cout << "east" << std::endl;
                 send_buffer_east.push_back(vec[counter]);
-                vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
-            }
-            // west
+                vec[counter].flag = SEND;
+            } // west
             else if (ixmin_cond && (!iymin_cond) && (!iymax_cond))
             {
                 // std::cout << "west" << std::endl;
                 send_buffer_west.push_back(vec[counter]);
-                vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
+                vec[counter].flag = SEND;
             }
             else
             {
@@ -397,6 +393,7 @@ void species::advance_cell(int *ranks_mpi)
 
 void species::prepare_buffer()
 {
+    // determine the size of the arrays that Exchange particles in MPI
     size_send_north = send_buffer_north.size();
     size_send_south = send_buffer_south.size();
     size_send_east = send_buffer_east.size();
@@ -407,7 +404,7 @@ void species::prepare_buffer()
     size_send_nw = send_buffer_nw.size();
     size_send_sw = send_buffer_sw.size();
 
-    // clean all particles that are going to be send to buffers
+    // delete all particles that were sent to exchange array buffers
     vec.erase(std::remove_if(vec.begin(), vec.end(), [this](const part obj)
                              { return (obj.flag == SEND); }),
               vec.end());
