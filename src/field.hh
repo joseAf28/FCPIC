@@ -63,7 +63,7 @@ namespace FCPIC
         // Constructors
         // allocates memory to the field variables equal to the number of cells in the domain
         field(int, int);
-        //field(int, int, std::vector<double> &);
+        field();
         field(int, int, double *);
         // field(int, int, float **);
         // field(const field &);
@@ -77,12 +77,12 @@ namespace FCPIC
         void setEastGuard(double *);
         void setWestGuard(double *);
 
-        void reduceNorthBound(double*);
-        void reduceSouthBound(double*);
-        void reduceWestBound(double*);
-        void reduceEastBound(double*);
+        void reduceNorthBound(double *);
+        void reduceSouthBound(double *);
+        void reduceWestBound(double *);
+        void reduceEastBound(double *);
 
-        void print_field(std::ostream&);
+        void print_field(std::ostream &);
 
         // Member functions
         // void field_grad();                         // Uses central differences to calculate E field from Potential

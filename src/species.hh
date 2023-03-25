@@ -82,7 +82,7 @@ public:
     std::vector<part> vec;
 
     // charge field: Used for the jacobi iteration
-    //FCPIC::field *charge;
+    FCPIC::field *charge;
 
     // buffers to send data from MPI's data exchange
     std::vector<part> send_buffer_north;

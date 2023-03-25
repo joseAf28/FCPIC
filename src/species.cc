@@ -50,7 +50,7 @@ species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, floa
     recv_buffer_sw.reserve(np);
 
     // charge field initialization
-    //charge = new FCPIC::field();
+    charge = new FCPIC::field();
 
     // random number generator
     std::random_device dev;
@@ -86,7 +86,7 @@ species::~species()
     recv_buffer_sw.clear();
     recv_buffer_nw.clear();
 
-    delete charge;
+    // delete charge;
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
 
@@ -158,10 +158,10 @@ void species::get_charge()
     }
 
     // update Field Charge
-    charge->val = charge_vec;
-    charge->N_x = N_x;
-    charge->N_y = N_y;
-    charge->N = N_x * N_y;
+    // charge->val = charge_vec;
+    // charge->N_x = N_x;
+    // charge->N_y = N_y;
+    // charge->N = N_x * N_y;
 
     charge_vec.clear();
 }
@@ -517,14 +517,14 @@ void species::write_output_vec(const int rank, const int time)
     }
     Output_file << std::endl
                 << std::endl;
-    for (int i = 0; i < charge->val.size(); i++)
-    {
-        if (i % (N_x) == 0)
-            Output_file << std::endl;
+    // for (int i = 0; i < charge->val.size(); i++)
+    // {
+    //     if (i % (N_x) == 0)
+    //         Output_file << std::endl;
 
-        Output_file << std::setw(precision) << charge->val[i] << space;
-        // if (i % 4 == 0)
-    }
+    //     Output_file << std::setw(precision) << charge->val[i] << space;
+    //     // if (i % 4 == 0)
+    // }
 
     Output_file.close();
 }
