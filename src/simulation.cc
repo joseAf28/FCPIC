@@ -126,7 +126,7 @@ namespace FCPIC
         /////////////////////777////////////
 
         //---TESTES---
-        //PARA TESTAR COISAS USAR ESTE SÍTIO
+        // PARA TESTAR COISAS USAR ESTE SÍTIO
         /*
         std::cout << "Grid rank: " << grid_rank << std::endl;
         std::cout << "N_int_x: " << N_int_x << "   N_int_y: " << N_int_y << std::endl;
@@ -291,7 +291,7 @@ namespace FCPIC
         //
 
         part recv_dummy;
-        recv_dummy.ix = -1;
+        recv_dummy.ix = -1; // set to -1 as a way to check later if there was communication
         recv_dummy.iy = -1;
         lepton->recv_buffer_east.assign(lepton->size_recv_east, recv_dummy);
         lepton->recv_buffer_west.assign(lepton->size_recv_west, recv_dummy);
@@ -381,40 +381,52 @@ namespace FCPIC
                 Ex_field->val[POSITION] = (phi->val[WEST] - phi->val[EAST]) / (2.f * dx);
                 Ey_field->val[POSITION] = (phi->val[SOUTH] - phi->val[WEST]) / (2.f * dy);
             }
-        
-        if(grid_left == MPI_PROC_NULL){
-            if(bc[X_DIR]==CONDUCTIVE){
-                for(int i=0; i<=N_y; i++){
+
+        if (grid_left == MPI_PROC_NULL)
+        {
+            if (bc[X_DIR] == CONDUCTIVE)
+            {
+                for (int i = 0; i <= N_y; i++)
+                {
                     Ey_field->val[WEST_GUARD] = 0;
-                    Ex_field->val[WEST_GUARD] = - phi->val[WEST_BOUND] / dx;
-                    }
+                    Ex_field->val[WEST_GUARD] = -phi->val[WEST_BOUND] / dx;
+                }
             }
         }
 
-        if(grid_right == MPI_PROC_NULL){
-            if(bc[X_DIR]==CONDUCTIVE){
-                for(int i=0; i<=N_y; i++){
+        if (grid_right == MPI_PROC_NULL)
+        {
+            if (bc[X_DIR] == CONDUCTIVE)
+            {
+                for (int i = 0; i <= N_y; i++)
+                {
                     Ey_field->val[EAST_GUARD] = 0;
                     Ex_field->val[EAST_GUARD] = phi->val[EAST_BOUND] / dx;
-                    }
+                }
             }
         }
 
-        if(grid_top == MPI_PROC_NULL){
-            if(bc[Y_DIR]==CONDUCTIVE){
-                for(int j=0; j<=N_x; j++){
+        if (grid_top == MPI_PROC_NULL)
+        {
+            if (bc[Y_DIR] == CONDUCTIVE)
+            {
+                for (int j = 0; j <= N_x; j++)
+                {
                     Ex_field->val[NORTH_GUARD] = 0;
                     Ey_field->val[NORTH_GUARD] = phi->val[NORTH_BOUND] / dy;
-                    }
+                }
             }
         }
 
-        if(grid_bottom == MPI_PROC_NULL){
-            if(bc[Y_DIR]==CONDUCTIVE){
-                for(int j=0; j<=N_x; j++){
+        if (grid_bottom == MPI_PROC_NULL)
+        {
+            if (bc[Y_DIR] == CONDUCTIVE)
+            {
+                for (int j = 0; j <= N_x; j++)
+                {
                     Ex_field->val[SOUTH_GUARD] = 0;
-                    Ey_field->val[SOUTH_GUARD] = - phi->val[SOUTH_BOUND] / dy;
-                    }
+                    Ey_field->val[SOUTH_GUARD] = -phi->val[SOUTH_BOUND] / dy;
+                }
             }
         }
 
