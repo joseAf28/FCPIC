@@ -65,18 +65,14 @@ public:
     void advance_cell(int *);
 
     // particle pusher - leap frog method
-    void init_pusher(const float, const float);
-    void particle_pusher(const float, const float);
+    void init_pusher(FCPIC::field *, FCPIC::field *);
+    void particle_pusher(FCPIC::field *, FCPIC::field *);
 
     //!!!!!!!!!!!!!!!! methods for debugging
     void print();
     void write_output_vec(const int, const int);
     void write_output_buffer(const int, const int);
     void write_input_buffer(const int, const int);
-
-    //!!! dummy
-    void update_part();
-    void to_buffer();
 
     // array of particles
     std::vector<part> vec;

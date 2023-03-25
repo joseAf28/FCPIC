@@ -3,6 +3,7 @@
 
 int main(int argc, char **argv)
 {
+    // not used for now
     std::random_device dev;
     std::mt19937_64 rng(dev());
     std::normal_distribution<double> norm(3, 0.5);
@@ -49,18 +50,23 @@ int main(int argc, char **argv)
         vf[2] = 0.;
     }
 
-    //! constant field for now
-    float Ex = 0.;
-    float Ey = 0.;
+    //!! Test: All particles forced to move to top right corner
+    //! (external) constant field for now:
+
+    FCPIC::field *Ex = new FCPIC::field(range[0] + 1, range[1] + 1);
+    FCPIC::field *Ey = new FCPIC::field(range[0] + 1, range[1] + 1);
+
+    Ex->setValue(1.0);
+    Ey->setValue(1.5);
 
     // initializing species
     species test(name, ppc, range, vf, vth);
     test.set_x();
     test.set_u();
-    test.get_charge();
 
-    // getting initial charge field
+    test.get_charge(); // getting initial charge field
     // getting first electric field
+
     test.init_pusher(Ex, Ey); // first iteration of the particle pusher
 
     for (int counter = 0; counter < 5; counter++)
@@ -88,6 +94,9 @@ int main(int argc, char **argv)
         // std::cout << "End grid_rank: " << sim.grid_rank << std::endl;
     }
     std::cout << "End Loop" << std::endl;
+
+    delete Ex;
+    delete Ey;
 
     return 0;
 }

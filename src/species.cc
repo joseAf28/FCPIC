@@ -21,6 +21,7 @@ species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, floa
     // initializing vector with set_np_part() number: number of particles
     np = range[0] * ppc[0] * range[1] * ppc[1];
 
+    // number of cells in each direction of the process domain
     N_x = range[0] + 1;
     N_y = range[1] + 1;
 
@@ -157,35 +158,41 @@ void species::get_charge()
         charge_vec[ij + 1 + N_x] += wx * wy * q;
     }
     // update Field Charge
-    charge = new FCPIC::field(N_x, N_y, charge_vec);
+    charge = new FCPIC::field(N_x, N_y, charge_vec); // The physical domain, with no cell guards is sent
+
     charge_vec.clear();
 }
 
 //!! Define the Efield in each particle: missing feature
-void species::init_pusher(const float Ex, const float Ey)
+void species::init_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
 {
     int N_part = vec.size();
 
-    for (int counter = 0; counter < vec.size(); counter++)
+    for (int i = 0; i < vec.size(); i++)
     {
+        //! Interpolation inside the cell is missing
         // get E field in the particle position
+        int ij = vec[i].ix + N_x * vec[i].iy;
 
-        vec[counter].ux = vec[counter].ux - 0.5 * q / m * Ex * dt;
-        vec[counter].uy = vec[counter].uy - 0.5 * q / m * Ey * dt;
+        vec[i].ux = vec[i].ux - 0.5 * q / m * Ex->val[ij] * dt;
+        vec[i].uy = vec[i].uy - 0.5 * q / m * Ey->val[ij] * dt;
     }
 }
 
 //!! Define the Efield in each particle: missing feature
-void species::particle_pusher(const float Ex, const float Ey)
+void species::particle_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
 {
-    for (int counter = 0; counter < vec.size(); counter++)
+    for (int i = 0; i < vec.size(); i++)
     {
+        //! Interpolation inside the cell is missing
         // get E field in the particle position
-        vec[counter].ux = vec[counter].ux + q / m * Ex * dt;
-        vec[counter].uy = vec[counter].uy + q / m * Ey * dt;
+        int ij = vec[i].ix + N_x * vec[i].iy;
 
-        vec[counter].x = vec[counter].x + vec[counter].ux * dt;
-        vec[counter].y = vec[counter].y + vec[counter].uy * dt;
+        vec[i].ux = vec[i].ux + q / m * Ex->val[ij] * dt;
+        vec[i].uy = vec[i].uy + q / m * Ey->val[ij] * dt;
+
+        vec[i].x = vec[i].x + vec[i].ux * dt;
+        vec[i].y = vec[i].y + vec[i].uy * dt;
     }
 }
 
