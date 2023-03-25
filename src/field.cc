@@ -14,26 +14,27 @@ namespace FCPIC
         val.assign(N, 0.);
         // std::cout << __PRETTY_FUNCTION__ << std::endl;
     }
+    /*
+    field::field(int N_x, int N_y, std::vector<double> &value){
+        N_int_x = Nx;
+        N_int_y = Ny;
+        N_x = Nx + 2;
+        N_y = Ny + 2;
+        N = N_x * N_y;
+        val.reserve(N);
+        val = value;
+    }
+    */
 
-    // field::field(int N_x, int N_y, std::vector<double> &value)
-    // {
-    //     Nx = N_x;
-    //     Ny = N_y;
-    //     N = N_x * N_y;
-    //     phi.reserve(N);
-    //     phi = value;
-    //     Efieldx.assign(N, 0.);
-    //     Efieldy.assign(N, 0.);
-    //     bc = new BC_type[N];
-    // }
-
-    field::field(){
-        N_x = 0;
-        N_y = 0;
+    field::field(int Nx, int Ny, double* arr){
+        N_int_x = Nx;
+        N_int_y = Ny;
+        N_x = Nx + 2;
+        N_y = Ny + 2;
         N = N_x * N_y;
         val.assign(N, 0.);
-        //     Efieldx.assign(N, 0.);
-        //     Efieldy.assign(N, 0.);
+        for(int i=0; i<N; i++)
+            val[i] = arr[i];
     }
 
     // field::field(const field &obj)

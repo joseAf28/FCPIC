@@ -23,6 +23,8 @@ namespace FCPIC
         N = Npart / 10;
         N_int_x = std::sqrt((double)N / aspect);
         N_int_y = aspect * (double)N_int_x;
+        N_int_x = 3; //
+        N_int_y = 3; //
         N = N_int_x * N_int_y;
         N_x = N_int_x + 2;
         N_y = N_int_y + 2;
@@ -87,18 +89,25 @@ namespace FCPIC
 
         //---TESTES---
         //PARA TESTAR COISAS USAR ESTE SÍTIO
-        /*
+        
         std::cout << "Grid rank: " << grid_rank << std::endl;
         std::cout << "N_int_x: " << N_int_x << "   N_int_y: " << N_int_y << std::endl;
         std::cout << "N_x: " << N_x << "   N_y: " << N_y << std::endl;
-        field phi(N_int_x, N_int_y);
-        phi.setValue((double) grid_rank);
+        double array[25] = { 0, 1, 2, 3, 4,
+                             5, 6, 7, 8, 9,
+                            10,11,12,13,14,
+                            15,16,17,18,19,
+                            20,21,22,23,24};
+        for(int k = 0; k<25; k++)
+            array[k] += grid_rank*25;
+        field phi(N_int_x, N_int_y, array);
+        //phi.setValue((double) grid_rank);
         sleep(grid_rank);
         phi.print_field(std::cout);
         exchange_charge_buffers(&phi);
         sleep(grid_rank);
         phi.print_field(std::cout);
-        */
+        
     }
 
     void simulation::set_periodic_field_bc()
@@ -272,8 +281,43 @@ namespace FCPIC
             for (int j = 1; j <= N_int_x; j++)
             {
                 Ex_field->val[POSITION] = (phi->val[WEST] - phi->val[EAST]) / (2.f * dx);
-                Ey_field->val[POSITION] = (phi->val[NORTH] - phi->val[SOUTH]) / (2.f * dy);
+                Ey_field->val[POSITION] = (phi->val[SOUTH] - phi->val[WEST]) / (2.f * dy);
             }
+        
+        if(grid_left == MPI_PROC_NULL){
+            if(bc[X_DIR]==CONDUCTIVE){
+                for(int i=0; i<=N_y; i++)
+                    Ey_field[WEST_GUARD] = 0;
+                    Ex_field[WEST_GUARD] = - phi->val[WEST_BOUND] / dx;
+            }
+        }
+
+        if(grid_right == MPI_PROC_NULL){
+            if(bc[X_DIR]==CONDUCTIVE){
+                for(int i=0; i<=N_y; i++)
+                    Ey_field[EAST_GUARD] = 0;
+                    Ex_field[EAST_GUARD] = phi->val[EAST_BOUND] / dx;
+            }
+        }
+
+        if(grid_top == MPI_PROC_NULL){
+            if(bc[Y_DIR]==CONDUCTIVE){
+                for(int i=0; i<=N_x; i++)
+                    Ex_field[NORTH_GUARD] = 0;
+                    Ey_field[NORTH_GUARD] = phi->val[NORTH_BOUND] / dy;
+            }
+        }
+
+        if(grid_bottom == MPI_PROC_NULL){
+            if(bc[Y_DIR]==CONDUCTIVE){
+                for(int i=0; i<=N_x; i++)
+                    Ex_field[SOUTH_GUARD] = 0;
+                    Ey_field[SOUTH_GUARD] = - phi->val[SOUTH_BOUND] / dy;
+            }
+        }
+
+        exchange_phi_buffers(Ex_field);
+        exchange_phi_buffers(Ey_field);
     }
 
     /*
