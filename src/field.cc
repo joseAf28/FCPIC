@@ -43,6 +43,11 @@ namespace FCPIC
         val = arr;
     }
 
+    field::~field()
+    {
+        val.clear();
+    }
+
     void field::setValue(double value)
     {
         for (int i = 0; i < N; i++)
@@ -95,11 +100,6 @@ namespace FCPIC
     {
         for (int i = 1; i <= N_int_y; i++)
             val[EAST_BOUND] += arr[i - 1];
-    }
-
-    field::~field()
-    {
-        val.clear();
     }
 
     void field::print_field(std::ostream &stream)

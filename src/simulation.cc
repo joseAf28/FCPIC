@@ -9,11 +9,8 @@
 namespace FCPIC
 {
     /********************************************************
-    Solving a poisson equation in 2D parallely
-    Finite volume discretized equation used is UE + UW + UN + US - 4*UP = f*h^2
-     h is the spacing.
-     f is the forcing function.
-     Nx and Ny are the number of CVs in x and y direction respectively_
+    Solving the poisson equation in 2D parallely
+    N_int_x and N_int_y are the number of inner grid points in x and y direction respectively
     ***********************************************************/
 
     simulation::simulation(int argc, char **argv)
@@ -278,7 +275,7 @@ namespace FCPIC
 
     void simulation::exchange_particles_buffers(species *lepton)
     {
-        // Communication tp determine the size of the arrays of each buffer
+        // Communication to determine the size of the arrays of each buffer
         MPI_Sendrecv(&(lepton->size_send_north), 1, MPI_INT, grid_top, 0, &(lepton->size_recv_south), 1, MPI_INT, grid_bottom, 0, grid_comm, &status);
         MPI_Sendrecv(&(lepton->size_send_south), 1, MPI_INT, grid_bottom, 0, &(lepton->size_recv_north), 1, MPI_INT, grid_top, 0, grid_comm, &status);
         MPI_Sendrecv(&(lepton->size_send_west), 1, MPI_INT, grid_left, 0, &(lepton->size_recv_east), 1, MPI_INT, grid_right, 0, grid_comm, &status);
@@ -290,8 +287,9 @@ namespace FCPIC
         MPI_Sendrecv(&(lepton->size_send_se), 1, MPI_INT, grid_se, 0, &(lepton->size_recv_nw), 1, MPI_INT, grid_nw, 0, grid_comm, &status);
         //
 
+        // allocate memory for the vectors that are going to receive the MPI particles
         part recv_dummy;
-        recv_dummy.ix = -1; // set to -1 as a way to check later if there was communication
+        recv_dummy.ix = -1; // set to -1 as a way to check later if there was "actual" communication
         recv_dummy.iy = -1;
         lepton->recv_buffer_east.assign(lepton->size_recv_east, recv_dummy);
         lepton->recv_buffer_west.assign(lepton->size_recv_west, recv_dummy);
@@ -370,7 +368,7 @@ namespace FCPIC
             loop++;
         }
 
-        printf("Maximum residual is %e and number of iterations are %ld and I am process %d \n", res, loop, grid_rank);
+        std::cout << "Maximum residual: " << res << "  | Number of iterations: " << loop << " | rank: " << grid_rank << std::endl;
     }
 
     void simulation::set_E_value(field *phi, field *Ex_field, field *Ey_field)

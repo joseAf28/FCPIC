@@ -65,6 +65,7 @@ public:
     void advance_cell(int *);
 
     // particle pusher - leap frog method
+    void field_inter(FCPIC::field *, FCPIC::field *, float &, float &, int);
     void init_pusher(FCPIC::field *, FCPIC::field *);
     void particle_pusher(FCPIC::field *, FCPIC::field *);
 

@@ -28,21 +28,14 @@ namespace FCPIC
         simulation(int, char **);
         ~simulation();
 
-        // Creates a virtual cartesian topology
+        // Creates a virtual cartesian topology and creates MPI Datatypes
         void setup_proc_grid();
-
-        void set_periodic_field_bc();
-        void set_conductive_field_bc();
-
-        // Packs data for communication across processes
-        // void setup_MPI_datatypes(int, int, int);
-
-        // sets flags for ghost and buffer cells
-        // void set_ghost_buffer_flag(domain &);
-
         void get_diagonal_rank(int *, int &);
 
         // Sets boundary condition values to boundary cells
+        void set_periodic_field_bc();
+        void set_conductive_field_bc();
+
         // void set_bc(field *);
 
         // exchanges data between processes

@@ -51,7 +51,7 @@ int main(int argc, char **argv)
     }
 
     //!! Test: All particles forced to move to top right corner
-    //! (external) constant field for now:
+    //! (external) constant field for now
 
     FCPIC::field *Ex = new FCPIC::field(range[0] + 1, range[1] + 1);
     FCPIC::field *Ey = new FCPIC::field(range[0] + 1, range[1] + 1);
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
     test.set_u();
 
     test.get_charge(); // getting initial charge field
-    // getting first electric field
+    // getting first consistent electric field
 
     test.init_pusher(Ex, Ey); // first iteration of the particle pusher
 
@@ -74,9 +74,9 @@ int main(int argc, char **argv)
         int flags_coords_mpi[5] = {sim.grid_rank, sim.grid_top, sim.grid_bottom, sim.grid_right, sim.grid_left};
 
         // compute de potential field with the jacobi iteration
-        // getting the E field interpolation
+        // getting the E field in the grid
 
-        test.particle_pusher(Ex, Ey);
+        test.particle_pusher(Ex, Ey); // includes field interpolation at particle position
         test.advance_cell(flags_coords_mpi);
 
         // test.write_output_vec(counter, sim.grid_rank); // debugging species list
@@ -97,6 +97,7 @@ int main(int argc, char **argv)
 
     delete Ex;
     delete Ey;
+    delete vf;
 
     return 0;
 }

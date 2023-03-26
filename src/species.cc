@@ -163,6 +163,29 @@ void species::get_charge()
     charge_vec.clear();
 }
 
+void species::field_inter(FCPIC::field *Ex, FCPIC::field *Ey, float &Ex_i, float &Ey_i, int counter)
+{ // field interpolation for both Ex and Ey for each individual particle
+  //! seems working fine: more testing later
+
+    //! Assuming that Ey and Ex fields have the dimensional properties (as expected)
+    int nx = Ex->N_x;
+    int ij = vec[counter].ix + nx * vec[counter].iy;
+
+    float wx = vec[counter].x;
+    float wy = vec[counter].y;
+
+    float Aij = (dx - wx) * (dy - wy);
+    float Aij_plus1 = wx * (dy - wy);
+    float Aij_plusnx = (dx - wx) * wy;
+    float Aij_plusnx1 = wx * wy;
+
+    float Ex_aux = Aij * Ex->val[ij] + Aij_plus1 * Ex->val[ij + 1] + Aij_plusnx * Ex->val[ij + nx] + Aij_plusnx1 * Ex->val[ij + nx + 1];
+    float Ey_aux = Aij * Ey->val[ij] + Aij_plus1 * Ey->val[ij + 1] + Aij_plusnx * Ey->val[ij + nx] + Aij_plusnx1 * Ey->val[ij + nx + 1];
+
+    Ex_i = Ex_aux / (dx * dy);
+    Ey_i = Ey_aux / (dx * dy);
+}
+
 //!! Define the Efield in each particle: missing feature
 void species::init_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
 {
@@ -170,26 +193,27 @@ void species::init_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
 
     for (int i = 0; i < vec.size(); i++)
     {
-        //! Interpolation inside the cell is missing
-        // get E field in the particle position
-        int ij = vec[i].ix + N_x * vec[i].iy;
+        float Ex_i = 0.f;
+        float Ey_i = 0.f;
 
-        vec[i].ux = vec[i].ux - 0.5 * q / m * Ex->val[ij] * dt;
-        vec[i].uy = vec[i].uy - 0.5 * q / m * Ey->val[ij] * dt;
+        field_inter(Ex, Ey, Ex_i, Ey_i, i);
+
+        vec[i].ux = vec[i].ux - 0.5 * q / m * Ex_i * dt;
+        vec[i].uy = vec[i].uy - 0.5 * q / m * Ey_i * dt;
     }
 }
 
-//!! Define the Efield in each particle: missing feature
 void species::particle_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
 {
     for (int i = 0; i < vec.size(); i++)
     {
-        //! Interpolation inside the cell is missing
-        // get E field in the particle position
-        int ij = vec[i].ix + N_x * vec[i].iy;
+        float Ex_i = 0.f;
+        float Ey_i = 0.f;
 
-        vec[i].ux = vec[i].ux + q / m * Ex->val[ij] * dt;
-        vec[i].uy = vec[i].uy + q / m * Ey->val[ij] * dt;
+        field_inter(Ex, Ey, Ex_i, Ey_i, i);
+
+        vec[i].ux = vec[i].ux + q / m * Ex_i * dt;
+        vec[i].uy = vec[i].uy + q / m * Ey_i * dt;
 
         vec[i].x = vec[i].x + vec[i].ux * dt;
         vec[i].y = vec[i].y + vec[i].uy * dt;
