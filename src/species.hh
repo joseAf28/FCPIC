@@ -56,13 +56,13 @@ public:
     void set_x();
     void set_u();
 
-    void get_charge();
+    void get_charge(FCPIC::field *);
 
     // methods used for MPI communication
     // !Integrate these methods with the particle pusher
     void prepare_buffer();
     void update_part_list();
-    void advance_cell(int *);
+    bool advance_cell(int *);
 
     // particle pusher - leap frog method
     void field_inter(FCPIC::field *, FCPIC::field *, float &, float &, int);
@@ -79,7 +79,7 @@ public:
     std::vector<part> vec;
 
     // charge field: Used for the jacobi iteration
-    FCPIC::field *charge;
+    //FCPIC::field *charge;
 
     // buffers to send data from MPI's data exchange
     std::vector<part> send_buffer_north;
@@ -130,6 +130,9 @@ public:
     // simulation box info
     int N_x; // number of x grid points
     int N_y; // number of y grid points
+
+    int N_int_x; // number of x grid points
+    int N_int_y; // number of y grid points
 
 private:
     // species name
