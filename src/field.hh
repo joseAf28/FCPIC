@@ -31,6 +31,11 @@
 #define NORTH i *N_x + j + N_x
 #define WEST i *N_x + j - 1
 #define EAST i *N_x + j + 1
+#define NORTHWEST i *N_x + j + N_x - 1
+#define NORTHEAST i *N_x + j + N_x + 1
+#define SOUTHWEST i *N_x + j - N_x - 1
+#define SOUTHEAST i *N_x + j - N_x + 1
+
 
 namespace FCPIC
 {

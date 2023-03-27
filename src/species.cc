@@ -2,7 +2,7 @@
 #include "math.h"
 #include "mpi.h"
 
-species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, float *vth_a) : name(name_a), charge(nullptr)
+species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, float *vth_a) : name(name_a)
 {
     ppc[0] = ppc_a[0];
     ppc[1] = ppc_a[1];
@@ -18,12 +18,15 @@ species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, floa
     vth[1] = vth_a[1];
     vth[2] = vth_a[2];
 
-    // initializing vector with set_np_part() number: number of particles
-    np = range[0] * ppc[0] * range[1] * ppc[1];
-
     // number of cells in each direction of the process domain
-    N_x = range[0] + 1;
-    N_y = range[1] + 1;
+    N_int_x = range[0]+1;
+    N_int_y = range[1]+1;
+
+    N_x = range[0] + 3;
+    N_y = range[1] + 3;
+
+    // initializing vector with set_np_part() number: number of particles
+    np = (N_int_x+1) * ppc[0] * (N_int_y+1)  * ppc[1];
 
     // reserve space for the arrays of particles
     part A;
@@ -84,7 +87,6 @@ species::~species()
     recv_buffer_sw.clear();
     recv_buffer_nw.clear();
 
-    delete charge;
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
 
@@ -119,14 +121,14 @@ void species::set_x()
 
     int ip = 0;
     //! Uniform Density of Particles
-    for (int j = 0; j < range[1]; j++)
+    for (int j = 0; j <= N_int_x; j++)
     {
-        for (int i = 0; i < range[0]; i++)
+        for (int i = 0; i <= N_int_y; i++)
         {
             for (int k = 0; k < npcell; k++)
             {
-                vec[ip].ix = i;
-                vec[ip].iy = j;
+                vec[ip].ix = j;
+                vec[ip].iy = i;
                 vec[ip].x = loccell[2 * k];
                 vec[ip].y = loccell[2 * k + 1];
                 ip = ip + 1;
@@ -136,62 +138,57 @@ void species::set_x()
     loccell.clear();
 }
 
-void species::get_charge()
-{
-    //! charge vec with no ghost cells: ghost cells are going to be taken care in Fields class
-    if (charge != nullptr)
-        delete charge;
+void species::get_charge(FCPIC::field *charge){
+    charge->setValue(0.f);
 
-    std::vector<double> charge_vec((N_x) * (N_y), 0.f);
+    int i, j;
+    float wx, wy;
+    for (int k = 0; k < np; k++){
+        i=vec[k].iy;
+        j=vec[k].ix;
+        wx = vec[k].x;
+        wy = vec[k].y;
 
-    for (int i = 0; i < vec.size(); i++)
-    {
-        int ij = vec[i].ix + N_x * vec[i].iy;
-
-        float wx = vec[i].x;
-        float wy = vec[i].y;
+        //std::cout << wx << "  " << wy << "\n";
 
         // divide by dx*dy
-        charge_vec[ij] += (dx - wx) * (dy - wy) * q;
-        charge_vec[ij + 1] += wx * (dy - wy) * q;
-        charge_vec[ij + N_x] += (dx - wx) * wy * q;
-        charge_vec[ij + 1 + N_x] += wx * wy * q;
+        charge->val[POSITION] += (dx - wx) * (dy - wy) * q;
+        charge->val[EAST] += wx * (dy - wy) * q;
+        charge->val[NORTH] += (dx - wx) * wy * q;
+        charge->val[NORTHEAST] += wx * wy * q;
     }
-    // update Field Charge
-    charge = new FCPIC::field(N_x, N_y, charge_vec); // The physical domain, with no cell guards is sent
-
-    charge_vec.clear();
 }
 
-void species::field_inter(FCPIC::field *Ex, FCPIC::field *Ey, float &Ex_i, float &Ey_i, int counter)
-{ // field interpolation for both Ex and Ey for each individual particle
-  //! seems working fine: more testing later
-
-    //! Assuming that Ey and Ex fields have the dimensional properties (as expected)
-    int nx = Ex->N_x;
-    int ij = vec[counter].ix + nx * vec[counter].iy;
+void species::field_inter(FCPIC::field *Ex, FCPIC::field *Ey, float &Ex_i, float &Ey_i, int counter){ 
+    int i = vec[counter].iy;
+    int j = vec[counter].ix;
 
     float wx = vec[counter].x;
     float wy = vec[counter].y;
 
-    float Aij = (dx - wx) * (dy - wy);
-    float Aij_plus1 = wx * (dy - wy);
-    float Aij_plusnx = (dx - wx) * wy;
-    float Aij_plusnx1 = wx * wy;
+    float A_pos = (dx - wx) * (dy - wy);
+    float A_e = wx * (dy - wy);
+    float A_n = (dx - wx) * wy;
+    float A_ne = wx * wy;
 
-    float Ex_aux = Aij * Ex->val[ij] + Aij_plus1 * Ex->val[ij + 1] + Aij_plusnx * Ex->val[ij + nx] + Aij_plusnx1 * Ex->val[ij + nx + 1];
-    float Ey_aux = Aij * Ey->val[ij] + Aij_plus1 * Ey->val[ij + 1] + Aij_plusnx * Ey->val[ij + nx] + Aij_plusnx1 * Ey->val[ij + nx + 1];
-
-    Ex_i = Ex_aux / (dx * dy);
-    Ey_i = Ey_aux / (dx * dy);
+    Ex_i = A_pos * Ex->val[POSITION] 
+         + A_e * Ex->val[EAST] 
+         + A_n * Ex->val[NORTH] 
+         + A_ne * Ex->val[NORTHEAST];
+    
+    Ey_i = A_pos * Ey->val[POSITION] 
+         + A_e * Ey->val[EAST] 
+         + A_n * Ey->val[NORTH] 
+         + A_ne * Ey->val[NORTHEAST];
+    
+    Ex_i /= (dx * dy);
+    Ey_i /= (dx * dy);
 }
 
 //!! Define the Efield in each particle: missing feature
-void species::init_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
-{
-    int N_part = vec.size();
+void species::init_pusher(FCPIC::field *Ex, FCPIC::field *Ey){
 
-    for (int i = 0; i < vec.size(); i++)
+    for (int i = 0; i < np; i++)
     {
         float Ex_i = 0.f;
         float Ey_i = 0.f;
@@ -203,9 +200,9 @@ void species::init_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
     }
 }
 
-void species::particle_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
-{
-    for (int i = 0; i < vec.size(); i++)
+void species::particle_pusher(FCPIC::field *Ex, FCPIC::field *Ey){
+    
+    for (int i = 0; i < np; i++)
     {
         float Ex_i = 0.f;
         float Ey_i = 0.f;
@@ -220,220 +217,141 @@ void species::particle_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
     }
 }
 
-void species::advance_cell(int *ranks_mpi)
+bool species::advance_cell(int *ranks_mpi)
 { // ranks_mpi[0] - rank, ranks_mpi[1] - top, ranks_mpi[2] - bottom,
     //  ranks_mpi[3] - right, ranks_mpi[4] - left
-    for (int counter = 0; counter < vec.size(); counter++)
+    bool changes_made = false;
+    for (int counter = 0; counter < np; counter++)
     {
-        float dx = 1.f;
-        float dy = 1.f;
+        if(vec[counter].x >=0 && vec[counter].x <dx && vec[counter].y >=0 && vec[counter].y <dx)
+            continue;
+        
+        changes_made = true;
+        
+        vec[counter].ix += floor(vec[counter].x / dx);
+        vec[counter].x = fmod(vec[counter].x, dx);
 
-        float posx = vec[counter].x;
-        float posy = vec[counter].y;
-
-        bool xmin_cond = posx < 0.f;
-        bool xmax_cond = posx > dx;
-        bool ymin_cond = posy < 0.f;
-        bool ymax_cond = posy > dy;
-
-        // // Debugging motion
-        // std::cout << "Init ****************" << std::endl;
-        // std::cout << "cell (" << vec[counter].ix << ", " << vec[counter].iy << ")" << std::endl;
-        // std::cout << "x:" << vec[counter].x << std::endl;
-        // std::cout << "y: " << vec[counter].y << std::endl;
-        // std::cout << "ux: " << vec[counter].ux << std::endl;
-        // std::cout << "uy: " << vec[counter].uy << std::endl;
-        // std::cout << "---------- ****************" << std::endl;
-
-        while ((xmin_cond || xmax_cond || ymin_cond || ymax_cond))
-        {
-            if (xmin_cond)
-            {
-                vec[counter].x = dx - fabs(posx);
-                vec[counter].ix = vec[counter].ix - 1;
-            }
-            if (xmax_cond)
-            {
-                vec[counter].x = posx - dx;
-                vec[counter].ix = vec[counter].ix + 1;
-            }
-            if (ymin_cond)
-            {
-                vec[counter].y = dy - fabs(posy);
-                vec[counter].iy = vec[counter].iy - 1;
-            }
-            if (ymax_cond)
-            {
-                vec[counter].y = posy - dy;
-                vec[counter].iy = vec[counter].iy + 1;
-            }
-            posx = vec[counter].x;
-            posy = vec[counter].y;
-
-            xmin_cond = posx < 0.f;
-            xmax_cond = posx > dx;
-            ymin_cond = posy < 0.f;
-            ymax_cond = posy > dy;
+        if(vec[counter].x<0){
+            vec[counter].x += dx;
         }
 
-        // // debugging the particles' motions inside the cell
-        // std::cout << "mid  ****************" << std::endl;
-        // std::cout << "cell (" << vec[counter].ix << ", " << vec[counter].iy << ")" << std::endl;
-        // std::cout << "x:" << vec[counter].x << std::endl;
-        // std::cout << "y: " << vec[counter].y << std::endl;
-        // std::cout << "ux: " << vec[counter].ux << std::endl;
-        // std::cout << "uy: " << vec[counter].uy << std::endl;
-        // std::cout << "---------- ****************" << std::endl;
+        vec[counter].iy += floor(vec[counter].y / dy);
+        vec[counter].y = fmod(vec[counter].y, dy);
 
+        if(vec[counter].y<0){
+            vec[counter].y += dy;
+        }
+        
         bool flag_top = ranks_mpi[1] == MPI_PROC_NULL;
         bool flag_bottom = ranks_mpi[2] == MPI_PROC_NULL;
         bool flag_right = ranks_mpi[3] == MPI_PROC_NULL;
         bool flag_left = ranks_mpi[4] == MPI_PROC_NULL;
 
-        int reflection = false; // check if we have reflection or not
+        bool ixmin_cond = vec[counter].ix <= -1;
+        bool ixmax_cond = vec[counter].ix > N_int_x;
+        bool iymin_cond = vec[counter].iy <= -1;
+        bool iymax_cond = vec[counter].iy > N_int_y;
 
-        if (flag_top || flag_bottom || flag_right || flag_left) // non periodic - physical - boundaries
-        {
-            // std::cout << "grid_rank: " << ranks_mpi[0] << " reflection" << std::endl;
-            // reflection of the particles
-            if (flag_left && vec[counter].ix < 0)
-            {
-                vec[counter].ux = fabs(vec[counter].ux);
-                vec[counter].ix = 0;
-                vec[counter].x = 0.;
-                vec[counter].flag = BULK;
-                reflection = true;
+        bool send_N_true = false;
+        bool send_S_true = false;
+        bool send_W_true = false;
+        bool send_E_true = false;
+
+        if(ixmin_cond){
+            if(flag_left){
+                vec[counter].x = dx - vec[counter].x;
+                vec[counter].ix = -vec[counter].ix - 1;
+                vec[counter].ux = -vec[counter].ux;
             }
-
-            if (flag_right && vec[counter].ix >= range[0])
-            {
-                vec[counter].ux = -fabs(vec[counter].ux);
-                vec[counter].ix = range[0] - 1;
-                vec[counter].x = dx;
-                vec[counter].flag = BULK;
-                reflection = true;
+            else{
+                vec[counter].ix = vec[counter].ix + N_int_x;
+                send_W_true = true;
             }
-
-            if (flag_bottom && vec[counter].iy < 0)
-            {
-                vec[counter].uy = fabs(vec[counter].uy);
-                vec[counter].iy = 0;
-                vec[counter].y = 0.;
-                vec[counter].flag = BULK;
-                reflection = true;
-            }
-
-            if (flag_top && vec[counter].iy >= range[1])
-            {
-                vec[counter].uy = -fabs(vec[counter].uy);
-                vec[counter].iy = range[1] - 1;
-                vec[counter].y = dx;
-                vec[counter].flag = BULK;
-                reflection = true;
-            }
-
-            // assunption: reflection takes priority over exchange particles with MPI
-            if (vec[counter].ix < 0 && reflection == true)
-                vec[counter].ix = 0;
-
-            if (vec[counter].iy < 0 && reflection == true)
-                vec[counter].iy = 0;
-
-            if (vec[counter].ix >= range[0] && reflection == true)
-                vec[counter].ix = range[0] - 1;
-
-            if (vec[counter].iy >= range[1] && reflection == true)
-                vec[counter].iy = vec[counter].iy - range[1];
-
-            if (reflection == true)
-                continue;
         }
 
-        // std::cout << "end ****************" << std::endl;
-        // std::cout << "cell (" << vec[counter].ix << ", " << vec[counter].iy << ")" << std::endl;
-        // std::cout << "x:" << vec[counter].x << std::endl;
-        // std::cout << "y: " << vec[counter].y << std::endl;
-        // std::cout << "ux: " << vec[counter].ux << std::endl;
-        // std::cout << "uy: " << vec[counter].uy << std::endl;
-        // std::cout << "---------- ****************" << std::endl;
+        if(iymin_cond){
+            if(flag_bottom){
+                vec[counter].y = dy - vec[counter].y;
+                vec[counter].iy = -vec[counter].iy - 1;
+                vec[counter].uy = -vec[counter].uy;
+            }
+            else{
+                vec[counter].iy = vec[counter].iy + N_int_y;
+                send_S_true = true;
+            }
+        }
 
-        // check if particle is going to be passed for MPI
-        bool ixmin_cond = vec[counter].ix <= -1;
-        bool ixmax_cond = vec[counter].ix >= range[0];
-        bool iymin_cond = vec[counter].iy <= -1;
-        bool iymax_cond = vec[counter].iy >= range[1];
+        if(ixmax_cond){
+            if(flag_right){
+                vec[counter].x = dx - vec[counter].x;
+                vec[counter].ix = 2*N_int_x-vec[counter].ix + 1;
+                vec[counter].ux = -vec[counter].ux;
+            }
+            else{
+                vec[counter].ix = vec[counter].ix - N_int_x;
+                send_E_true = true;
+            }
+        }
+
+        if(iymax_cond){
+            if(flag_top){
+                vec[counter].y = dy - vec[counter].y;
+                vec[counter].iy = 2*N_int_y-vec[counter].iy + 1;
+                vec[counter].uy = -vec[counter].uy;
+            }
+            else{
+                vec[counter].iy = vec[counter].iy - N_int_y;
+                send_N_true = true;
+            }
+        }
 
         if (ranks_mpi[0] != MPI_PROC_NULL) // periodic
         {
-            while (vec[counter].ix < 0)
-                vec[counter].ix = vec[counter].ix + range[0];
-
-            while (vec[counter].iy < 0)
-                vec[counter].iy = vec[counter].iy + range[1];
-
-            while (vec[counter].ix >= range[0])
-                vec[counter].ix = vec[counter].ix - range[0];
-
-            while (vec[counter].iy >= range[1])
-                vec[counter].iy = vec[counter].iy - range[1];
-
             // north buffer
-            if ((!ixmin_cond) && (!ixmax_cond) && iymax_cond)
-            {
-                // std::cout << "north" << std::endl;
+            if ((!send_W_true) && (!send_E_true) && send_N_true){
                 send_buffer_north.push_back(vec[counter]);
-                vec[counter].flag = SEND; //!!!!mark to delete in prepare_to_buffer method
-            }                             // ne buffer
-            else if (ixmax_cond && iymax_cond)
-            {
-                // std::cout << "ne" << std::endl;
+                vec[counter].flag = SEND; 
+            }                             
+            // ne buffer
+            else if (send_N_true && send_E_true){
                 send_buffer_ne.push_back(vec[counter]);
                 vec[counter].flag = SEND;
-            } // nw buffer
-            else if (ixmin_cond && iymax_cond)
-            {
-                // std::cout << "nw" << std::endl;
+            } 
+            // nw buffer
+            else if (send_N_true && send_W_true){
                 send_buffer_nw.push_back(vec[counter]);
                 vec[counter].flag = SEND;
-            } // south buffer
-            else if ((!ixmin_cond) && (!ixmax_cond) && iymin_cond)
-            {
-                // std::cout << "south" << std::endl;
+            } 
+            // south buffer
+            else if ((!send_W_true) && (!send_E_true) && send_S_true){
                 send_buffer_south.push_back(vec[counter]);
                 vec[counter].flag = SEND;
-            } // se buffer
-            else if (ixmax_cond && iymin_cond)
-            {
-                // std::cout << "se" << std::endl;
+            } 
+            // se buffer
+            else if (send_S_true && send_E_true){
                 send_buffer_se.push_back(vec[counter]);
                 vec[counter].flag = SEND;
-            } // sw buffer
-            else if (ixmin_cond && iymin_cond)
-            {
-                // std::cout << "sw" << std::endl;
+            } 
+            // sw buffer
+            else if (send_S_true && send_W_true){
                 send_buffer_sw.push_back(vec[counter]);
                 vec[counter].flag = SEND;
-            } // east buffer
-            else if (ixmax_cond && (!iymin_cond) && (!iymax_cond))
-            {
-                // std::cout << "east" << std::endl;
+            } 
+            // east buffer
+            else if (send_E_true && (!send_N_true) && (!send_S_true)){
                 send_buffer_east.push_back(vec[counter]);
                 vec[counter].flag = SEND;
-            } // west
-            else if (ixmin_cond && (!iymin_cond) && (!iymax_cond))
-            {
-                // std::cout << "west" << std::endl;
+            } 
+            // west
+            else if (send_W_true && (!send_N_true) && (!send_S_true)){
                 send_buffer_west.push_back(vec[counter]);
                 vec[counter].flag = SEND;
             }
-            else
-            {
-                // std::cout << "Nothing happens" << std::endl;
-            }
+            else{}
         }
     }
+    return changes_made;
 }
-
 void species::prepare_buffer()
 {
     // determine the size of the arrays that Exchange particles in MPI
@@ -452,6 +370,7 @@ void species::prepare_buffer()
                              { return (obj.flag == SEND); }),
               vec.end());
 }
+
 
 void species::update_part_list()
 {
@@ -560,7 +479,7 @@ void species::write_output_vec(const int rank, const int time)
     }
     Output_file << std::endl
                 << std::endl;
-
+    /*
     if (charge != nullptr)
     {
         for (int i = 0; i < charge->val.size(); i++)
@@ -572,7 +491,7 @@ void species::write_output_vec(const int rank, const int time)
             // if (i % 4 == 0)
         }
     }
-
+    */
     Output_file.close();
 }
 

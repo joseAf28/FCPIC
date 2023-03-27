@@ -15,19 +15,23 @@ namespace FCPIC
 
     simulation::simulation(int argc, char **argv)
     {
-        aspect = .5; // (INPUT) y_len = aspect (x_len always norm to 1)
+        aspect = 1; // (INPUT) y_len = aspect (x_len always norm to 1)
         Npart = 500; // (INPUT)
         N = Npart / 10;
         N_int_x = std::sqrt((double)N / aspect);
         N_int_y = aspect * (double)N_int_x;
-        N_int_x = 3; //
-        N_int_y = 3; //
+        N_int_x = 11; //
+        N_int_y = 11; //
         N = N_int_x * N_int_y;
         N_x = N_int_x + 2;
         N_y = N_int_y + 2;
 
+
         dx = 1 / (double)N_x;
         dy = aspect / (double)N_y;
+
+        dx = 1; //
+        dy = 1; //
 
         MPI_Init(&argc, &argv);
 
@@ -177,7 +181,7 @@ namespace FCPIC
     void simulation::exchange_phi_buffers(field *phi)
     {
         int i, j;
-
+        /*
         // Boundary conditions
         if (grid_left == MPI_PROC_NULL)
         {
@@ -222,7 +226,7 @@ namespace FCPIC
                 phi->setSouthGuard(Y_guard_data);
             }
         }
-
+        */
         i = 1;
         j = 0;
 
@@ -286,7 +290,6 @@ namespace FCPIC
         MPI_Sendrecv(&(lepton->size_send_nw), 1, MPI_INT, grid_nw, 0, &(lepton->size_recv_se), 1, MPI_INT, grid_se, 0, grid_comm, &status);
         MPI_Sendrecv(&(lepton->size_send_se), 1, MPI_INT, grid_se, 0, &(lepton->size_recv_nw), 1, MPI_INT, grid_nw, 0, grid_comm, &status);
         //
-
         // allocate memory for the vectors that are going to receive the MPI particles
         part recv_dummy;
         recv_dummy.ix = -1; // set to -1 as a way to check later if there was "actual" communication
@@ -330,6 +333,7 @@ namespace FCPIC
 
         long int loop = 0;
 
+        phi->setValue(0.0);
         // Defining a new temporary field (temp is not part of the domain)
         field temp(N_x, N_y);
 
@@ -368,6 +372,8 @@ namespace FCPIC
             loop++;
         }
 
+        exchange_phi_buffers(phi);
+
         std::cout << "Maximum residual: " << res << "  | Number of iterations: " << loop << " | rank: " << grid_rank << std::endl;
     }
 
@@ -377,14 +383,14 @@ namespace FCPIC
             for (int j = 1; j <= N_int_x; j++)
             {
                 Ex_field->val[POSITION] = (phi->val[WEST] - phi->val[EAST]) / (2.f * dx);
-                Ey_field->val[POSITION] = (phi->val[SOUTH] - phi->val[WEST]) / (2.f * dy);
+                Ey_field->val[POSITION] = (phi->val[SOUTH] - phi->val[NORTH]) / (2.f * dy);
             }
 
         if (grid_left == MPI_PROC_NULL)
         {
             if (bc[X_DIR] == CONDUCTIVE)
             {
-                for (int i = 0; i <= N_y; i++)
+                for (int i = 0; i < N_y; i++)
                 {
                     Ey_field->val[WEST_GUARD] = 0;
                     Ex_field->val[WEST_GUARD] = -phi->val[WEST_BOUND] / dx;
@@ -396,7 +402,7 @@ namespace FCPIC
         {
             if (bc[X_DIR] == CONDUCTIVE)
             {
-                for (int i = 0; i <= N_y; i++)
+                for (int i = 0; i < N_y; i++)
                 {
                     Ey_field->val[EAST_GUARD] = 0;
                     Ex_field->val[EAST_GUARD] = phi->val[EAST_BOUND] / dx;
@@ -408,7 +414,7 @@ namespace FCPIC
         {
             if (bc[Y_DIR] == CONDUCTIVE)
             {
-                for (int j = 0; j <= N_x; j++)
+                for (int j = 0; j < N_x; j++)
                 {
                     Ex_field->val[NORTH_GUARD] = 0;
                     Ey_field->val[NORTH_GUARD] = phi->val[NORTH_BOUND] / dy;
@@ -420,7 +426,7 @@ namespace FCPIC
         {
             if (bc[Y_DIR] == CONDUCTIVE)
             {
-                for (int j = 0; j <= N_x; j++)
+                for (int j = 0; j < N_x; j++)
                 {
                     Ex_field->val[SOUTH_GUARD] = 0;
                     Ey_field->val[SOUTH_GUARD] = -phi->val[SOUTH_BOUND] / dy;

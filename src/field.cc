@@ -5,8 +5,8 @@ namespace FCPIC
 {
     // Constructors
     // allocates memory to the field variables equal to the number of cells in the domain
-    field::field()
-    {
+    field::field(){
+
     }
 
     field::field(int Nx, int Ny)
