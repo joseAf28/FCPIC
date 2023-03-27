@@ -146,10 +146,17 @@ void species::get_charge()
 
     for (int i = 0; i < vec.size(); i++)
     {
-        int ij = vec[i].ix + N_x * vec[i].iy;
+        int ij = vec[i].ix + (N_x)*vec[i].iy;
+        // int ij = (N_x) + 1 + vec[i].ix + (N_x)*vec[i].iy;
 
         float wx = vec[i].x;
         float wy = vec[i].y;
+
+        int ix = vec[i].ix;
+        int iy = vec[i].iy;
+
+        // if (ix == N_x - 2)
+        //     ij = ij + 3;
 
         // divide by dx*dy
         charge_vec[ij] += (dx - wx) * (dy - wy) * q;
@@ -157,7 +164,8 @@ void species::get_charge()
         charge_vec[ij + N_x] += (dx - wx) * wy * q;
         charge_vec[ij + 1 + N_x] += wx * wy * q;
     }
-    // update Field Charge
+
+    //  update Field Charge
     charge = new FCPIC::field(N_x, N_y, charge_vec); // The physical domain, with no cell guards is sent
 
     charge_vec.clear();

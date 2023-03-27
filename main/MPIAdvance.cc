@@ -15,7 +15,7 @@ int main(int argc, char **argv)
     // declaring species object
     std::string name = "electron";
     int ppc[2] = {1, 1};
-    int range[2] = {10, 10}; // number of cells in each direction
+    int range[2] = {20, 10}; // number of cells in each direction
 
     float *vf = new float[3];
     float vth[3] = {0.0, 0.0, 0.0};
@@ -64,7 +64,8 @@ int main(int argc, char **argv)
     test.set_x();
     test.set_u();
 
-    test.get_charge(); // getting initial charge field
+    test.get_charge();                        // getting initial charge field
+    test.write_output_vec(-1, sim.grid_rank); // debugging
     // getting first consistent electric field
 
     test.init_pusher(Ex, Ey); // first iteration of the particle pusher
