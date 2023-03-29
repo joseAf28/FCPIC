@@ -93,8 +93,8 @@ int main(int argc, char **argv)
             test.prepare_buffer();
             sim.exchange_particles_buffers(&test);
 
-            test.write_input_buffer(counter, sim.grid_rank);  // debugging communication
-            test.write_output_buffer(counter, sim.grid_rank); // debugging
+            // test.write_input_buffer(counter, sim.grid_rank);  // debugging communication
+            // test.write_output_buffer(counter, sim.grid_rank); // debugging
 
             test.update_part_list(); // update the list of particles of each ptocess because of the MPI exchange
         }
@@ -103,6 +103,27 @@ int main(int argc, char **argv)
         sim.exchange_charge_buffers(charge);
         sim.jacobi(phi, charge);
         sim.set_E_value(phi, Ex, Ey);
+
+        //! Writting in file;
+        std::fstream Ex_file;
+        std::string Ex_filename = "../results/Ex_field/rank:_" + std::to_string(sim.grid_rank) + "_counter_" + std::to_string(counter) + ".txt";
+        Ex_file.open(Ex_filename, std::ios::out);
+        Ex->print_field(Ex_file);
+        Ex_file.close();
+
+        std::fstream Ey_file;
+        std::string Ey_filename = "../results/Ey_field/rank:_" + std::to_string(sim.grid_rank) + "_counter_" + std::to_string(counter) + ".txt";
+        Ey_file.open(Ey_filename, std::ios::out);
+        Ey->print_field(Ey_file);
+        Ey_file.close();
+
+        std::fstream charge_file;
+        std::string charge_filename = "../results/charge_field/rank:_" + std::to_string(sim.grid_rank) + "_counter_" + std::to_string(counter) + ".txt";
+        charge_file.open(charge_filename, std::ios::out);
+        charge->print_field(charge_file);
+        charge_file.close();
+        ///
+
         // sleep(sim.grid_rank);
         // charge->print_field(std::cout);
 
@@ -111,17 +132,17 @@ int main(int argc, char **argv)
     }
     std::cout << "End Loop" << std::endl;
 
-    if (sim.grid_rank == 2)
-    {
-        charge->print_field(std::cout);
-        std::cout << "\n";
-        phi->print_field(std::cout);
-        std::cout << "\n";
-        Ex->print_field(std::cout);
-        std::cout << "\n";
-        Ey->print_field(std::cout);
-        std::cout << "\n";
-    }
+    // if (sim.grid_rank == 2)
+    // {
+    //     charge->print_field(std::cout);
+    //     std::cout << "\n";
+    //     phi->print_field(std::cout);
+    //     std::cout << "\n";
+    //     Ex->print_field(std::cout);
+    //     std::cout << "\n";
+    //     Ey->print_field(std::cout);
+    //     std::cout << "\n";
+    // }
 
     delete Ex;
     delete Ey;

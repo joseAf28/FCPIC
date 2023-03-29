@@ -15,7 +15,7 @@ namespace FCPIC
 
     simulation::simulation(int argc, char **argv)
     {
-        aspect = 1; // (INPUT) y_len = aspect (x_len always norm to 1)
+        aspect = 1;  // (INPUT) y_len = aspect (x_len always norm to 1)
         Npart = 500; // (INPUT)
         N = Npart / 10;
         N_int_x = std::sqrt((double)N / aspect);
@@ -25,7 +25,6 @@ namespace FCPIC
         N = N_int_x * N_int_y;
         N_x = N_int_x + 2;
         N_y = N_int_y + 2;
-
 
         dx = 1 / (double)N_x;
         dy = aspect / (double)N_y;
@@ -374,7 +373,7 @@ namespace FCPIC
 
         exchange_phi_buffers(phi);
 
-        std::cout << "Maximum residual: " << res << "  | Number of iterations: " << loop << " | rank: " << grid_rank << std::endl;
+        // std::cout << "Maximum residual: " << res << "  | Number of iterations: " << loop << " | rank: " << grid_rank << std::endl;
     }
 
     void simulation::set_E_value(field *phi, field *Ex_field, field *Ey_field)
