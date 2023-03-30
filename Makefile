@@ -49,7 +49,8 @@ exe := $(wildcard */*.exe) $(wildcard *.exe)
 obj := $(wildcard */*.o) $(wildcard *.o)  $(wildcard */*.pcm) $(wildcard */*.d)
 mylibs := $(wildcard */*.so) $(wildcard */*.a)
 
-txtOut := $(wildcard results/*.txt)
+txtOut := $(wildcard results/*/*.txt)
+pngOut := $(wildcard results/*/*.png)
 
 clean:
 	@echo cleaning dir...
@@ -57,4 +58,4 @@ clean:
 
 OutClean:
 	@echo cleaning results...
-	@rm -f $(txtOut)$
+	@rm -f $(txtOut) $(pngOut)
