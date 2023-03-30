@@ -16,7 +16,7 @@ INC := $(wildcard src/*.hh)
 
 
 mpiAd: MPIAdvance.exe
-	@cd bin; echo 'running program...\n \nOutput Results:'; mpirun ./MPIAdvance.exe;
+	@cd bin; echo 'running program...\n \nOutput Results:'; mpiexec -np 4 ./MPIAdvance.exe -infile=test.txt
 
 Advance: Advancetest.exe
 	@cd bin; echo 'running program...\n \nOutput Results:'; ./Advancetest.exe;

@@ -60,7 +60,7 @@ species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, floa
     rng = rng_aux;
     rand_gauss = norm_aux;
 
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    //std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
 
 species::~species()

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cmath>
 #include <string>
+#include <fstream>
 #include <iomanip>
 #include <unistd.h>
 
@@ -15,6 +16,14 @@ namespace FCPIC
 
     simulation::simulation(int argc, char **argv)
     {
+        int rank;
+        MPI_Init(&argc, &argv);
+        // retrieve the number of processes
+        MPI_Comm_size(MPI_COMM_WORLD, &n_Procs);
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        readArgs(argc,argv);
+        if(rank ==0)
+            printTitle();
         aspect = 1; // (INPUT) y_len = aspect (x_len always norm to 1)
         Npart = 500; // (INPUT)
         N = Npart / 10;
@@ -32,11 +41,6 @@ namespace FCPIC
 
         dx = 1; //
         dy = 1; //
-
-        MPI_Init(&argc, &argv);
-
-        // retrieve the number of processes
-        MPI_Comm_size(MPI_COMM_WORLD, &n_Procs);
 
         Y_guard_data = new double[N_x];
         X_guard_data = new double[N_int_y];
@@ -61,6 +65,205 @@ namespace FCPIC
         delete[] Y_guard_data, X_guard_data,
             Y_guard_data1, X_guard_data1,
             Y_guard_data2, X_guard_data2;
+    }
+
+    void simulation::printTitle(){
+        std::cout << "\n";
+        std::cout << "┌─────────────────────────────────────────────────────────────────────────────┐\n";
+        std::cout << "│ ▄▄▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄▄▄▄▄ │\n";
+        std::cout << "│ ████████████   ████████████   █████████████   █████████████   █████████████ │\n";
+        std::cout << "│ ████████████   ████████████   █████████████   █████████████   █████████████ │\n";
+        std::cout << "│ █████          █████          █████     ███       █████       █████         │\n";
+        std::cout << "│ █████          █████          █████     ███       █████       █████         │\n";
+        std::cout << "│ █████▄▄▄▄▄     █████          █████▄▄▄▄▄███       █████       █████         │\n";
+        std::cout << "│ ██████████     █████          █████████████       █████       █████         │\n";
+        std::cout << "│ █████          █████          █████               █████       █████         │\n";
+        std::cout << "│ █████          █████▄▄▄▄▄▄▄   █████           ▄▄▄▄█████▄▄▄▄   █████▄▄▄▄▄▄▄▄ │\n";
+        std::cout << "│ █████          ████████████   █████           █████████████   █████████████ │\n";
+        std::cout << "│ █████          ████████████   █████           █████████████   █████████████ │\n";
+        std::cout << "├─────────────────────────────────────────────────────────────────────────────┤\n";
+        std::cout << "│ 2D Particle-in-Cell code using MPI                                          │\n";
+        std::cout << "│ Guilherme Crispim, João Palma, José Afonso, ATCP 2023                       │\n";
+        std::cout << "└─────────────────────────────────────────────────────────────────────────────┘\n";
+        std::cout << "\n";
+        std::cout << "Simulation size: " << "\n";
+        std::cout << "Spatial discretization: "<< "\n";
+        std::cout << "MPI process grid: "<< "\n";
+        std::cout << "Number of MPI processes: "<< "\n";
+        std::cout << "\n";
+    }
+
+    void simulation::printHelp(){
+        std::cout << "\n";
+        std::cout << ">> mpiexec ./FCPIC.exec -infile=infile.txt\n";
+        std::cout << ">> mpiexec ./FCPIC.exec -npart=1000,2000 -charge=1,-1  ...\n";
+        std::cout << "\n";
+        std::cout << "-infile=fff           Read parameters from input file\n";
+        std::cout << "\n";
+        std::cout << "-npart=nn1,nn2,...    Particle number for all species\n";
+        std::cout << "                            Default: 1000\n";
+        std::cout << "-qom=qq1,qq2,...      Charge/mass of all species (in q_proton/m_electron)\n";
+        std::cout << "                            Default: -1\n";
+        std::cout << "-temp=tt1,tt2,...     Temperature of all species (in K)\n";
+        std::cout << "                            Default: 298\n";
+        std::cout << "-nxlen=lll            Horizontal length of the simulation box (in cm)\n";
+        std::cout << "                            Default: 1\n";
+        std::cout << "-nxproc=ppp           Number of MPI processes horizontally in the grid\n";
+        std::cout << "                            Default: Number of processes/2\n";
+        std::cout << "-nxsamples=sss        Number of discretization cells horizontally\n";
+        std::cout << "                            Default: 10\n";
+        std::cout << "-aspect=aaa           Box aspect ratio (ylen = aspect * xlen)\n";
+        std::cout << "                            Default: 1\n";
+        std::cout << "-simtime=ttt          Simulation time (in secs)\n";
+        std::cout << "                            Default: 1\n";
+        std::cout << "-boundcond=bbb        Boundary condition (0->periodic, 1->conductive)\n";
+        std::cout << "                            Default: 0\n";
+        std::cout << "\n"; 
+    }
+
+    void simulation::readArgs(int argc, char **argv){
+        std::vector<std::string> allArgs(argv, argv+argc);
+        std::vector<std::string> numbers;
+        std::string line, header, number;
+        int k;
+
+        for(auto & arg : allArgs){
+            k=0;
+            for(char &c : arg){
+                    if((c > 47 && c<58) || c == '.' || (c == '-' && k != 0))
+                        number.push_back(c);
+                    if(c == ','){
+                        numbers.push_back(number);
+                        number.clear();
+                        }
+                    if((c > 96 && c < 123) || (c == '-' && k == 0))
+                        header.push_back(c);
+                    if(c > 64 && c < 91)
+                        header.push_back(c+32);
+
+                    if(header.compare("-infile")==0){
+                        arg.erase(0,8);
+                        std::cout << arg << "\n";
+                        break;
+                    }
+                    k++;
+                }
+
+                if(header.compare("-help")==0){
+                    printHelp();
+                }
+
+                if(header.compare("-infile")==0){
+                        getParamsfromFile(arg);
+                        break;
+                    }
+
+                if(header.compare("-npart")==0){
+                    numbers.push_back(number);
+                    std::cout << "npart in, getting ";
+                    for(auto & num : numbers)
+                        std::cout << num << " ";
+                    std::cout << "\n";
+                }
+                if(header.compare("-qom")==0){
+                    numbers.push_back(number);
+                    std::cout << "qom in, getting ";
+                    for(auto & num : numbers)
+                        std::cout << num << " ";
+                    std::cout << "\n";
+                }
+                if(header.compare("-temp")==0){
+                    numbers.push_back(number);
+                    std::cout << "temp in, getting ";
+                    for(auto & num : numbers)
+                        std::cout << num << " ";
+                    std::cout << "\n";
+                }
+                if(header.compare("-xlen")==0)
+                    std::cout << "xlen in, getting " << number << "\n";
+                if(header.compare("-nxproc")==0)
+                    std::cout << "nxproc in, getting " << number << "\n";
+                if(header.compare("-nxsamples")==0)
+                    std::cout << "nxsamples in, getting " << number << "\n";
+                if(header.compare("-aspect")==0)
+                    std::cout << "aspect in, getting " << number << "\n";
+                if(header.compare("-simtime")==0)
+                    std::cout << "aspect in, getting " << number << "\n";
+                if(header.compare("-boundcond")==0)
+                    std::cout << "boundcond in, getting " << number << "\n";
+                
+                numbers.clear();
+                number.clear();
+                header.clear();
+        }
+    }
+
+    void simulation::getParamsfromFile(std::string filename){
+        
+            std::ifstream infile(filename);
+            std::vector<std::string> filelines, numbers;
+            std::string line, header, number;
+
+            while(getline(infile, line))
+                filelines.push_back(line);
+            
+            infile.close();
+            
+            for(auto & fline : filelines){
+                if(fline[0] == '#')
+                    continue;
+                
+                for(char &c : fline){
+                    if((c > 47 && c<58) || c == '.' || c == '-')
+                        number.push_back(c);
+                    if(c == ','){
+                        numbers.push_back(number);
+                        number.clear();
+                        }
+                    if(c > 96 && c < 123)
+                        header.push_back(c);
+                    if(c > 64 && c < 91)
+                        header.push_back(c+32);
+                }
+                
+                if(header.compare("npart")==0){
+                    numbers.push_back(number);
+                    std::cout << "npart in, getting ";
+                    for(auto & num : numbers)
+                        std::cout << num << " ";
+                    std::cout << "\n";
+                }
+                if(header.compare("qom")==0){
+                    numbers.push_back(number);
+                    std::cout << "qom in, getting ";
+                    for(auto & num : numbers)
+                        std::cout << num << " ";
+                    std::cout << "\n";
+                }
+                if(header.compare("temp")==0){
+                    numbers.push_back(number);
+                    std::cout << "temp in, getting ";
+                    for(auto & num : numbers)
+                        std::cout << num << " ";
+                    std::cout << "\n";
+                }
+                if(header.compare("xlen")==0)
+                    std::cout << "xlen in, getting " << number << "\n";
+                if(header.compare("nxproc")==0)
+                    std::cout << "nxproc in, getting " << number << "\n";
+                if(header.compare("nxsamples")==0)
+                    std::cout << "nxsamples in, getting " << number << "\n";
+                if(header.compare("aspect")==0)
+                    std::cout << "aspect in, getting " << number << "\n";
+                if(header.compare("simtime")==0)
+                    std::cout << "aspect in, getting " << number << "\n";
+                if(header.compare("boundcond")==0)
+                    std::cout << "boundcond in, getting " << number << "\n";
+                
+                numbers.clear();
+                number.clear();
+                header.clear();
+            }
     }
 
     // Creating a virtual cartesian topology
@@ -122,7 +325,7 @@ namespace FCPIC
         get_diagonal_rank(coords_nw, grid_nw);
         get_diagonal_rank(coords_sw, grid_sw);
 
-        std::cout << "grid_rank: " << grid_rank << " ne: " << grid_ne << " se: " << grid_se << " sw: " << grid_sw << " nw: " << grid_nw << std::endl;
+        //std::cout << "grid_rank: " << grid_rank << " ne: " << grid_ne << " se: " << grid_se << " sw: " << grid_sw << " nw: " << grid_nw << std::endl;
 
         /////////////////////777////////////
 
@@ -181,52 +384,7 @@ namespace FCPIC
     void simulation::exchange_phi_buffers(field *phi)
     {
         int i, j;
-        /*
-        // Boundary conditions
-        if (grid_left == MPI_PROC_NULL)
-        {
-            if (bc[Y_DIR] == CONDUCTIVE)
-            {
-                for (j = 0; j < N_int_y; j++)
-                    X_guard_data[j] = 0;
-
-                phi->setWestGuard(X_guard_data);
-            }
-        }
-
-        if (grid_right == MPI_PROC_NULL)
-        {
-            if (bc[Y_DIR] == CONDUCTIVE)
-            {
-                for (j = 0; j < N_int_y; j++)
-                    X_guard_data[j] = 0;
-
-                phi->setEastGuard(X_guard_data);
-            }
-        }
-
-        if (grid_top == MPI_PROC_NULL)
-        {
-            if (bc[X_DIR] == CONDUCTIVE)
-            {
-                for (int j = 0; j < N_x; j++)
-                    Y_guard_data[j] = 0;
-
-                phi->setNorthGuard(Y_guard_data);
-            }
-        }
-
-        if (grid_bottom == MPI_PROC_NULL)
-        {
-            if (bc[X_DIR] == CONDUCTIVE)
-            {
-                for (int j = 0; j < N_x; j++)
-                    Y_guard_data[j] = 0;
-
-                phi->setSouthGuard(Y_guard_data);
-            }
-        }
-        */
+        
         i = 1;
         j = 0;
 
@@ -356,7 +514,7 @@ namespace FCPIC
                                                 phi->val[EAST] + phi->val[WEST] -
                                                 charge->val[POSITION]);
 
-                    e = temp.val[POSITION] - phi->val[POSITION];
+                    e = fabs(temp.val[POSITION] - phi->val[POSITION]);
                     if (e > res) // norm infty: supremo
                         res = e;
                 }

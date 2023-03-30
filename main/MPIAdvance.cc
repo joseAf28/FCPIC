@@ -12,7 +12,7 @@ int main(int argc, char **argv)
     // initializaing simulation fields and MPI
     FCPIC::simulation sim(argc, argv);
     sim.set_conductive_field_bc();
-
+    
     // declaring species object
     std::string name = "electron";
     int ppc[2] = {1, 1};
@@ -76,9 +76,11 @@ int main(int argc, char **argv)
     //    sleep(3);
     //sleep(sim.grid_rank);
     
+    //phi->print_field(std::cout);
 
     test.init_pusher(Ex, Ey); // first iteration of the particle pusher
-
+    
+    /*
     for (int counter = 0; counter < 50; counter++)
     {
         int flags_coords_mpi[5] = {sim.grid_rank, sim.grid_top, sim.grid_bottom, sim.grid_right, sim.grid_left};
@@ -126,6 +128,6 @@ int main(int argc, char **argv)
     delete Ey;
     delete charge, phi;
     delete vf;
-
+    */
     return 0;
 }

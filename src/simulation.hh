@@ -11,6 +11,7 @@
 
 namespace FCPIC
 {
+    /*
     // Patch
     typedef enum
     {
@@ -20,13 +21,18 @@ namespace FCPIC
         YMIN,
         YMAX
     } PATCH_type;
-    extern PATCH_type patch;
+    extern PATCH_type patch;*/
 
     class simulation
     {
     public:
         simulation(int, char **);
         ~simulation();
+
+        void getParamsfromFile(std::string);
+        void readArgs(int, char **);
+        void printHelp();
+        void printTitle();
 
         // Creates a virtual cartesian topology and creates MPI Datatypes
         void setup_proc_grid();
