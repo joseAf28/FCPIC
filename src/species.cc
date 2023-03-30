@@ -19,14 +19,14 @@ species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, floa
     vth[2] = vth_a[2];
 
     // number of cells in each direction of the process domain
-    N_int_x = range[0]+1;
-    N_int_y = range[1]+1;
+    N_int_x = range[0] + 1;
+    N_int_y = range[1] + 1;
 
     N_x = range[0] + 3;
     N_y = range[1] + 3;
 
     // initializing vector with set_np_part() number: number of particles
-    np = (N_int_x+1) * ppc[0] * (N_int_y+1)  * ppc[1];
+    np = (N_int_x + 1) * ppc[0] * (N_int_y + 1) * ppc[1];
 
     // reserve space for the arrays of particles
     part A;
@@ -138,18 +138,26 @@ void species::set_x()
     loccell.clear();
 }
 
-void species::get_charge(FCPIC::field *charge){
+void species::get_charge(FCPIC::field *charge)
+{
     charge->setValue(0.f);
 
     int i, j;
     float wx, wy;
-    for (int k = 0; k < np; k++){
-        i=vec[k].iy;
-        j=vec[k].ix;
+    for (int k = 0; k < np; k++)
+    {
+        i = vec[k].iy;
+        j = vec[k].ix;
         wx = vec[k].x;
         wy = vec[k].y;
 
-        //std::cout << wx << "  " << wy << "\n";
+        // std::cout << wx << "  " << wy << "\n";
+
+        int ix = vec[i].ix;
+        int iy = vec[i].iy;
+
+        // if (ix == N_x - 2)
+        //     ij = ij + 3;
 
         // divide by dx*dy
         charge->val[POSITION] += (dx - wx) * (dy - wy) * q;
@@ -159,7 +167,8 @@ void species::get_charge(FCPIC::field *charge){
     }
 }
 
-void species::field_inter(FCPIC::field *Ex, FCPIC::field *Ey, float &Ex_i, float &Ey_i, int counter){ 
+void species::field_inter(FCPIC::field *Ex, FCPIC::field *Ey, float &Ex_i, float &Ey_i, int counter)
+{
     int i = vec[counter].iy;
     int j = vec[counter].ix;
 
@@ -171,22 +180,17 @@ void species::field_inter(FCPIC::field *Ex, FCPIC::field *Ey, float &Ex_i, float
     float A_n = (dx - wx) * wy;
     float A_ne = wx * wy;
 
-    Ex_i = A_pos * Ex->val[POSITION] 
-         + A_e * Ex->val[EAST] 
-         + A_n * Ex->val[NORTH] 
-         + A_ne * Ex->val[NORTHEAST];
-    
-    Ey_i = A_pos * Ey->val[POSITION] 
-         + A_e * Ey->val[EAST] 
-         + A_n * Ey->val[NORTH] 
-         + A_ne * Ey->val[NORTHEAST];
-    
+    Ex_i = A_pos * Ex->val[POSITION] + A_e * Ex->val[EAST] + A_n * Ex->val[NORTH] + A_ne * Ex->val[NORTHEAST];
+
+    Ey_i = A_pos * Ey->val[POSITION] + A_e * Ey->val[EAST] + A_n * Ey->val[NORTH] + A_ne * Ey->val[NORTHEAST];
+
     Ex_i /= (dx * dy);
     Ey_i /= (dx * dy);
 }
 
 //!! Define the Efield in each particle: missing feature
-void species::init_pusher(FCPIC::field *Ex, FCPIC::field *Ey){
+void species::init_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
+{
 
     for (int i = 0; i < np; i++)
     {
@@ -200,8 +204,9 @@ void species::init_pusher(FCPIC::field *Ex, FCPIC::field *Ey){
     }
 }
 
-void species::particle_pusher(FCPIC::field *Ex, FCPIC::field *Ey){
-    
+void species::particle_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
+{
+
     for (int i = 0; i < np; i++)
     {
         float Ex_i = 0.f;
@@ -223,25 +228,27 @@ bool species::advance_cell(int *ranks_mpi)
     bool changes_made = false;
     for (int counter = 0; counter < np; counter++)
     {
-        if(vec[counter].x >=0 && vec[counter].x <dx && vec[counter].y >=0 && vec[counter].y <dx)
+        if (vec[counter].x >= 0 && vec[counter].x < dx && vec[counter].y >= 0 && vec[counter].y < dx)
             continue;
-        
+
         changes_made = true;
-        
+
         vec[counter].ix += floor(vec[counter].x / dx);
         vec[counter].x = fmod(vec[counter].x, dx);
 
-        if(vec[counter].x<0){
+        if (vec[counter].x < 0)
+        {
             vec[counter].x += dx;
         }
 
         vec[counter].iy += floor(vec[counter].y / dy);
         vec[counter].y = fmod(vec[counter].y, dy);
 
-        if(vec[counter].y<0){
+        if (vec[counter].y < 0)
+        {
             vec[counter].y += dy;
         }
-        
+
         bool flag_top = ranks_mpi[1] == MPI_PROC_NULL;
         bool flag_bottom = ranks_mpi[2] == MPI_PROC_NULL;
         bool flag_right = ranks_mpi[3] == MPI_PROC_NULL;
@@ -257,49 +264,61 @@ bool species::advance_cell(int *ranks_mpi)
         bool send_W_true = false;
         bool send_E_true = false;
 
-        if(ixmin_cond){
-            if(flag_left){
+        if (ixmin_cond)
+        {
+            if (flag_left)
+            {
                 vec[counter].x = dx - vec[counter].x;
                 vec[counter].ix = -vec[counter].ix - 1;
                 vec[counter].ux = -vec[counter].ux;
             }
-            else{
+            else
+            {
                 vec[counter].ix = vec[counter].ix + N_int_x;
                 send_W_true = true;
             }
         }
 
-        if(iymin_cond){
-            if(flag_bottom){
+        if (iymin_cond)
+        {
+            if (flag_bottom)
+            {
                 vec[counter].y = dy - vec[counter].y;
                 vec[counter].iy = -vec[counter].iy - 1;
                 vec[counter].uy = -vec[counter].uy;
             }
-            else{
+            else
+            {
                 vec[counter].iy = vec[counter].iy + N_int_y;
                 send_S_true = true;
             }
         }
 
-        if(ixmax_cond){
-            if(flag_right){
+        if (ixmax_cond)
+        {
+            if (flag_right)
+            {
                 vec[counter].x = dx - vec[counter].x;
-                vec[counter].ix = 2*N_int_x-vec[counter].ix + 1;
+                vec[counter].ix = 2 * N_int_x - vec[counter].ix + 1;
                 vec[counter].ux = -vec[counter].ux;
             }
-            else{
+            else
+            {
                 vec[counter].ix = vec[counter].ix - N_int_x;
                 send_E_true = true;
             }
         }
 
-        if(iymax_cond){
-            if(flag_top){
+        if (iymax_cond)
+        {
+            if (flag_top)
+            {
                 vec[counter].y = dy - vec[counter].y;
-                vec[counter].iy = 2*N_int_y-vec[counter].iy + 1;
+                vec[counter].iy = 2 * N_int_y - vec[counter].iy + 1;
                 vec[counter].uy = -vec[counter].uy;
             }
-            else{
+            else
+            {
                 vec[counter].iy = vec[counter].iy - N_int_y;
                 send_N_true = true;
             }
@@ -308,46 +327,56 @@ bool species::advance_cell(int *ranks_mpi)
         if (ranks_mpi[0] != MPI_PROC_NULL) // periodic
         {
             // north buffer
-            if ((!send_W_true) && (!send_E_true) && send_N_true){
+            if ((!send_W_true) && (!send_E_true) && send_N_true)
+            {
                 send_buffer_north.push_back(vec[counter]);
-                vec[counter].flag = SEND; 
-            }                             
+                vec[counter].flag = SEND;
+            }
             // ne buffer
-            else if (send_N_true && send_E_true){
+            else if (send_N_true && send_E_true)
+            {
                 send_buffer_ne.push_back(vec[counter]);
                 vec[counter].flag = SEND;
-            } 
+            }
             // nw buffer
-            else if (send_N_true && send_W_true){
+            else if (send_N_true && send_W_true)
+            {
                 send_buffer_nw.push_back(vec[counter]);
                 vec[counter].flag = SEND;
-            } 
+            }
             // south buffer
-            else if ((!send_W_true) && (!send_E_true) && send_S_true){
+            else if ((!send_W_true) && (!send_E_true) && send_S_true)
+            {
                 send_buffer_south.push_back(vec[counter]);
                 vec[counter].flag = SEND;
-            } 
+            }
             // se buffer
-            else if (send_S_true && send_E_true){
+            else if (send_S_true && send_E_true)
+            {
                 send_buffer_se.push_back(vec[counter]);
                 vec[counter].flag = SEND;
-            } 
+            }
             // sw buffer
-            else if (send_S_true && send_W_true){
+            else if (send_S_true && send_W_true)
+            {
                 send_buffer_sw.push_back(vec[counter]);
                 vec[counter].flag = SEND;
-            } 
+            }
             // east buffer
-            else if (send_E_true && (!send_N_true) && (!send_S_true)){
+            else if (send_E_true && (!send_N_true) && (!send_S_true))
+            {
                 send_buffer_east.push_back(vec[counter]);
                 vec[counter].flag = SEND;
-            } 
+            }
             // west
-            else if (send_W_true && (!send_N_true) && (!send_S_true)){
+            else if (send_W_true && (!send_N_true) && (!send_S_true))
+            {
                 send_buffer_west.push_back(vec[counter]);
                 vec[counter].flag = SEND;
             }
-            else{}
+            else
+            {
+            }
         }
     }
     return changes_made;
@@ -370,7 +399,6 @@ void species::prepare_buffer()
                              { return (obj.flag == SEND); }),
               vec.end());
 }
-
 
 void species::update_part_list()
 {

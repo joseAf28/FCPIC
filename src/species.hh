@@ -142,7 +142,7 @@ private:
     float m = 1; //!! to define in the constructor later
     float q = 1;
 
-    // number of particles per cell
+    // number of particles per cell at beggining
     int ppc[2];
 
     // number of cells in each direction

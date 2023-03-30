@@ -42,8 +42,6 @@ namespace FCPIC
         void set_periodic_field_bc();
         void set_conductive_field_bc();
 
-        // void set_bc(field *);
-
         // exchanges data between processes
         void exchange_phi_buffers(field *);
         void exchange_charge_buffers(field *);
