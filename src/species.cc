@@ -142,6 +142,17 @@ void species::set_x()
         }
     }
     loccell.clear();
+
+    // vec.clear();
+    // part b_dummy;
+    // vec.assign(1, b_dummy);
+
+    // np = 1;
+
+    // vec[0].ix = 3;
+    // vec[0].iy = 1;
+    // vec[0].x = 0.1;
+    // vec[0].y = 0.1;
 }
 
 void species::get_charge(FCPIC::field *charge)
@@ -206,8 +217,8 @@ void species::init_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
 
         field_inter(Ex, Ey, Ex_i, Ey_i, i);
 
-        vec[i].ux = vec[i].ux - 0.5 * q / m * Ex_i * dt;
-        vec[i].uy = vec[i].uy - 0.5 * q / m * Ey_i * dt;
+        vec[i].ux = vec[i].ux - 0.5 * q / m * 0 * Ex_i * dt;
+        vec[i].uy = vec[i].uy - 0.5 * q / m * 0 * Ey_i * dt;
     }
 }
 
@@ -221,8 +232,8 @@ void species::particle_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
 
         field_inter(Ex, Ey, Ex_i, Ey_i, i);
 
-        vec[i].ux = vec[i].ux + q / m * Ex_i * dt;
-        vec[i].uy = vec[i].uy + q / m * Ey_i * dt;
+        vec[i].ux = vec[i].ux + 0. * q / m * Ex_i * dt;
+        vec[i].uy = vec[i].uy + 0. * q / m * Ey_i * dt;
 
         vec[i].x = vec[i].x + vec[i].ux * dt;
         vec[i].y = vec[i].y + vec[i].uy * dt;
@@ -275,6 +286,7 @@ bool species::advance_cell(int *ranks_mpi)
         {
             if (flag_left)
             {
+                std::cout << "flag refelction1" << std::endl;
                 vec[counter].x = dx - vec[counter].x;
                 vec[counter].ix = -vec[counter].ix - 1;
                 vec[counter].ux = -vec[counter].ux;
@@ -290,6 +302,7 @@ bool species::advance_cell(int *ranks_mpi)
         {
             if (flag_bottom)
             {
+                std::cout << "flag refelction2" << std::endl;
                 vec[counter].y = dy - vec[counter].y;
                 vec[counter].iy = -vec[counter].iy - 1;
                 vec[counter].uy = -vec[counter].uy;
@@ -305,6 +318,7 @@ bool species::advance_cell(int *ranks_mpi)
         {
             if (flag_right)
             {
+                std::cout << "flag refelction3" << std::endl;
                 vec[counter].x = dx - vec[counter].x;
                 vec[counter].ix = 2 * N_int_x - vec[counter].ix + 1;
                 vec[counter].ux = -vec[counter].ux;
@@ -320,6 +334,7 @@ bool species::advance_cell(int *ranks_mpi)
         {
             if (flag_top)
             {
+                std::cout << "flag refelction4" << std::endl;
                 vec[counter].y = dy - vec[counter].y;
                 vec[counter].iy = 2 * N_int_y - vec[counter].iy + 1;
                 vec[counter].uy = -vec[counter].uy;

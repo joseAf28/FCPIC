@@ -82,7 +82,7 @@ int main(int argc, char **argv)
     std::string name = "electron";
 
     int ppc[2] = {1, 1};
-    int range[2] = {10, 10}; // number of cells in each direction
+    int range[2] = {5, 5}; // number of cells in each direction
 
     float *vf = new float[3];
     float vth[3] = {0.0, 0.0, 0.0};
@@ -90,38 +90,60 @@ int main(int argc, char **argv)
     // differentiate vectors
     if (proc_rank == 0) // 0
     {
-        vf[0] = 1.8;
-        vf[1] = 1.3;
+        vf[0] = 1.;
+        vf[1] = 0;
         vf[2] = 0;
     }
     if (proc_rank == 1) // 1
     {
-        vf[0] = -1.5;
-        vf[1] = -1.6;
+        vf[0] = 1;
+        vf[1] = 1;
         vf[2] = 0.;
     }
     if (proc_rank == 2) // 2
     {
-        vf[0] = 1.3;
-        vf[1] = -1.1;
+        vf[0] = 1;
+        vf[1] = 1;
         vf[2] = 0.;
     }
     if (proc_rank == 3) // 3
     {
-        vf[0] = -1.5;
-        vf[1] = -1.7;
+        vf[0] = 1;
+        vf[1] = 1;
         vf[2] = 0.;
     }
 
-    float Ex = 0.;
-    float Ey = 0.;
+    FCPIC::field *Ex = new FCPIC::field(range[0] + 1, range[1] + 1);
+    FCPIC::field *Ey = new FCPIC::field(range[0] + 1, range[1] + 1);
     int counter = 1;
 
     int flags_coords_mpi[5] = {P_grid_rank, P_grid_top, P_grid_bottom, P_grid_right, P_grid_left};
 
-    species test(name, ppc, range, vf, vth);
+    species test(name, ppc, range, vf, vth, 1);
     test.set_x();
     test.set_u();
+    if (proc_rank == 0)
+    {
+        for (int i = 1; i < test.vec.size(); i++)
+            test.vec[i].flag = SEND;
+
+        test.vec.erase(std::remove_if(test.vec.begin(), test.vec.end(), [&test](const part obj)
+                                      { return (obj.flag == SEND); }),
+                       test.vec.end());
+
+        std::cout << proc_rank << "vec.size: " << test.vec.size() << std::endl;
+    }
+
+    if (proc_rank != 0)
+    {
+        for (int i = 0; i < test.vec.size(); i++)
+            test.vec[i].flag = SEND;
+
+        test.vec.erase(std::remove_if(test.vec.begin(), test.vec.end(), [&test](const part obj)
+                                      { return (obj.flag == SEND); }),
+                       test.vec.end());
+        std::cout << proc_rank << "vec.size: " << test.vec.size() << std::endl;
+    }
 
     //
     for (int i = 0; i < 20; i++)
