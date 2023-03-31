@@ -5,7 +5,7 @@ LIBDIR := lib
 
 CCFLAGS :=  -Wextra -Wfloat-equal -Wundef -Werror -fverbose-asm  -Wshadow -Wpointer-arith -Wcast-align -Wconversion
 DEBUG := -g -pedantic -Wall
-CC := mpic++ -std=c++14 -O2 -pedantic
+CC := mpic++ -std=c++14 -g -pedantic
 
 
 VPATH = main:src
@@ -51,6 +51,7 @@ mylibs := $(wildcard */*.so) $(wildcard */*.a)
 
 txtOut := $(wildcard results/*/*.txt)
 pngOut := $(wildcard results/*/*.png)
+txtOutb := $(wildcard results/*.txt)
 
 clean:
 	@echo cleaning dir...
@@ -58,4 +59,4 @@ clean:
 
 OutClean:
 	@echo cleaning results...
-	@rm -f $(txtOut) $(pngOut)
+	@rm -f $(txtOut) $(pngOut) $(txtOutb)

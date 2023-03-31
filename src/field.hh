@@ -36,7 +36,6 @@
 #define SOUTHWEST i *N_x + j - N_x - 1
 #define SOUTHEAST i *N_x + j - N_x + 1
 
-
 namespace FCPIC
 {
     // Boundary condition type
@@ -85,6 +84,8 @@ namespace FCPIC
         void reduceSouthBound(double *);
         void reduceWestBound(double *);
         void reduceEastBound(double *);
+
+        void add_field(field *);
 
         void print_field(std::ostream &);
 

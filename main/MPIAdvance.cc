@@ -10,69 +10,94 @@ int main(int argc, char **argv)
     std::normal_distribution<double> norm(3, 0.5);
 
     // initializaing simulation fields and MPI
-    FCPIC::simulation sim(argc, argv);
-    sim.set_conductive_field_bc();
+    FCPIC::simulation *sim = new FCPIC::simulation(argc, argv);
+    sim->set_conductive_field_bc();
 
     // declaring species object
     std::string name = "electron";
     int ppc[2] = {1, 1};
-    int range[2] = {20, 10}; // number of cells in each direction
+    int range[2] = {5, 5}; // number of cells in each direction
 
-    float *vf = new float[3];
-    float vth[3] = {0.0, 0.0, 0.0};
+    float *vfa = new float[3];
+    float *vfb = new float[3];
+    float vth[3] = {0.2, 0., 0.};
+    vfa[0] = 0.;
+    vfa[1] = 0.;
+    vfa[2] = 0.;
+    vfb[0] = -0.;
+    vfb[1] = 0.;
+    vfb[2] = 0.;
 
-    vf[0] = 0.;
-    vf[1] = 1.3;
-    vf[2] = 0;
-
-    // differentiate vectors
-    if (sim.grid_rank == 0) // 0
-    {
-        vf[0] = 1.8;
-        vf[1] = 1.3;
-        vf[2] = 0;
-    }
-    if (sim.grid_rank == 1) // 1
-    {
-        vf[0] = -1.5;
-        vf[1] = -1.6;
-        vf[2] = 0.;
-    }
-    if (sim.grid_rank == 2) // 2
-    {
-        vf[0] = 1.3;
-        vf[1] = -1.1;
-        vf[2] = 0.;
-    }
-    if (sim.grid_rank == 3) // 3
-    {
-        vf[0] = -1.5;
-        vf[1] = -1.7;
-        vf[2] = 0.;
-    }
-
-    sim.printHelp();
-
-    //!! Test: All particles forced to move to top right corner
-    //! (external) constant field for now
+    // // differentiate vectors
+    // if (sim->grid_rank == 0) // 0
+    // {
+    //     vfa[0] = 0.;
+    //     vfa[1] = 0.;
+    //     vfa[2] = 0;
+    //     vfb[0] = 0.;
+    //     vfb[1] = 0.;
+    //     vfb[2] = 0;
+    // }
+    // if (sim->grid_rank == 1) // 1
+    // {
+    //     vfa[0] = 0.;
+    //     vfa[1] = 0.;
+    //     vfa[2] = 0.;
+    //     vfb[0] = 0.;
+    //     vfb[1] = 0.;
+    //     vfb[2] = 0.;
+    // }
+    // if (sim->grid_rank == 2) // 2
+    // {
+    //     vfa[0] = 0.;
+    //     vfa[1] = 0.;
+    //     vfa[2] = 0.;
+    //     vfb[0] = 0.;
+    //     vfb[1] = 0.;
+    //     vfb[2] = 0.;
+    // }
+    // if (sim->grid_rank == 3) // 3
+    // {
+    //     vfa[0] = 0.;
+    //     vfa[1] = 0.;
+    //     vfa[2] = 0.;
+    //     vfb[0] = 0.;
+    //     vfb[1] = 0.;
+    //     vfb[2] = 0.;
+    // }
 
     FCPIC::field *Ex = new FCPIC::field(range[0] + 1, range[1] + 1);
     FCPIC::field *Ey = new FCPIC::field(range[0] + 1, range[1] + 1);
-    FCPIC::field *charge = new FCPIC::field(range[0] + 1, range[1] + 1);
+    FCPIC::field *charge;
     FCPIC::field *phi = new FCPIC::field(range[0] + 1, range[1] + 1);
 
     // Ex->setValue(1.0);
     // Ey->setValue(1.5);
 
     // initializing species
-    species test(name, ppc, range, vf, vth);
-    test.set_x();
-    test.set_u();
+    species specA(name, ppc, range, vfa, vth, 1.);
+    species specB(name, ppc, range, vfa, vth, -0.9);
+    specA.set_x();
+    specA.set_u();
 
-    test.get_charge(charge); // getting initial charge field
-    sim.exchange_charge_buffers(charge);
-    sim.jacobi(phi, charge);
-    sim.set_E_value(phi, Ex, Ey);
+    specB.set_x();
+    specB.set_u();
+
+    std::cout << "grid: " << sim->grid_rank << " vec.sizeA: " << specA.vec.size() << " vec.size B: " << specB.vec.size() << std::endl;
+
+    charge = new FCPIC::field(range[0] + 1, range[1] + 1);
+    specA.get_charge(charge); // getting initial charge field
+    specB.get_charge(charge);
+
+    std::fstream charge_file;
+    std::string charge_filename = "../results/charge_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(0) + ".txt";
+    charge_file.open(charge_filename, std::ios::out);
+    charge->print_field(charge_file);
+    charge_file.close();
+
+    // sim->exchange_charge_buffers(charge);
+    sim->jacobi(phi, charge);
+    sim->set_E_value(phi, Ex, Ey);
     // getting first consistent electric field
     // if(sim.grid_rank!=0)
     //    sleep(3);
@@ -80,78 +105,85 @@ int main(int argc, char **argv)
 
     // phi->print_field(std::cout);
 
-    test.init_pusher(Ex, Ey); // first iteration of the particle pusher
+    specA.init_pusher(Ex, Ey); // first iteration of the particle pusher
+    specB.init_pusher(Ex, Ey);
+    // specA.size(sim->grid_rank);
 
-    // for (int counter = 0; counter < 50; counter++)
-    // {
-    //     int flags_coords_mpi[5] = {sim.grid_rank, sim.grid_top, sim.grid_bottom, sim.grid_right, sim.grid_left};
+    for (int counter = 0; counter < 60; counter++)
+    {
+        // std::cout << "grid_rank: " << sim->grid_rank << "counter:" << counter << std::endl;
+        // //! Writting in file;
+        std::fstream Ex_file;
+        std::string Ex_filename = "../results/Ex_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(counter) + ".txt";
+        Ex_file.open(Ex_filename, std::ios::out);
+        Ex->print_field(Ex_file);
+        Ex_file.close();
 
-    //     // compute de potential field with the jacobi iteration
-    //     // getting the E field in the grid
+        std::fstream Ey_file;
+        std::string Ey_filename = "../results/Ey_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(counter) + ".txt";
+        Ey_file.open(Ey_filename, std::ios::out);
+        Ey->print_field(Ey_file);
+        Ey_file.close();
 
-    //     test.particle_pusher(Ex, Ey); // includes field interpolation at particle position
-    //     while (test.advance_cell(flags_coords_mpi))
-    //     {
-    //         // test.write_output_vec(counter, sim.grid_rank); // debugging
+        std::fstream charge_file;
+        std::string charge_filename = "../results/charge_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(counter + 1) + ".txt";
+        charge_file.open(charge_filename, std::ios::out);
+        charge->print_field(charge_file);
+        charge_file.close();
 
-    //         test.prepare_buffer();
-    //         sim.exchange_particles_buffers(&test);
+        specA.write_output_vec(counter, sim->grid_rank); // debugging
 
-    //         // test.write_input_buffer(counter, sim.grid_rank);  // debugging communication
-    //         // test.write_output_buffer(counter, sim.grid_rank); // debugging
+        int flags_coords_mpi[5] = {sim->grid_rank, sim->grid_top, sim->grid_bottom, sim->grid_right, sim->grid_left};
 
-    //         test.update_part_list(); // update the list of particles of each ptocess because of the MPI exchange
-    //     }
+        specA.particle_pusher(Ex, Ey); // includes field interpolation at particle position
+        while (specA.advance_cell(flags_coords_mpi))
+        {
+            // test.write_output_vec(counter, sim.grid_rank); // debugging
+            // specA.size(sim->grid_rank);
+            specA.prepare_buffer();
+            std::cout << "grid: " << sim->grid_rank << " vec.sizeA: " << specA.vec.size() << " vec.size B: " << specB.vec.size() << std::endl;
 
-    //     test.get_charge(charge); // getting charge distribution
-    //     sim.exchange_charge_buffers(charge);
-    //     sim.jacobi(phi, charge);
-    //     sim.set_E_value(phi, Ex, Ey);
+            sim->exchange_particles_buffers(&specA);
 
-    //     // //! Writting in file;
-    //     // std::fstream Ex_file;
-    //     // std::string Ex_filename = "../results/Ex_field/rank:_" + std::to_string(sim.grid_rank) + "_counter_" + std::to_string(counter) + ".txt";
-    //     // Ex_file.open(Ex_filename, std::ios::out);
-    //     // Ex->print_field(Ex_file);
-    //     // Ex_file.close();
+            // test.write_input_buffer(counter, sim.grid_rank);  // debugging communication
 
-    //     // std::fstream Ey_file;
-    //     // std::string Ey_filename = "../results/Ey_field/rank:_" + std::to_string(sim.grid_rank) + "_counter_" + std::to_string(counter) + ".txt";
-    //     // Ey_file.open(Ey_filename, std::ios::out);
-    //     // Ey->print_field(Ey_file);
-    //     // Ey_file.close();
+            specA.update_part_list(); // update the list of particles of each ptocess because of the MPI exchange
+            std::cout << "****************" << std::endl;
+        }
 
-    //     // std::fstream charge_file;
-    //     // std::string charge_filename = "../results/charge_field/rank:_" + std::to_string(sim.grid_rank) + "_counter_" + std::to_string(counter) + ".txt";
-    //     // charge_file.open(charge_filename, std::ios::out);
-    //     // charge->print_field(charge_file);
-    //     // charge_file.close();
-    //     ///
+        specB.particle_pusher(Ex, Ey);
+        while (specB.advance_cell(flags_coords_mpi))
+        {
+            specB.prepare_buffer();
+            sim->exchange_particles_buffers(&specB);
 
-    //     // sleep(sim.grid_rank);
-    //     // charge->print_field(std::cout);
+            specB.update_part_list();
+            std::cout << "****************" << std::endl;
+        }
 
-    //     // test.write_output_vec(counter, sim.grid_rank); // debugging
-    //     //  std::cout << "End grid_rank: " << sim.grid_rank << std::endl;
-    // }
+        // getting charge distribution and doing the sum at the same time
+        charge->setValue(0.f);
+
+        specA.get_charge(charge);
+        specB.get_charge(charge);
+
+        // jacobi with all the species charge
+        sim->jacobi(phi, charge);
+        sim->set_E_value(phi, Ex, Ey);
+
+        // sleep(sim.grid_rank);
+        // charge->print_field(std::cout);
+
+        // test.write_output_vec(counter, sim.grid_rank); // debugging
+        //  std::cout << "End grid_rank: " << sim.grid_rank << std::endl;
+    }
     // std::cout << "End Loop" << std::endl;
-
-    // if (sim.grid_rank == 2)
-    // {
-    //     charge->print_field(std::cout);
-    //     std::cout << "\n";
-    //     phi->print_field(std::cout);
-    //     std::cout << "\n";
-    //     Ex->print_field(std::cout);
-    //     std::cout << "\n";
-    //     Ey->print_field(std::cout);
-    //     std::cout << "\n";
-    // }
 
     delete Ex;
     delete Ey;
     delete charge, phi;
-    delete vf;
-
+    delete vfa;
+    delete vfb;
+    delete sim;
     return 0;
 }

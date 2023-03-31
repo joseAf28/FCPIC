@@ -2,7 +2,7 @@
 #include "math.h"
 #include "mpi.h"
 
-species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, float *vth_a) : name(name_a)
+species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, float *vth_a, float charge) : name(name_a), q(charge)
 {
     ppc[0] = ppc_a[0];
     ppc[1] = ppc_a[1];
@@ -17,6 +17,8 @@ species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, floa
     vth[0] = vth_a[0];
     vth[1] = vth_a[1];
     vth[2] = vth_a[2];
+
+    // std::cout << "vth[0]: " << vth[0] << " vth[1]: " << vth[1] << " vth[2]: " << vth[2] << std::endl;
 
     // number of cells in each direction of the process domain
     N_int_x = range[0] + 1;
@@ -60,7 +62,7 @@ species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, floa
     rng = rng_aux;
     rand_gauss = norm_aux;
 
-    //std::cout << __PRETTY_FUNCTION__ << std::endl;
+    // std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
 
 species::~species()
@@ -94,9 +96,13 @@ void species::set_u()
 {
     for (int i = 0; i < np; i++)
     {
-        vec[i].ux = vf[0] + vth[0] * rand_gauss(rng);
-        vec[i].uy = vf[1] + vth[1] * rand_gauss(rng);
-        vec[i].uz = vf[2] + vth[2] * rand_gauss(rng);
+        //     vec[i].ux = vf[0] + vth[0] * rand_gauss(rng);
+        //     vec[i].uy = vf[1] + vth[1] * rand_gauss(rng);
+        //     vec[i].uz = vf[2] + vth[2] * rand_gauss(rng);
+
+        vec[i].ux = vf[0] + vth[0];
+        vec[i].uy = vf[1] + vth[1];
+        vec[i].uz = vf[2] + vth[2];
     }
 }
 
@@ -140,11 +146,12 @@ void species::set_x()
 
 void species::get_charge(FCPIC::field *charge)
 {
-    charge->setValue(0.f);
+    //! Done in simulation: avoid creating a new field and doing the sum of all components
+    // charge->setValue(0.f);
 
     int i, j;
     float wx, wy;
-    for (int k = 0; k < np; k++)
+    for (int k = 0; k < vec.size(); k++)
     {
         i = vec[k].iy;
         j = vec[k].ix;
@@ -381,6 +388,21 @@ bool species::advance_cell(int *ranks_mpi)
     }
     return changes_made;
 }
+void species::size(int grid_rank)
+{
+    size_send_north = send_buffer_north.size();
+    size_send_south = send_buffer_south.size();
+    size_send_east = send_buffer_east.size();
+    size_send_west = send_buffer_west.size();
+
+    size_send_ne = send_buffer_ne.size();
+    size_send_se = send_buffer_se.size();
+    size_send_nw = send_buffer_nw.size();
+    size_send_sw = send_buffer_sw.size();
+
+    // std::cout << "Spec::grid: " << grid_rank << " n: " << size_send_north << " s: " << size_send_south << " e: " << size_send_east << " sw: " << size_send_west << std::endl;
+}
+
 void species::prepare_buffer()
 {
     // determine the size of the arrays that Exchange particles in MPI
@@ -393,6 +415,11 @@ void species::prepare_buffer()
     size_send_se = send_buffer_se.size();
     size_send_nw = send_buffer_nw.size();
     size_send_sw = send_buffer_sw.size();
+
+    // std::cout << "grid: "
+    //           << "n: " << size_send_north << " s: " << size_send_south << " e: " << size_send_east
+    //           << " ne: " << size_send_ne << " se: " << size_send_se << " sw: " << size_send_nw
+    //           << " sw: " << size_send_sw << std::endl;
 
     // delete all particles that were sent to exchange array buffers
     vec.erase(std::remove_if(vec.begin(), vec.end(), [this](const part obj)
@@ -452,7 +479,7 @@ void species::update_part_list()
     recv_buffer_south.clear();
     recv_buffer_east.clear();
     recv_buffer_west.clear();
-
+    //
     recv_buffer_ne.clear();
     recv_buffer_se.clear();
     recv_buffer_nw.clear();

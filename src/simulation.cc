@@ -21,16 +21,17 @@ namespace FCPIC
         // retrieve the number of processes
         MPI_Comm_size(MPI_COMM_WORLD, &n_Procs);
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        readArgs(argc,argv);
-        if(rank ==0)
+        readArgs(argc, argv);
+        if (rank == 0)
             printTitle();
-        aspect = 1; // (INPUT) y_len = aspect (x_len always norm to 1)
+        aspect = 1;  // (INPUT) y_len = aspect (x_len always norm to 1)
         Npart = 500; // (INPUT)
         N = Npart / 10;
         N_int_x = std::sqrt((double)N / aspect);
         N_int_y = aspect * (double)N_int_x;
-        N_int_x = 11; //
-        N_int_y = 11; //
+
+        N_int_x = 6; //
+        N_int_y = 6; //
         N = N_int_x * N_int_y;
         N_x = N_int_x + 2;
         N_y = N_int_y + 2;
@@ -66,7 +67,8 @@ namespace FCPIC
             Y_guard_data2, X_guard_data2;
     }
 
-    void simulation::printTitle(){
+    void simulation::printTitle()
+    {
         std::cout << "\n";
         std::cout << "┌─────────────────────────────────────────────────────────────────────────────┐\n";
         std::cout << "│ ▄▄▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄▄▄▄▄ │\n";
@@ -85,14 +87,19 @@ namespace FCPIC
         std::cout << "│ Guilherme Crispim, João Palma, José Afonso, ATCP 2023                       │\n";
         std::cout << "└─────────────────────────────────────────────────────────────────────────────┘\n";
         std::cout << "\n";
-        std::cout << "Simulation size: " << "\n";
-        std::cout << "Spatial discretization: "<< "\n";
-        std::cout << "MPI process grid: "<< "\n";
-        std::cout << "Number of MPI processes: "<< "\n";
+        std::cout << "Simulation size: "
+                  << "\n";
+        std::cout << "Spatial discretization: "
+                  << "\n";
+        std::cout << "MPI process grid: "
+                  << "\n";
+        std::cout << "Number of MPI processes: "
+                  << "\n";
         std::cout << "\n";
     }
 
-    void simulation::printHelp(){
+    void simulation::printHelp()
+    {
         std::cout << "\n";
         std::cout << ">> mpiexec ./FCPIC.exec -infile=infile.txt\n";
         std::cout << ">> mpiexec ./FCPIC.exec -npart=1000,2000 -charge=1,-1  ...\n";
@@ -117,152 +124,169 @@ namespace FCPIC
         std::cout << "                            Default: 1\n";
         std::cout << "-boundcond=bbb        Boundary condition (0->periodic, 1->conductive)\n";
         std::cout << "                            Default: 0\n";
-        std::cout << "\n"; 
+        std::cout << "\n";
     }
 
-    void simulation::readArgs(int argc, char **argv){
-        std::vector<std::string> allArgs(argv, argv+argc);
+    void simulation::readArgs(int argc, char **argv)
+    {
+        std::vector<std::string> allArgs(argv, argv + argc);
         std::vector<std::string> numbers;
         std::string line, header, number;
         int k;
 
-        for(auto & arg : allArgs){
-            k=0;
-            for(char &c : arg){
-                    if((c > 47 && c<58) || c == '.' || (c == '-' && k != 0))
-                        number.push_back(c);
-                    if(c == ','){
-                        numbers.push_back(number);
-                        number.clear();
-                        }
-                    if((c > 96 && c < 123) || (c == '-' && k == 0))
-                        header.push_back(c);
-                    if(c > 64 && c < 91)
-                        header.push_back(c+32);
-
-                    if(header.compare("-infile")==0){
-                        arg.erase(0,8);
-                        std::cout << arg << "\n";
-                        break;
-                    }
-                    k++;
-                }
-
-                if(header.compare("-help")==0){
-                    printHelp();
-                }
-
-                if(header.compare("-infile")==0){
-                        getParamsfromFile(arg);
-                        break;
-                    }
-
-                if(header.compare("-npart")==0){
+        for (auto &arg : allArgs)
+        {
+            k = 0;
+            for (char &c : arg)
+            {
+                if ((c > 47 && c < 58) || c == '.' || (c == '-' && k != 0))
+                    number.push_back(c);
+                if (c == ',')
+                {
                     numbers.push_back(number);
-                    std::cout << "npart in, getting ";
-                    for(auto & num : numbers)
-                        std::cout << num << " ";
-                    std::cout << "\n";
+                    number.clear();
                 }
-                if(header.compare("-qom")==0){
-                    numbers.push_back(number);
-                    std::cout << "qom in, getting ";
-                    for(auto & num : numbers)
-                        std::cout << num << " ";
-                    std::cout << "\n";
+                if ((c > 96 && c < 123) || (c == '-' && k == 0))
+                    header.push_back(c);
+                if (c > 64 && c < 91)
+                    header.push_back(c + 32);
+
+                if (header.compare("-infile") == 0)
+                {
+                    arg.erase(0, 8);
+                    std::cout << arg << "\n";
+                    break;
                 }
-                if(header.compare("-temp")==0){
-                    numbers.push_back(number);
-                    std::cout << "temp in, getting ";
-                    for(auto & num : numbers)
-                        std::cout << num << " ";
-                    std::cout << "\n";
-                }
-                if(header.compare("-xlen")==0)
-                    std::cout << "xlen in, getting " << number << "\n";
-                if(header.compare("-nxproc")==0)
-                    std::cout << "nxproc in, getting " << number << "\n";
-                if(header.compare("-nxsamples")==0)
-                    std::cout << "nxsamples in, getting " << number << "\n";
-                if(header.compare("-aspect")==0)
-                    std::cout << "aspect in, getting " << number << "\n";
-                if(header.compare("-simtime")==0)
-                    std::cout << "aspect in, getting " << number << "\n";
-                if(header.compare("-boundcond")==0)
-                    std::cout << "boundcond in, getting " << number << "\n";
-                
-                numbers.clear();
-                number.clear();
-                header.clear();
+                k++;
+            }
+
+            if (header.compare("-help") == 0)
+            {
+                printHelp();
+            }
+
+            if (header.compare("-infile") == 0)
+            {
+                getParamsfromFile(arg);
+                break;
+            }
+
+            if (header.compare("-npart") == 0)
+            {
+                numbers.push_back(number);
+                std::cout << "npart in, getting ";
+                for (auto &num : numbers)
+                    std::cout << num << " ";
+                std::cout << "\n";
+            }
+            if (header.compare("-qom") == 0)
+            {
+                numbers.push_back(number);
+                std::cout << "qom in, getting ";
+                for (auto &num : numbers)
+                    std::cout << num << " ";
+                std::cout << "\n";
+            }
+            if (header.compare("-temp") == 0)
+            {
+                numbers.push_back(number);
+                std::cout << "temp in, getting ";
+                for (auto &num : numbers)
+                    std::cout << num << " ";
+                std::cout << "\n";
+            }
+            if (header.compare("-xlen") == 0)
+                std::cout << "xlen in, getting " << number << "\n";
+            if (header.compare("-nxproc") == 0)
+                std::cout << "nxproc in, getting " << number << "\n";
+            if (header.compare("-nxsamples") == 0)
+                std::cout << "nxsamples in, getting " << number << "\n";
+            if (header.compare("-aspect") == 0)
+                std::cout << "aspect in, getting " << number << "\n";
+            if (header.compare("-simtime") == 0)
+                std::cout << "aspect in, getting " << number << "\n";
+            if (header.compare("-boundcond") == 0)
+                std::cout << "boundcond in, getting " << number << "\n";
+
+            numbers.clear();
+            number.clear();
+            header.clear();
         }
     }
 
-    void simulation::getParamsfromFile(std::string filename){
-        
-            std::ifstream infile(filename);
-            std::vector<std::string> filelines, numbers;
-            std::string line, header, number;
+    void simulation::getParamsfromFile(std::string filename)
+    {
 
-            while(getline(infile, line))
-                filelines.push_back(line);
-            
-            infile.close();
-            
-            for(auto & fline : filelines){
-                if(fline[0] == '#')
-                    continue;
-                
-                for(char &c : fline){
-                    if((c > 47 && c<58) || c == '.' || c == '-')
-                        number.push_back(c);
-                    if(c == ','){
-                        numbers.push_back(number);
-                        number.clear();
-                        }
-                    if(c > 96 && c < 123)
-                        header.push_back(c);
-                    if(c > 64 && c < 91)
-                        header.push_back(c+32);
-                }
-                
-                if(header.compare("npart")==0){
+        std::ifstream infile(filename);
+        std::vector<std::string> filelines, numbers;
+        std::string line, header, number;
+
+        while (getline(infile, line))
+            filelines.push_back(line);
+
+        infile.close();
+
+        for (auto &fline : filelines)
+        {
+            if (fline[0] == '#')
+                continue;
+
+            for (char &c : fline)
+            {
+                if ((c > 47 && c < 58) || c == '.' || c == '-')
+                    number.push_back(c);
+                if (c == ',')
+                {
                     numbers.push_back(number);
-                    std::cout << "npart in, getting ";
-                    for(auto & num : numbers)
-                        std::cout << num << " ";
-                    std::cout << "\n";
+                    number.clear();
                 }
-                if(header.compare("qom")==0){
-                    numbers.push_back(number);
-                    std::cout << "qom in, getting ";
-                    for(auto & num : numbers)
-                        std::cout << num << " ";
-                    std::cout << "\n";
-                }
-                if(header.compare("temp")==0){
-                    numbers.push_back(number);
-                    std::cout << "temp in, getting ";
-                    for(auto & num : numbers)
-                        std::cout << num << " ";
-                    std::cout << "\n";
-                }
-                if(header.compare("xlen")==0)
-                    std::cout << "xlen in, getting " << number << "\n";
-                if(header.compare("nxproc")==0)
-                    std::cout << "nxproc in, getting " << number << "\n";
-                if(header.compare("nxsamples")==0)
-                    std::cout << "nxsamples in, getting " << number << "\n";
-                if(header.compare("aspect")==0)
-                    std::cout << "aspect in, getting " << number << "\n";
-                if(header.compare("simtime")==0)
-                    std::cout << "aspect in, getting " << number << "\n";
-                if(header.compare("boundcond")==0)
-                    std::cout << "boundcond in, getting " << number << "\n";
-                
-                numbers.clear();
-                number.clear();
-                header.clear();
+                if (c > 96 && c < 123)
+                    header.push_back(c);
+                if (c > 64 && c < 91)
+                    header.push_back(c + 32);
             }
+
+            if (header.compare("npart") == 0)
+            {
+                numbers.push_back(number);
+                std::cout << "npart in, getting ";
+                for (auto &num : numbers)
+                    std::cout << num << " ";
+                std::cout << "\n";
+            }
+            if (header.compare("qom") == 0)
+            {
+                numbers.push_back(number);
+                std::cout << "qom in, getting ";
+                for (auto &num : numbers)
+                    std::cout << num << " ";
+                std::cout << "\n";
+            }
+            if (header.compare("temp") == 0)
+            {
+                numbers.push_back(number);
+                std::cout << "temp in, getting ";
+                for (auto &num : numbers)
+                    std::cout << num << " ";
+                std::cout << "\n";
+            }
+            if (header.compare("xlen") == 0)
+                std::cout << "xlen in, getting " << number << "\n";
+            if (header.compare("nxproc") == 0)
+                std::cout << "nxproc in, getting " << number << "\n";
+            if (header.compare("nxsamples") == 0)
+                std::cout << "nxsamples in, getting " << number << "\n";
+            if (header.compare("aspect") == 0)
+                std::cout << "aspect in, getting " << number << "\n";
+            if (header.compare("simtime") == 0)
+                std::cout << "aspect in, getting " << number << "\n";
+            if (header.compare("boundcond") == 0)
+                std::cout << "boundcond in, getting " << number << "\n";
+
+            numbers.clear();
+            number.clear();
+            header.clear();
+        }
     }
 
     // Creating a virtual cartesian topology
@@ -324,7 +348,7 @@ namespace FCPIC
         get_diagonal_rank(coords_nw, grid_nw);
         get_diagonal_rank(coords_sw, grid_sw);
 
-        //std::cout << "grid_rank: " << grid_rank << " ne: " << grid_ne << " se: " << grid_se << " sw: " << grid_sw << " nw: " << grid_nw << std::endl;
+        // std::cout << "grid_rank: " << grid_rank << " ne: " << grid_ne << " se: " << grid_se << " sw: " << grid_sw << " nw: " << grid_nw << std::endl;
 
         /////////////////////777////////////
 
@@ -383,7 +407,7 @@ namespace FCPIC
     void simulation::exchange_phi_buffers(field *phi)
     {
         int i, j;
-        
+
         i = 1;
         j = 0;
 
@@ -437,53 +461,147 @@ namespace FCPIC
     void simulation::exchange_particles_buffers(species *lepton)
     {
         // Communication to determine the size of the arrays of each buffer
-        MPI_Sendrecv(&(lepton->size_send_north), 1, MPI_INT, grid_top, 0, &(lepton->size_recv_south), 1, MPI_INT, grid_bottom, 0, grid_comm, &status);
-        MPI_Sendrecv(&(lepton->size_send_south), 1, MPI_INT, grid_bottom, 0, &(lepton->size_recv_north), 1, MPI_INT, grid_top, 0, grid_comm, &status);
-        MPI_Sendrecv(&(lepton->size_send_west), 1, MPI_INT, grid_left, 0, &(lepton->size_recv_east), 1, MPI_INT, grid_right, 0, grid_comm, &status);
-        MPI_Sendrecv(&(lepton->size_send_east), 1, MPI_INT, grid_right, 0, &(lepton->size_recv_west), 1, MPI_INT, grid_left, 0, grid_comm, &status);
+        lepton->size_recv_north = 0;
+        lepton->size_recv_south = 0;
+        lepton->size_recv_east = 0;
+        lepton->size_recv_west = 0;
 
-        MPI_Sendrecv(&(lepton->size_send_ne), 1, MPI_INT, grid_ne, 0, &(lepton->size_recv_sw), 1, MPI_INT, grid_sw, 0, grid_comm, &status);
-        MPI_Sendrecv(&(lepton->size_send_sw), 1, MPI_INT, grid_sw, 0, &(lepton->size_recv_ne), 1, MPI_INT, grid_ne, 0, grid_comm, &status);
-        MPI_Sendrecv(&(lepton->size_send_nw), 1, MPI_INT, grid_nw, 0, &(lepton->size_recv_se), 1, MPI_INT, grid_se, 0, grid_comm, &status);
-        MPI_Sendrecv(&(lepton->size_send_se), 1, MPI_INT, grid_se, 0, &(lepton->size_recv_nw), 1, MPI_INT, grid_nw, 0, grid_comm, &status);
-        //
+        // std::cout << "SEND:grid_rank: " << grid_rank << " n: " << lepton->size_send_north << " s:" << lepton->size_send_south
+        //           << " e: " << lepton->size_send_east << " w: " << lepton->size_send_west << std::endl;
+
+        // for (int i = 0; i < lepton->send_buffer_east.size(); i++)
+        //     std::cout << "grid East: " << grid_rank << " ix: " << lepton->send_buffer_east[i].ix << " iy: " << lepton->send_buffer_east[i].iy << std::endl;
+
+        // for (int i = 0; i < lepton->send_buffer_west.size(); i++)
+        //     std::cout << "grid West: " << grid_rank << " ix: " << lepton->send_buffer_west[i].ix << " iy: " << lepton->send_buffer_west[i].iy << std::endl;
+
+        // MPI_Sendrecv(&(lepton->size_send_north), 1, MPI_INT, grid_top, 0, &(lepton->size_recv_south), 1, MPI_INT, grid_bottom, 0, grid_comm, MPI_STATUS_IGNORE);
+        // MPI_Sendrecv(&(lepton->size_send_south), 1, MPI_INT, grid_bottom, 0, &(lepton->size_recv_north), 1, MPI_INT, grid_top, 0, grid_comm, MPI_STATUS_IGNORE);
+
+        // MPI_Sendrecv(&(lepton->size_send_west), 1, MPI_INT, grid_left, 0, &(lepton->size_recv_east), 1, MPI_INT, grid_right, 0, grid_comm, MPI_STATUS_IGNORE);
+        // MPI_Sendrecv(&(lepton->size_send_east), 1, MPI_INT, grid_right, 0, &(lepton->size_recv_west), 1, MPI_INT, grid_left, 0, grid_comm, MPI_STATUS_IGNORE);
+
+        // MPI_Barrier(grid_comm);
+
+        // std::cout << "RECV:grid_rank: " << grid_rank << " n: " << lepton->size_recv_north << " s:" << lepton->size_recv_south
+        //           << " e: " << lepton->size_recv_east << " w: " << lepton->size_recv_west << std::endl;
+
+        // MPI_Barrier(grid_comm);
+        // std::cout << "SEND:grid_rank: " << grid_rank << " n: " << lepton->size_send_north << " s:" << lepton->size_send_south
+        //           << " e: " << lepton->size_send_east << " w: " << lepton->size_send_west << std::endl;
+
+        // std::cout << "RECV:grid_rank: " << grid_rank << " n: " << lepton->size_recv_north << " s:" << lepton->size_recv_south
+        //           << " e: " << lepton->size_recv_east << " w: " << lepton->size_recv_west << std::endl;
+
+        // MPI_Sendrecv(&(lepton->size_send_ne), 1, MPI_INT, grid_ne, 0, &(lepton->size_recv_sw), 1, MPI_INT, grid_sw, 0, grid_comm, &status);
+        // MPI_Sendrecv(&(lepton->size_send_sw), 1, MPI_INT, grid_sw, 0, &(lepton->size_recv_ne), 1, MPI_INT, grid_ne, 0, grid_comm, &status);
+        // MPI_Sendrecv(&(lepton->size_send_nw), 1, MPI_INT, grid_nw, 0, &(lepton->size_recv_se), 1, MPI_INT, grid_se, 0, grid_comm, &status);
+        // MPI_Sendrecv(&(lepton->size_send_se), 1, MPI_INT, grid_se, 0, &(lepton->size_recv_nw), 1, MPI_INT, grid_nw, 0, grid_comm, &status);
+
+        // std::cout << "SEND_actual:grid_rank: " << grid_rank << " n: " << lepton->size_send_north << " s:" << lepton->size_send_south
+        //           << " e: " << lepton->size_send_east << " w: " << lepton->size_send_west << std::endl;
+
         // allocate memory for the vectors that are going to receive the MPI particles
         part recv_dummy;
         recv_dummy.ix = -1; // set to -1 as a way to check later if there was "actual" communication
         recv_dummy.iy = -1;
-        lepton->recv_buffer_east.assign(lepton->size_recv_east, recv_dummy);
-        lepton->recv_buffer_west.assign(lepton->size_recv_west, recv_dummy);
-        lepton->recv_buffer_north.assign(lepton->size_recv_north, recv_dummy);
-        lepton->recv_buffer_south.assign(lepton->size_recv_south, recv_dummy);
+        int over = 0;
+        lepton->recv_buffer_east.assign(lepton->size_recv_east + over, recv_dummy);
+        lepton->recv_buffer_west.assign(lepton->size_recv_west + over, recv_dummy);
+        lepton->recv_buffer_north.assign(lepton->size_recv_north + over, recv_dummy);
+        lepton->recv_buffer_south.assign(lepton->size_recv_south + over, recv_dummy);
 
-        lepton->recv_buffer_ne.assign(lepton->size_recv_ne, recv_dummy);
-        lepton->recv_buffer_nw.assign(lepton->size_recv_nw, recv_dummy);
-        lepton->recv_buffer_se.assign(lepton->size_recv_se, recv_dummy);
-        lepton->recv_buffer_sw.assign(lepton->size_recv_sw, recv_dummy);
+        lepton->recv_buffer_ne.assign(lepton->size_recv_ne + over, recv_dummy);
+        lepton->recv_buffer_nw.assign(lepton->size_recv_nw + over, recv_dummy);
+        lepton->recv_buffer_se.assign(lepton->size_recv_se + over, recv_dummy);
+        lepton->recv_buffer_sw.assign(lepton->size_recv_sw + over, recv_dummy);
 
-        //! Buffers Communication
+        // std::cout << "SEND_before:grid_rank: " << grid_rank << " n: " << lepton->size_send_north << " s:" << lepton->size_send_south
+        //           << " e: " << lepton->size_send_east << " w: " << lepton->size_send_west << std::endl;
+        // std::cout << "chega aqui!!!!!!" << std::endl;
+        // //! Buffers Communication
         // All traffic in direction "top"
-        MPI_Sendrecv(&(lepton->send_buffer_north[0]), lepton->send_buffer_north.size(), exchange_part_type, grid_top, 0, &(lepton->recv_buffer_south[0]), lepton->size_recv_south, exchange_part_type, grid_bottom, 0, grid_comm, &status);
-        // All traf\fic in direction "bottom"
-        MPI_Sendrecv(&(lepton->send_buffer_south[0]), lepton->send_buffer_south.size(), exchange_part_type, grid_bottom, 0, &(lepton->recv_buffer_north[0]), lepton->size_recv_north, exchange_part_type, grid_top, 0, grid_comm, &status);
-        // All traf\fic in direction "bottom"
-        MPI_Sendrecv(&(lepton->send_buffer_west[0]), lepton->send_buffer_west.size(), exchange_part_type, grid_left, 0, &(lepton->recv_buffer_east[0]), lepton->size_recv_east, exchange_part_type, grid_right, 0, grid_comm, &status);
-        // All traffic in direction "right"
-        MPI_Sendrecv(&(lepton->send_buffer_east[0]), lepton->send_buffer_east.size(), exchange_part_type, grid_right, 0, &(lepton->recv_buffer_west[0]), lepton->size_recv_west, exchange_part_type, grid_left, 0, grid_comm, &status);
+        // MPI_Sendrecv(&(lepton->send_buffer_north[0]), lepton->send_buffer_north.size(), exchange_part_type, grid_top, 0, &(lepton->recv_buffer_south[0]), lepton->size_recv_south, exchange_part_type, grid_bottom, 0, grid_comm, MPI_STATUS_IGNORE);
+        // // All traf\fic in direction "bottom"
+        // MPI_Sendrecv(&(lepton->send_buffer_south[0]), lepton->send_buffer_south.size(), exchange_part_type, grid_bottom, 0, &(lepton->recv_buffer_north[0]), lepton->size_recv_north, exchange_part_type, grid_top, 0, grid_comm, MPI_STATUS_IGNORE);
+        // // // All traf\fic in direction "bottom"
+        // MPI_Sendrecv(&(lepton->send_buffer_west[0]), lepton->send_buffer_west.size(), exchange_part_type, grid_left, 0, &(lepton->recv_buffer_east[0]), lepton->size_recv_east, exchange_part_type, grid_right, 0, grid_comm, MPI_STATUS_IGNORE);
+        // // All traffic in direction "right"
+        // MPI_Sendrecv(&(lepton->send_buffer_east[0]), lepton->send_buffer_east.size(), exchange_part_type, grid_right, 0, &(lepton->recv_buffer_west[0]), lepton->size_recv_west, exchange_part_type, grid_left, 0, grid_comm, MPI_STATUS_IGNORE);
+
+        // MPI_Sendrecv(&(lepton->size_send_west), 1, MPI_INT, grid_left, 0, &(lepton->size_recv_east), 1, MPI_INT, grid_right, 0, grid_comm, &status);
+
+        // if (grid_left != MPI_PROC_NULL)
+        //     MPI_Send(&(lepton->size_send_west), 1, MPI_INT, grid_left, 0, grid_comm);
+        // if (grid_left != MPI_PROC_NULL)
+        //     MPI_Recv(&(lepton->size_recv_east), 1, MPI_INT, grid_right, 0, grid_comm, &status);
+        // if (grid_right != MPI_PROC_NULL)
+        //     MPI_Send(&(lepton->size_send_east), 1, MPI_INT, grid_right, 0, grid_comm);
+        // if (grid_right != MPI_PROC_NULL)
+        //     MPI_Recv(&(lepton->size_recv_west), 1, MPI_INT, grid_left, 0, grid_comm, &status);
+
+        // MPI_Send(&(lepton->size_send_east), 1, MPI_INT, grid_right, 0, grid_comm);
+
+        // MPI_Recv(&(lepton->size_recv_west), 1, MPI_INT, grid_left, 0, grid_comm, &status);
+
+        // MPI_Send(&(lepton->size_send_west), 1, MPI_INT, grid_left, 0, grid_comm);
+
+        // MPI_Recv(&(lepton->size_recv_east), 1, MPI_INT, grid_right, 0, grid_comm, &status);
+
+        // lepton->recv_buffer_east.assign(lepton->size_recv_east + over, recv_dummy);
+        // lepton->recv_buffer_west.assign(lepton->size_recv_west + over, recv_dummy);
+
+        MPI_Send(&(lepton->send_buffer_west[0]), lepton->send_buffer_west.size(), exchange_part_type, grid_left, 0, grid_comm);
+
+        MPI_Probe(grid_right, 0, grid_comm, &status);
+        MPI_Get_count(&status, exchange_part_type, &(lepton->size_recv_east));
+        // if (lepton->size_recv_east < 0)
+        //     lepton->size_recv_east = 0;
+        std::cout << "SEND:grid_rank_east: " << grid_rank << " n: " << lepton->size_recv_east << std::endl;
+        lepton->recv_buffer_east.assign(lepton->size_recv_east, recv_dummy);
+
+        MPI_Recv(&(lepton->recv_buffer_east[0]), lepton->size_recv_east, exchange_part_type, grid_right, 0, grid_comm, MPI_STATUS_IGNORE);
+
+        MPI_Send(&(lepton->send_buffer_east[0]), lepton->send_buffer_east.size(), exchange_part_type, grid_right, 0, grid_comm);
+
+        MPI_Probe(grid_left, 0, grid_comm, &status);
+        MPI_Get_count(&status, exchange_part_type, &(lepton->size_recv_west));
+
+        MPI_Barrier(grid_comm);
+
+        // if (lepton->size_recv_west < 0)
+        //     lepton->size_recv_west = 0;
+        std::cout << "SEND:grid_rank_west: " << grid_rank << " n: " << lepton->size_recv_west << std::endl;
+        lepton->recv_buffer_west.assign(lepton->size_recv_west, recv_dummy);
+
+        MPI_Recv(&(lepton->recv_buffer_west[0]), lepton->size_recv_west, exchange_part_type, grid_left, 0, grid_comm, MPI_STATUS_IGNORE);
+
+        // std::cout << "SEND:grid_rank: " << grid_rank << " n: " << lepton->size_send_north << " s:" << lepton->size_send_south
+        //           << " e: " << lepton->size_send_east << " w: " << lepton->size_send_west << std::endl;
+
+        // std::cout << "RECV:grid_rank: " << grid_rank << " n: " << lepton->size_recv_north << " s:" << lepton->size_recv_south
+        //           << " e: " << lepton->size_recv_east << " w: " << lepton->size_recv_west << std::endl;
+
+        // std::cout << "SEND_PASSOU:grid_rank: " << grid_rank << " n: " << lepton->size_send_north << " s:" << lepton->size_send_south
+        //           << " e: " << lepton->size_send_east << " w: " << lepton->size_send_west << std::endl;
 
         // All traffic in direction "ne-sw"
-        MPI_Sendrecv(&(lepton->send_buffer_ne[0]), lepton->send_buffer_ne.size(), exchange_part_type, grid_ne, 0, &(lepton->recv_buffer_sw[0]), lepton->size_recv_sw, exchange_part_type, grid_sw, 0, grid_comm, &status);
-        // All traf\fic in direction "sw-ne"
-        MPI_Sendrecv(&(lepton->send_buffer_sw[0]), lepton->send_buffer_sw.size(), exchange_part_type, grid_sw, 0, &(lepton->recv_buffer_ne[0]), lepton->size_recv_ne, exchange_part_type, grid_ne, 0, grid_comm, &status);
-        // All traf\fic in direction "se-nw"
-        MPI_Sendrecv(&(lepton->send_buffer_se[0]), lepton->send_buffer_se.size(), exchange_part_type, grid_se, 0, &(lepton->recv_buffer_nw[0]), lepton->size_recv_nw, exchange_part_type, grid_nw, 0, grid_comm, &status);
-        // All traffic in direction "nw-se"
-        MPI_Sendrecv(&(lepton->send_buffer_nw[0]), lepton->send_buffer_nw.size(), exchange_part_type, grid_nw, 0, &(lepton->recv_buffer_se[0]), lepton->size_recv_se, exchange_part_type, grid_se, 0, grid_comm, &status);
+        // MPI_Sendrecv(&(lepton->send_buffer_ne[0]), lepton->send_buffer_ne.size(), exchange_part_type, grid_ne, 0, &(lepton->recv_buffer_sw[0]), lepton->size_recv_sw, exchange_part_type, grid_sw, 0, grid_comm, &status);
+        // // All traf\fic in direction "sw-ne"
+
+        // MPI_Sendrecv(&(lepton->send_buffer_sw[0]), lepton->send_buffer_sw.size(), exchange_part_type, grid_sw, 0, &(lepton->recv_buffer_ne[0]), lepton->size_recv_ne, exchange_part_type, grid_ne, 0, grid_comm, &status);
+        // // All traf\fic in direction "se-nw"
+
+        // MPI_Sendrecv(&(lepton->send_buffer_se[0]), lepton->send_buffer_se.size(), exchange_part_type, grid_se, 0, &(lepton->recv_buffer_nw[0]), lepton->size_recv_nw, exchange_part_type, grid_nw, 0, grid_comm, &status);
+        // // All traffic in direction "nw-se"
+
+        // MPI_Sendrecv(&(lepton->send_buffer_nw[0]), lepton->send_buffer_nw.size(), exchange_part_type, grid_nw, 0, &(lepton->recv_buffer_se[0]), lepton->size_recv_se, exchange_part_type, grid_se, 0, grid_comm, &status);
     }
 
     // Jacobi solver
     void simulation::jacobi(field *phi, field *charge)
     {
+        // std::cout << __PRETTY_FUNCTION__ << std::endl;
         double res, e;
         double global_res = 1.0;
         double tol = 1e-7;
@@ -509,9 +627,12 @@ namespace FCPIC
             for (int i = 1; i <= N_int_y; i++)
                 for (int j = 1; j <= N_int_x; j++)
                 {
-                    temp.val[POSITION] = .25 * (phi->val[NORTH] + phi->val[SOUTH] +
-                                                phi->val[EAST] + phi->val[WEST] -
-                                                charge->val[POSITION]);
+
+                    temp.val[POSITION] = .25 * (phi->val[NORTH] + phi->val[SOUTH] + phi->val[EAST] + phi->val[WEST] -
+                                                charge->val[POSITION] / 1000.);
+
+                    // temp.val[POSITION] = .25 * (phi->val[NORTH] + phi->val[SOUTH] + phi->val[EAST] + phi->val[WEST] -
+                    //                             1. / 1000.);
 
                     e = fabs(temp.val[POSITION] - phi->val[POSITION]);
                     if (e > res) // norm infty: supremo
@@ -531,7 +652,7 @@ namespace FCPIC
 
         exchange_phi_buffers(phi);
 
-        // std::cout << "Maximum residual: " << res << "  | Number of iterations: " << loop << " | rank: " << grid_rank << std::endl;
+        std::cout << "Maximum residual: " << res << "  | Number of iterations: " << loop << " | rank: " << grid_rank << std::endl;
     }
 
     void simulation::set_E_value(field *phi, field *Ex_field, field *Ey_field)

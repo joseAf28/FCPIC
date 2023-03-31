@@ -50,13 +50,15 @@ typedef struct Particle
 class species
 {
 public:
-    species(std::string, int *, int *, float *, float *);
+    species(std::string, int *, int *, float *, float *, float);
     ~species();
 
     void set_x();
     void set_u();
 
     void get_charge(FCPIC::field *);
+
+    void size(int);
 
     // methods used for MPI communication
     // !Integrate these methods with the particle pusher
@@ -77,9 +79,6 @@ public:
 
     // array of particles
     std::vector<part> vec;
-
-    // charge field: Used for the jacobi iteration
-    //FCPIC::field *charge;
 
     // buffers to send data from MPI's data exchange
     std::vector<part> send_buffer_north;
@@ -140,7 +139,7 @@ private:
 
     // mass and charge
     float m = 1; //!! to define in the constructor later
-    float q = 1;
+    float q;
 
     // number of particles per cell at beggining
     int ppc[2];

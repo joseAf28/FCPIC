@@ -44,7 +44,7 @@ def readField_rank(rank, charge_field, field_type):
 results_path = "/home/jose/Desktop/FCPIC/results/"
 
 nb_ranks = 4
-counter = 50
+counter = 150
 
 
 ##number and orientation of each process
@@ -97,6 +97,8 @@ for i in range(0, nb_ranks):
 snapshots_charge = []
 snapshots_Ex = []
 snapshots_Ey = []
+
+image_counter = 0
 for count_plot in range(0, counter):
     big_charge_dummy = []
     Ex_dummy = []
@@ -134,32 +136,56 @@ for count_plot in range(0, counter):
     snapshots_Ex.append(Ex_dummy)
     snapshots_Ey.append(Ey_dummy)
 
-    # plt.imshow(big_charge,  cmap="Greens", interpolation ='nearest')
+
+    # plt.figure(image_counter)
+    # plt.imshow(big_charge_dummy, interpolation ='nearest')
     # plt.xlabel(r"$x$")
     # plt.ylabel(r"$y$")
     # plt.title(r"$\rho$")
-    
-    # plt.savefig(results_path + "/plots/test_"+ str(count_plot) +"_2.png")
+    # plt.colorbar()
+    # plt.savefig(results_path + "plots/charge_field_2species_"+ str(count_plot) +"_2.png")
 
-fps = 10
+    # image_counter = image_counter + 1
+
+    # plt.figure(image_counter)
+    # plt.imshow(Ex_dummy, interpolation ='nearest')
+    # plt.xlabel(r"$x$")
+    # plt.ylabel(r"$y$")
+    # plt.title(r"$E_x$")
+    # plt.colorbar()
+    # plt.savefig(results_path + "plots/Ex_field_2species_"+ str(count_plot) +"_2.png")
+
+    # image_counter = image_counter + 1
+
+    # plt.figure(image_counter)
+    # plt.imshow(Ey_dummy, interpolation ='nearest')
+    # plt.xlabel(r"$x$")
+    # plt.ylabel(r"$y$")
+    # plt.title(r"$E_y$")
+    # plt.colorbar()
+    # plt.savefig(results_path + "plots/Ey_field_2species_"+ str(count_plot) +"_2.png")
+
+    # image_counter = image_counter + 1
+
+##Video Creation
+fps = 15
 nSeconds = math.floor(counter/fps)
 print(nSeconds)
-
-
 # First set up the figure, the axis, and the plot element we want to animate
 fig = plt.figure( figsize=(8,8) )
 
-a = snapshots_charge[0]
-im = plt.imshow(a, interpolation='nearest', cmap="Greens")
+a = snapshots_Ey[0]
+im = plt.imshow(a, interpolation='nearest', extent=[0, 5, 0, 5])
 plt.xlabel(r"$x$")
 plt.ylabel(r"$y$")
-plt.title(r"$\rho$")
+plt.title(r"$E_y$")
+plt.colorbar()
 
 def animate_func(i):
     if i % fps == 0:
         print( '.', end ='' )
 
-    im.set_array(snapshots_charge[i])
+    im.set_array(snapshots_Ey[i])
     return [im]
 
 anim = animation.FuncAnimation(fig, animate_func, 
@@ -167,48 +193,6 @@ anim = animation.FuncAnimation(fig, animate_func,
                                interval = 1000 / fps, # in ms
                                )
 
-anim.save('test_charge_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save('Ey_1species_1ppc_square_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
 
 print('Charge Anim Done!')
-
-
-
-
-
-
-
-
-
-##Good example I found online
-
-# import numpy as np
-# def func(x, y):
-#     return x*(1-x)*np.cos(4*np.pi*x) * np.sin(4*np.pi*y**2)**2
-
-# rng = np.random.default_rng()
-# points = rng.random((1000, 2))
-# values = func(points[:,0], points[:,1])
-
-# grid_x, grid_y = np.mgrid[0:1:100j, 0:1:200j]
-
-# from scipy.interpolate import griddata
-# grid_z0 = griddata(points, values, (grid_x, grid_y), method='nearest')
-# grid_z1 = griddata(points, values, (grid_x, grid_y), method='linear')
-# grid_z2 = griddata(points, values, (grid_x, grid_y), method='cubic')
-
-# import matplotlib.pyplot as plt
-# plt.subplot(221)
-# plt.imshow(func(grid_x, grid_y).T, extent=(0,1,0,1), origin='lower')
-# plt.plot(points[:,0], points[:,1], 'k.', ms=1)
-# plt.title('Original')
-# plt.subplot(222)
-# plt.imshow(grid_z0.T, extent=(0,1,0,1), origin='lower')
-# plt.title('Nearest')
-# plt.subplot(223)
-# plt.imshow(grid_z1.T, extent=(0,1,0,1), origin='lower')
-# plt.title('Linear')
-# plt.subplot(224)
-# plt.imshow(grid_z2.T, extent=(0,1,0,1), origin='lower')
-# plt.title('Cubic')
-# plt.gcf().set_size_inches(6, 6)
-# plt.show()
