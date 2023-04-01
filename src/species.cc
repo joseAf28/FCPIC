@@ -294,7 +294,6 @@ bool species::advance_cell(int *ranks_mpi)
         {
             if (flag_right)
             {
-                // std::cout << "flag refelction3" << std::endl;
                 vec[counter].x = dx - vec[counter].x;
                 vec[counter].ix = 2 * N_int_x - vec[counter].ix + 1;
                 vec[counter].ux = -vec[counter].ux;
