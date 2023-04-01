@@ -286,7 +286,7 @@ bool species::advance_cell(int *ranks_mpi)
         {
             if (flag_left)
             {
-                std::cout << "flag refelction1" << std::endl;
+                // std::cout << "flag refelction1" << std::endl;
                 vec[counter].x = dx - vec[counter].x;
                 vec[counter].ix = -vec[counter].ix - 1;
                 vec[counter].ux = -vec[counter].ux;
@@ -302,7 +302,7 @@ bool species::advance_cell(int *ranks_mpi)
         {
             if (flag_bottom)
             {
-                std::cout << "flag refelction2" << std::endl;
+                // std::cout << "flag refelction2" << std::endl;
                 vec[counter].y = dy - vec[counter].y;
                 vec[counter].iy = -vec[counter].iy - 1;
                 vec[counter].uy = -vec[counter].uy;
@@ -318,7 +318,7 @@ bool species::advance_cell(int *ranks_mpi)
         {
             if (flag_right)
             {
-                std::cout << "flag refelction3" << std::endl;
+                // std::cout << "flag refelction3" << std::endl;
                 vec[counter].x = dx - vec[counter].x;
                 vec[counter].ix = 2 * N_int_x - vec[counter].ix + 1;
                 vec[counter].ux = -vec[counter].ux;
@@ -334,7 +334,7 @@ bool species::advance_cell(int *ranks_mpi)
         {
             if (flag_top)
             {
-                std::cout << "flag refelction4" << std::endl;
+                // std::cout << "flag refelction4" << std::endl;
                 vec[counter].y = dy - vec[counter].y;
                 vec[counter].iy = 2 * N_int_y - vec[counter].iy + 1;
                 vec[counter].uy = -vec[counter].uy;

@@ -120,8 +120,6 @@ int main(int argc, char **argv)
     int flags_coords_mpi[5] = {P_grid_rank, P_grid_top, P_grid_bottom, P_grid_right, P_grid_left};
 
     species test(name, ppc, range, vf, vth, 1);
-    test.set_x();
-    test.set_u();
     if (proc_rank == 0)
     {
         for (int i = 1; i < test.vec.size(); i++)
@@ -144,18 +142,22 @@ int main(int argc, char **argv)
                        test.vec.end());
         std::cout << proc_rank << "vec.size: " << test.vec.size() << std::endl;
     }
+    test.set_x();
+    test.set_u();
 
-    //
+    test.write_output_vec(0, P_grid_rank);
+
+    // //
     for (int i = 0; i < 20; i++)
     {
+        test.update_part_list();
+        test.write_output_vec(i, P_grid_rank);
         test.init_pusher(Ex, Ey);
         test.particle_pusher(Ex, Ey);
         test.advance_cell(flags_coords_mpi);
         std::cout << "+++*+***+**+**+*+******++*+*+++++++++" << std::endl;
 
         //
-
-        test.write_output_vec(i, P_grid_rank);
         test.prepare_buffer();
 
         //!!! Size of the arrays to send
@@ -174,7 +176,6 @@ int main(int argc, char **argv)
         test.recv_buffer_south.assign(test.size_recv_south, recv_dummy);
 
         test.write_input_buffer(i, P_grid_rank);
-        test.write_output_buffer(i, P_grid_rank);
 
         //! Buffers Communication
         MPI_Sendrecv(&(test.send_buffer_north[0]), test.send_buffer_north.size(), mpi_part, P_grid_top, 0, &(test.recv_buffer_south[0]), test.size_recv_south, mpi_part, P_grid_bottom, 0, grid_comm, &status);
@@ -190,9 +191,7 @@ int main(int argc, char **argv)
         std::cout << "size north: " << test.send_buffer_north.size() << std::endl;
 
         // test.write_input_buffer(8, P_grid_rank);
-        test.write_output_buffer(i, P_grid_rank);
-        test.update_part_list();
-        test.write_output_vec(i, P_grid_rank);
+        // test.update_part_list();
     }
 
     MPI_Finalize();

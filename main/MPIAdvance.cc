@@ -20,8 +20,8 @@ int main(int argc, char **argv)
 
     float *vfa = new float[3];
     float *vfb = new float[3];
-    float vth[3] = {0.2, 0., 0.};
-    vfa[0] = 0.;
+    float vth[3] = {0., 0., 0.};
+    vfa[0] = 0.9;
     vfa[1] = 0.;
     vfa[2] = 0.;
     vfb[0] = -0.;
@@ -83,11 +83,35 @@ int main(int argc, char **argv)
     specB.set_x();
     specB.set_u();
 
-    std::cout << "grid: " << sim->grid_rank << " vec.sizeA: " << specA.vec.size() << " vec.size B: " << specB.vec.size() << std::endl;
+    if (sim->grid_rank == 0)
+    {
+        for (int i = 1; i < specA.vec.size(); i++)
+            specA.vec[i].flag = SEND;
+
+        specA.vec.erase(std::remove_if(specA.vec.begin(), specA.vec.end(), [&specA](const part obj)
+                                       { return (obj.flag == SEND); }),
+                        specA.vec.end());
+
+        std::cout << sim->grid_rank << "vec.size: " << specA.vec.size() << std::endl;
+    }
+
+    if (sim->grid_rank != 0)
+    {
+        for (int i = 0; i < specA.vec.size(); i++)
+            specA.vec[i].flag = SEND;
+
+        specA.vec.erase(std::remove_if(specA.vec.begin(), specA.vec.end(), [&specA](const part obj)
+                                       { return (obj.flag == SEND); }),
+                        specA.vec.end());
+        std::cout << sim->grid_rank << "vec.size: " << specA.vec.size() << std::endl;
+    }
+    specA.write_output_vec(-1, sim->grid_rank);
+
+    // std::cout << "grid: " << sim->grid_rank << " vec.sizeA: " << specA.vec.size() << " vec.size B: " << specB.vec.size() << std::endl;
 
     charge = new FCPIC::field(range[0] + 1, range[1] + 1);
     specA.get_charge(charge); // getting initial charge field
-    specB.get_charge(charge);
+    // specB.get_charge(charge);
 
     std::fstream charge_file;
     std::string charge_filename = "../results/charge_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(0) + ".txt";
@@ -106,30 +130,30 @@ int main(int argc, char **argv)
     // phi->print_field(std::cout);
 
     specA.init_pusher(Ex, Ey); // first iteration of the particle pusher
-    specB.init_pusher(Ex, Ey);
+    // specB.init_pusher(Ex, Ey);
     // specA.size(sim->grid_rank);
 
     for (int counter = 0; counter < 60; counter++)
     {
         // std::cout << "grid_rank: " << sim->grid_rank << "counter:" << counter << std::endl;
         // //! Writting in file;
-        std::fstream Ex_file;
-        std::string Ex_filename = "../results/Ex_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(counter) + ".txt";
-        Ex_file.open(Ex_filename, std::ios::out);
-        Ex->print_field(Ex_file);
-        Ex_file.close();
+        // std::fstream Ex_file;
+        // std::string Ex_filename = "../results/Ex_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(counter) + ".txt";
+        // Ex_file.open(Ex_filename, std::ios::out);
+        // Ex->print_field(Ex_file);
+        // Ex_file.close();
 
-        std::fstream Ey_file;
-        std::string Ey_filename = "../results/Ey_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(counter) + ".txt";
-        Ey_file.open(Ey_filename, std::ios::out);
-        Ey->print_field(Ey_file);
-        Ey_file.close();
+        // std::fstream Ey_file;
+        // std::string Ey_filename = "../results/Ey_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(counter) + ".txt";
+        // Ey_file.open(Ey_filename, std::ios::out);
+        // Ey->print_field(Ey_file);
+        // Ey_file.close();
 
-        std::fstream charge_file;
-        std::string charge_filename = "../results/charge_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(counter + 1) + ".txt";
-        charge_file.open(charge_filename, std::ios::out);
-        charge->print_field(charge_file);
-        charge_file.close();
+        // std::fstream charge_file;
+        // std::string charge_filename = "../results/charge_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(counter + 1) + ".txt";
+        // charge_file.open(charge_filename, std::ios::out);
+        // charge->print_field(charge_file);
+        // charge_file.close();
 
         specA.write_output_vec(counter, sim->grid_rank); // debugging
 
@@ -151,21 +175,21 @@ int main(int argc, char **argv)
             std::cout << "****************" << std::endl;
         }
 
-        specB.particle_pusher(Ex, Ey);
-        while (specB.advance_cell(flags_coords_mpi))
-        {
-            specB.prepare_buffer();
-            sim->exchange_particles_buffers(&specB);
+        // specB.particle_pusher(Ex, Ey);
+        // while (specB.advance_cell(flags_coords_mpi))
+        // {
+        //     specB.prepare_buffer();
+        //     sim->exchange_particles_buffers(&specB);
 
-            specB.update_part_list();
-            std::cout << "****************" << std::endl;
-        }
+        //     specB.update_part_list();
+        //     std::cout << "****************" << std::endl;
+        // }
 
         // getting charge distribution and doing the sum at the same time
         charge->setValue(0.f);
 
         specA.get_charge(charge);
-        specB.get_charge(charge);
+        // specB.get_charge(charge);
 
         // jacobi with all the species charge
         sim->jacobi(phi, charge);
