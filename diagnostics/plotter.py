@@ -44,7 +44,7 @@ def readField_rank(rank, charge_field, field_type):
 results_path = "/home/jose/Desktop/FCPIC/results/"
 
 nb_ranks = 4
-counter = 150
+counter = 190
 
 
 ##number and orientation of each process
@@ -168,24 +168,24 @@ for count_plot in range(0, counter):
     # image_counter = image_counter + 1
 
 ##Video Creation
-fps = 15
+fps = 20
 nSeconds = math.floor(counter/fps)
 print(nSeconds)
 # First set up the figure, the axis, and the plot element we want to animate
 fig = plt.figure( figsize=(8,8) )
 
-a = snapshots_Ey[0]
-im = plt.imshow(a, interpolation='nearest', extent=[0, 5, 0, 5])
+a = snapshots_charge[0]
+im = plt.imshow(a, interpolation='spline16')
 plt.xlabel(r"$x$")
 plt.ylabel(r"$y$")
-plt.title(r"$E_y$")
+plt.title(r"$\rho$")
 plt.colorbar()
 
 def animate_func(i):
     if i % fps == 0:
         print( '.', end ='' )
 
-    im.set_array(snapshots_Ey[i])
+    im.set_array(snapshots_charge[i])
     return [im]
 
 anim = animation.FuncAnimation(fig, animate_func, 
@@ -193,6 +193,6 @@ anim = animation.FuncAnimation(fig, animate_func,
                                interval = 1000 / fps, # in ms
                                )
 
-anim.save('Ey_1species_1ppc_square_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save('charge_1species_1ppc_square_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
 
 print('Charge Anim Done!')

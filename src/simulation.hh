@@ -59,6 +59,7 @@ namespace FCPIC
         int grid_rank;                                    // rank of the current proces in the virtual grid
         int grid_top, grid_bottom, grid_left, grid_right; // ranks of the neighbouring processes
         int grid_ne, grid_se, grid_nw, grid_sw;           // ranks of diagonal processes: NE, SE, NW, SW
+        int wrap_around[2];                               // public for the class species particle pusher can see it
 
     private:
         int n_Procs;                         // total number of processes
@@ -67,7 +68,6 @@ namespace FCPIC
         MPI_Comm grid_comm;                  // grid COMMUNICATOR
         int offset[2];                       // offset for cell numbering for subdomains
         int grid_coord[2];                   // coordinates of the process in the virtual grid
-        int wrap_around[2];
         MPI_Status status;
 
         // MPI_Datatype exchange_part_type;

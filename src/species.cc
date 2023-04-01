@@ -217,8 +217,8 @@ void species::init_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
 
         field_inter(Ex, Ey, Ex_i, Ey_i, i);
 
-        vec[i].ux = vec[i].ux - 0.5 * q / m * 0 * Ex_i * dt;
-        vec[i].uy = vec[i].uy - 0.5 * q / m * 0 * Ey_i * dt;
+        vec[i].ux = vec[i].ux - 0.5 * q / m * Ex_i * dt;
+        vec[i].uy = vec[i].uy - 0.5 * q / m * Ey_i * dt;
     }
 }
 
@@ -232,8 +232,8 @@ void species::particle_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
 
         field_inter(Ex, Ey, Ex_i, Ey_i, i);
 
-        vec[i].ux = vec[i].ux + 0. * q / m * Ex_i * dt;
-        vec[i].uy = vec[i].uy + 0. * q / m * Ey_i * dt;
+        vec[i].ux = vec[i].ux + q / m * Ex_i * dt;
+        vec[i].uy = vec[i].uy + q / m * Ey_i * dt;
 
         vec[i].x = vec[i].x + vec[i].ux * dt;
         vec[i].y = vec[i].y + vec[i].uy * dt;
@@ -346,60 +346,60 @@ bool species::advance_cell(int *ranks_mpi)
             }
         }
 
-        if (ranks_mpi[0] != MPI_PROC_NULL) // periodic
+        // if (ranks_mpi[0] != MPI_PROC_NULL) // periodic
+        // {
+        // north buffer
+        if ((!send_W_true) && (!send_E_true) && send_N_true)
         {
-            // north buffer
-            if ((!send_W_true) && (!send_E_true) && send_N_true)
-            {
-                send_buffer_north.push_back(vec[counter]);
-                vec[counter].flag = SEND;
-            }
-            // ne buffer
-            else if (send_N_true && send_E_true)
-            {
-                send_buffer_ne.push_back(vec[counter]);
-                vec[counter].flag = SEND;
-            }
-            // nw buffer
-            else if (send_N_true && send_W_true)
-            {
-                send_buffer_nw.push_back(vec[counter]);
-                vec[counter].flag = SEND;
-            }
-            // south buffer
-            else if ((!send_W_true) && (!send_E_true) && send_S_true)
-            {
-                send_buffer_south.push_back(vec[counter]);
-                vec[counter].flag = SEND;
-            }
-            // se buffer
-            else if (send_S_true && send_E_true)
-            {
-                send_buffer_se.push_back(vec[counter]);
-                vec[counter].flag = SEND;
-            }
-            // sw buffer
-            else if (send_S_true && send_W_true)
-            {
-                send_buffer_sw.push_back(vec[counter]);
-                vec[counter].flag = SEND;
-            }
-            // east buffer
-            else if (send_E_true && (!send_N_true) && (!send_S_true))
-            {
-                send_buffer_east.push_back(vec[counter]);
-                vec[counter].flag = SEND;
-            }
-            // west
-            else if (send_W_true && (!send_N_true) && (!send_S_true))
-            {
-                send_buffer_west.push_back(vec[counter]);
-                vec[counter].flag = SEND;
-            }
-            else
-            {
-            }
+            send_buffer_north.push_back(vec[counter]);
+            vec[counter].flag = SEND;
         }
+        // ne buffer
+        else if (send_N_true && send_E_true)
+        {
+            send_buffer_ne.push_back(vec[counter]);
+            vec[counter].flag = SEND;
+        }
+        // nw buffer
+        else if (send_N_true && send_W_true)
+        {
+            send_buffer_nw.push_back(vec[counter]);
+            vec[counter].flag = SEND;
+        }
+        // south buffer
+        else if ((!send_W_true) && (!send_E_true) && send_S_true)
+        {
+            send_buffer_south.push_back(vec[counter]);
+            vec[counter].flag = SEND;
+        }
+        // se buffer
+        else if (send_S_true && send_E_true)
+        {
+            send_buffer_se.push_back(vec[counter]);
+            vec[counter].flag = SEND;
+        }
+        // sw buffer
+        else if (send_S_true && send_W_true)
+        {
+            send_buffer_sw.push_back(vec[counter]);
+            vec[counter].flag = SEND;
+        }
+        // east buffer
+        else if (send_E_true && (!send_N_true) && (!send_S_true))
+        {
+            send_buffer_east.push_back(vec[counter]);
+            vec[counter].flag = SEND;
+        }
+        // west
+        else if (send_W_true && (!send_N_true) && (!send_S_true))
+        {
+            send_buffer_west.push_back(vec[counter]);
+            vec[counter].flag = SEND;
+        }
+        else
+        {
+        }
+        // }
     }
     return changes_made;
 }
