@@ -44,7 +44,7 @@ def readField_rank(rank, charge_field, field_type):
 results_path = "/home/jose/Desktop/FCPIC/results/"
 
 nb_ranks = 4
-counter = 190
+counter = 700
 
 
 ##number and orientation of each process
@@ -115,7 +115,8 @@ for count_plot in range(0, counter):
         Ey_dummy.append(Ey_aux)
 
 
-    for i in range(len(charge_field[0][count_plot])-1, 0, -1):
+    # for i in range(len(charge_field[0][count_plot])-1, 0, -1):
+    for i in range(0, len(charge_field[0][count_plot])):
         charge_aux = charge_field[0][count_plot][i] + charge_field[1][count_plot][i]
         big_charge_dummy.append(charge_aux)
 
@@ -168,7 +169,7 @@ for count_plot in range(0, counter):
     # image_counter = image_counter + 1
 
 ##Video Creation
-fps = 20
+fps = 30
 nSeconds = math.floor(counter/fps)
 print(nSeconds)
 # First set up the figure, the axis, and the plot element we want to animate
@@ -193,6 +194,6 @@ anim = animation.FuncAnimation(fig, animate_func,
                                interval = 1000 / fps, # in ms
                                )
 
-anim.save('charge_1species_1ppc_square_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save('charge_2species_1ppc_700_mod_vert_square_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
 
 print('Charge Anim Done!')
