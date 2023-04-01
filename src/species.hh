@@ -58,10 +58,7 @@ public:
 
     void get_charge(FCPIC::field *);
 
-    void size(int);
-
     // methods used for MPI communication
-    // !Integrate these methods with the particle pusher
     void prepare_buffer();
     void update_part_list();
     bool advance_cell(int *);
@@ -71,7 +68,7 @@ public:
     void init_pusher(FCPIC::field *, FCPIC::field *);
     void particle_pusher(FCPIC::field *, FCPIC::field *);
 
-    //!!!!!!!!!!!!!!!! methods for debugging
+    //!!!!!!!!!!!!!!!! emporary methods for debugging
     void print();
     void write_output_vec(const int, const int);
     void write_output_buffer(const int, const int);
@@ -122,9 +119,8 @@ public:
     int size_recv_se = 0;
     int size_recv_nw = 0;
     int size_recv_sw = 0;
-    ///
 
-    int np; // total number of particles in the simulation
+    int np; // total number of particles in the simulation (after each iteration: it is updated)
 
     // simulation box info
     int N_x; // number of x grid points
@@ -141,7 +137,7 @@ private:
     float m = 1; //!! to define in the constructor later
     float q;
 
-    // number of particles per cell at beggining
+    // number of particles per cell at beggining of simulation
     int ppc[2];
 
     // number of cells in each direction

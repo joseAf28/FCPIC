@@ -460,46 +460,26 @@ namespace FCPIC
 
     void simulation::exchange_particles_buffers(species *lepton)
     {
-        // Communication to determine the size of the arrays of each buffer
         lepton->size_recv_north = 0;
         lepton->size_recv_south = 0;
         lepton->size_recv_east = 0;
         lepton->size_recv_west = 0;
 
-        // std::cout << "SEND:grid_rank: " << grid_rank << " n: " << lepton->size_send_north << " s:" << lepton->size_send_south
-        //           << " e: " << lepton->size_send_east << " w: " << lepton->size_send_west << std::endl;
+        lepton->size_recv_ne = 0;
+        lepton->size_recv_se = 0;
+        lepton->size_recv_nw = 0;
+        lepton->size_recv_sw = 0;
 
-        // for (int i = 0; i < lepton->send_buffer_east.size(); i++)
-        //     std::cout << "grid East: " << grid_rank << " ix: " << lepton->send_buffer_east[i].ix << " iy: " << lepton->send_buffer_east[i].iy << std::endl;
-
-        // for (int i = 0; i < lepton->send_buffer_west.size(); i++)
-        //     std::cout << "grid West: " << grid_rank << " ix: " << lepton->send_buffer_west[i].ix << " iy: " << lepton->send_buffer_west[i].iy << std::endl;
-
-        MPI_Sendrecv(&(lepton->size_send_north), 1, MPI_INT, grid_top, 0, &(lepton->size_recv_south), 1, MPI_INT, grid_bottom, 0, grid_comm, MPI_STATUS_IGNORE);
-        MPI_Sendrecv(&(lepton->size_send_south), 1, MPI_INT, grid_bottom, 0, &(lepton->size_recv_north), 1, MPI_INT, grid_top, 0, grid_comm, MPI_STATUS_IGNORE);
-
-        MPI_Sendrecv(&(lepton->size_send_west), 1, MPI_INT, grid_left, 0, &(lepton->size_recv_east), 1, MPI_INT, grid_right, 0, grid_comm, MPI_STATUS_IGNORE);
-        MPI_Sendrecv(&(lepton->size_send_east), 1, MPI_INT, grid_right, 0, &(lepton->size_recv_west), 1, MPI_INT, grid_left, 0, grid_comm, MPI_STATUS_IGNORE);
-
-        // MPI_Barrier(grid_comm);
-
-        // std::cout << "RECV:grid_rank: " << grid_rank << " n: " << lepton->size_recv_north << " s:" << lepton->size_recv_south
-        //           << " e: " << lepton->size_recv_east << " w: " << lepton->size_recv_west << std::endl;
-
-        // MPI_Barrier(grid_comm);
-        // std::cout << "SEND:grid_rank: " << grid_rank << " n: " << lepton->size_send_north << " s:" << lepton->size_send_south
-        //           << " e: " << lepton->size_send_east << " w: " << lepton->size_send_west << std::endl;
-
-        // std::cout << "RECV:grid_rank: " << grid_rank << " n: " << lepton->size_recv_north << " s:" << lepton->size_recv_south
-        //           << " e: " << lepton->size_recv_east << " w: " << lepton->size_recv_west << std::endl;
+        // Communication to determine the size of the arrays of each buffe
+        MPI_Sendrecv(&(lepton->size_send_north), 1, MPI_INT, grid_top, 0, &(lepton->size_recv_south), 1, MPI_INT, grid_bottom, 0, grid_comm, &status);
+        MPI_Sendrecv(&(lepton->size_send_south), 1, MPI_INT, grid_bottom, 0, &(lepton->size_recv_north), 1, MPI_INT, grid_top, 0, grid_comm, &status);
+        MPI_Sendrecv(&(lepton->size_send_west), 1, MPI_INT, grid_left, 0, &(lepton->size_recv_east), 1, MPI_INT, grid_right, 0, grid_comm, &status);
+        MPI_Sendrecv(&(lepton->size_send_east), 1, MPI_INT, grid_right, 0, &(lepton->size_recv_west), 1, MPI_INT, grid_left, 0, grid_comm, &status);
 
         MPI_Sendrecv(&(lepton->size_send_ne), 1, MPI_INT, grid_ne, 0, &(lepton->size_recv_sw), 1, MPI_INT, grid_sw, 0, grid_comm, &status);
         MPI_Sendrecv(&(lepton->size_send_sw), 1, MPI_INT, grid_sw, 0, &(lepton->size_recv_ne), 1, MPI_INT, grid_ne, 0, grid_comm, &status);
         MPI_Sendrecv(&(lepton->size_send_nw), 1, MPI_INT, grid_nw, 0, &(lepton->size_recv_se), 1, MPI_INT, grid_se, 0, grid_comm, &status);
         MPI_Sendrecv(&(lepton->size_send_se), 1, MPI_INT, grid_se, 0, &(lepton->size_recv_nw), 1, MPI_INT, grid_nw, 0, grid_comm, &status);
-
-        // std::cout << "SEND_actual:grid_rank: " << grid_rank << " n: " << lepton->size_send_north << " s:" << lepton->size_send_south
-        //           << " e: " << lepton->size_send_east << " w: " << lepton->size_send_west << std::endl;
 
         // allocate memory for the vectors that are going to receive the MPI particles
         part recv_dummy;
@@ -516,86 +496,31 @@ namespace FCPIC
         lepton->recv_buffer_se.assign(lepton->size_recv_se + over, recv_dummy);
         lepton->recv_buffer_sw.assign(lepton->size_recv_sw + over, recv_dummy);
 
-        // std::cout << "SEND_before:grid_rank: " << grid_rank << " n: " << lepton->size_send_north << " s:" << lepton->size_send_south
-        //           << " e: " << lepton->size_send_east << " w: " << lepton->size_send_west << std::endl;
-        // std::cout << "chega aqui!!!!!!" << std::endl;
-        // //! Buffers Communication
+        // Buffers Communication
         // All traffic in direction "top"
         MPI_Sendrecv(&(lepton->send_buffer_north[0]), lepton->send_buffer_north.size(), exchange_part_type, grid_top, 0, &(lepton->recv_buffer_south[0]), lepton->size_recv_south, exchange_part_type, grid_bottom, 0, grid_comm, MPI_STATUS_IGNORE);
-        // All traf\fic in direction "bottom"
+        // All traffic in direction "bottom"
         MPI_Sendrecv(&(lepton->send_buffer_south[0]), lepton->send_buffer_south.size(), exchange_part_type, grid_bottom, 0, &(lepton->recv_buffer_north[0]), lepton->size_recv_north, exchange_part_type, grid_top, 0, grid_comm, MPI_STATUS_IGNORE);
-        // // All traf\fic in direction "bottom"
-        MPI_Sendrecv(&(lepton->send_buffer_west[0]), lepton->send_buffer_west.size(), exchange_part_type, grid_left, 0, &(lepton->recv_buffer_east[0]), lepton->size_recv_east, exchange_part_type, grid_right, 0, grid_comm, MPI_STATUS_IGNORE);
         // All traffic in direction "right"
+        MPI_Sendrecv(&(lepton->send_buffer_west[0]), lepton->send_buffer_west.size(), exchange_part_type, grid_left, 0, &(lepton->recv_buffer_east[0]), lepton->size_recv_east, exchange_part_type, grid_right, 0, grid_comm, MPI_STATUS_IGNORE);
+        // All traffic in direction "left"
         MPI_Sendrecv(&(lepton->send_buffer_east[0]), lepton->send_buffer_east.size(), exchange_part_type, grid_right, 0, &(lepton->recv_buffer_west[0]), lepton->size_recv_west, exchange_part_type, grid_left, 0, grid_comm, MPI_STATUS_IGNORE);
-
-        MPI_Sendrecv(&(lepton->size_send_west), 1, MPI_INT, grid_left, 0, &(lepton->size_recv_east), 1, MPI_INT, grid_right, 0, grid_comm, &status);
-
-        // if (grid_left != MPI_PROC_NULL)
-        //     MPI_Send(&(lepton->size_send_west), 1, MPI_INT, grid_left, 0, grid_comm);
-        // if (grid_left != MPI_PROC_NULL)
-        //     MPI_Recv(&(lepton->size_recv_east), 1, MPI_INT, grid_right, 0, grid_comm, &status);
-        // if (grid_right != MPI_PROC_NULL)
-        //     MPI_Send(&(lepton->size_send_east), 1, MPI_INT, grid_right, 0, grid_comm);
-        // if (grid_right != MPI_PROC_NULL)
-        //     MPI_Recv(&(lepton->size_recv_west), 1, MPI_INT, grid_left, 0, grid_comm, &status);
-
-        // MPI_Send(&(lepton->size_send_east), 1, MPI_INT, grid_right, 0, grid_comm);
-
-        // MPI_Recv(&(lepton->size_recv_west), 1, MPI_INT, grid_left, 0, grid_comm, &status);
-
-        // MPI_Send(&(lepton->size_send_west), 1, MPI_INT, grid_left, 0, grid_comm);
-
-        // MPI_Recv(&(lepton->size_recv_east), 1, MPI_INT, grid_right, 0, grid_comm, &status);
-
-        // lepton->recv_buffer_east.assign(lepton->size_recv_east + over, recv_dummy);
-        // lepton->recv_buffer_west.assign(lepton->size_recv_west + over, recv_dummy);
-
-        // MPI_Send(&(lepton->send_buffer_west[0]), lepton->send_buffer_west.size(), exchange_part_type, grid_left, 0, grid_comm);
-
-        // MPI_Probe(grid_right, 0, grid_comm, &status);
-        // MPI_Get_count(&status, exchange_part_type, &(lepton->size_recv_east));
-        // // if (lepton->size_recv_east < 0)
-        // //     lepton->size_recv_east = 0;
-        // std::cout << "SEND:grid_rank_east: " << grid_rank << " n: " << lepton->size_recv_east << std::endl;
-        // lepton->recv_buffer_east.assign(lepton->size_recv_east, recv_dummy);
-
-        // MPI_Recv(&(lepton->recv_buffer_east[0]), lepton->size_recv_east, exchange_part_type, grid_right, 0, grid_comm, MPI_STATUS_IGNORE);
-
-        // MPI_Send(&(lepton->send_buffer_east[0]), lepton->send_buffer_east.size(), exchange_part_type, grid_right, 0, grid_comm);
-
-        // MPI_Probe(grid_left, 0, grid_comm, &status);
-        // MPI_Get_count(&status, exchange_part_type, &(lepton->size_recv_west));
-
-        // // MPI_Barrier(grid_comm);
-
-        // // if (lepton->size_recv_west < 0)
-        // //     lepton->size_recv_west = 0;
-        // std::cout << "SEND:grid_rank_west: " << grid_rank << " n: " << lepton->size_recv_west << std::endl;
-        // lepton->recv_buffer_west.assign(lepton->size_recv_west, recv_dummy);
-
-        // MPI_Recv(&(lepton->recv_buffer_west[0]), lepton->size_recv_west, exchange_part_type, grid_left, 0, grid_comm, MPI_STATUS_IGNORE);
-
-        // std::cout << "SEND:grid_rank: " << grid_rank << " n: " << lepton->size_send_north << " s:" << lepton->size_send_south
-        //           << " e: " << lepton->size_send_east << " w: " << lepton->size_send_west << std::endl;
-
-        // std::cout << "RECV:grid_rank: " << grid_rank << " n: " << lepton->size_recv_north << " s:" << lepton->size_recv_south
-        //           << " e: " << lepton->size_recv_east << " w: " << lepton->size_recv_west << std::endl;
-
-        // std::cout << "SEND_PASSOU:grid_rank: " << grid_rank << " n: " << lepton->size_send_north << " s:" << lepton->size_send_south
-        //           << " e: " << lepton->size_send_east << " w: " << lepton->size_send_west << std::endl;
 
         // All traffic in direction "ne-sw"
         MPI_Sendrecv(&(lepton->send_buffer_ne[0]), lepton->send_buffer_ne.size(), exchange_part_type, grid_ne, 0, &(lepton->recv_buffer_sw[0]), lepton->size_recv_sw, exchange_part_type, grid_sw, 0, grid_comm, &status);
         // All traf\fic in direction "sw-ne"
-
         MPI_Sendrecv(&(lepton->send_buffer_sw[0]), lepton->send_buffer_sw.size(), exchange_part_type, grid_sw, 0, &(lepton->recv_buffer_ne[0]), lepton->size_recv_ne, exchange_part_type, grid_ne, 0, grid_comm, &status);
         // All traf\fic in direction "se-nw"
-
         MPI_Sendrecv(&(lepton->send_buffer_se[0]), lepton->send_buffer_se.size(), exchange_part_type, grid_se, 0, &(lepton->recv_buffer_nw[0]), lepton->size_recv_nw, exchange_part_type, grid_nw, 0, grid_comm, &status);
         // All traffic in direction "nw-se"
-
         MPI_Sendrecv(&(lepton->send_buffer_nw[0]), lepton->send_buffer_nw.size(), exchange_part_type, grid_nw, 0, &(lepton->recv_buffer_se[0]), lepton->size_recv_se, exchange_part_type, grid_se, 0, grid_comm, &status);
+
+        // // Another approach to handle MPI with a dynamic message
+        //  MPI_Send(&(lepton->send_buffer_west[0]), lepton->send_buffer_west.size(), exchange_part_type, grid_left, 0, grid_comm);
+        //  MPI_Probe(grid_right, 0, grid_comm, &status);
+        //  MPI_Get_count(&status, exchange_part_type, &(lepton->size_recv_east));
+        //  lepton->recv_buffer_east.assign(lepton->size_recv_east, recv_dummy);
+        //  MPI_Recv(&(lepton->recv_buffer_east[0]), lepton->size_recv_east, exchange_part_type, grid_right, 0, grid_comm, MPI_STATUS_IGNORE);
     }
 
     // Jacobi solver
@@ -714,69 +639,4 @@ namespace FCPIC
         exchange_phi_buffers(Ey_field);
     }
 
-    /*
-
-    // bit dumb: use bool to choose u or charge
-    void simulation::write_output_u(domain &subdomain, int rank, int time)
-    {
-        int l, m;
-        int N_local = subdomain.u->N;
-        int N_local_x = subdomain.u->Nx;
-        int N_local_y = subdomain.u->Ny;
-        std::fstream Output_file;
-
-        std::string filename;
-
-        // offset of cell numbering for the subdomain
-        offset[X_DIR] = grid_coord[X_DIR] * (N_local_x - 2);
-        offset[Y_DIR] = grid_coord[Y_DIR] * (N_local_y - 2);
-
-        filename = "../results/subdomain_" + std::to_string(rank) + "__t_" + std::to_string(time) + ".txt";
-        std::string space = "        ";
-        Output_file.open(filename, std::ios::out);
-        Output_file << "x position" << space << "y position" << space << "field value" << std::endl;
-
-        for (int i = 0; i < N_local; i++)
-        {
-            if (subdomain.u->bc[i] == NONE)
-            {
-                l = i % N_local_x;
-                m = (int)i / N_local_x;
-
-                double value_x = (l + offset[X_DIR]) * (subdomain.charge->h);
-                double value_y = (m + offset[Y_DIR]) * (subdomain.charge->h);
-
-                Output_file << "    " << value_x << space << value_y << space << subdomain.u->val[i] << std::endl;
-            }
-        }
-
-        Output_file.close();
-    }
-    void simulation::write_output_charge(domain &subdomain, int rank, int time)
-    {
-        std::fstream Output_file;
-        std::string filename;
-        int l, m;
-        int N_local = subdomain.u->N;
-        int N_local_x = subdomain.u->Nx;
-        int N_local_y = subdomain.u->Ny;
-
-        filename = "../results/charge_" + std::to_string(rank) + "__t_" + std::to_string(time) + ".txt";
-        std::string space = "   ";
-
-        Output_file.open(filename, std::ios::out);
-        int precision = 4;
-
-        for (int i = 0; i < N_local; i++)
-        {
-            if (i % (N_local_x) == 0)
-                Output_file << std::endl;
-
-            Output_file << std::setw(precision) << subdomain.charge->val[i] << space;
-            // if (i % 4 == 0)
-        }
-
-        Output_file.close();
-    }
-    */
 }

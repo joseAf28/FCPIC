@@ -33,7 +33,7 @@ species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, floa
     // reserve space for the arrays of particles
     part A;
     A.flag = BULK;
-    vec.reserve(3 * np); // assumotion for the minimum reserved space
+    vec.reserve(3 * np); // assumption for the minimum reserved space
     vec.assign(np, A);
     send_buffer_north.reserve(np); // assumption for the space
     send_buffer_south.reserve(np); // ! Think about it later
@@ -96,13 +96,9 @@ void species::set_u()
 {
     for (int i = 0; i < np; i++)
     {
-        //     vec[i].ux = vf[0] + vth[0] * rand_gauss(rng);
-        //     vec[i].uy = vf[1] + vth[1] * rand_gauss(rng);
-        //     vec[i].uz = vf[2] + vth[2] * rand_gauss(rng);
-
-        vec[i].ux = vf[0] + vth[0];
-        vec[i].uy = vf[1] + vth[1];
-        vec[i].uz = vf[2] + vth[2];
+        vec[i].ux = vf[0] + vth[0] * rand_gauss(rng);
+        vec[i].uy = vf[1] + vth[1] * rand_gauss(rng);
+        vec[i].uz = vf[2] + vth[2] * rand_gauss(rng);
     }
 }
 
@@ -142,17 +138,6 @@ void species::set_x()
         }
     }
     loccell.clear();
-
-    // vec.clear();
-    // part b_dummy;
-    // vec.assign(1, b_dummy);
-
-    // np = 1;
-
-    // vec[0].ix = 3;
-    // vec[0].iy = 1;
-    // vec[0].x = 0.1;
-    // vec[0].y = 0.1;
 }
 
 void species::get_charge(FCPIC::field *charge)
@@ -169,19 +154,13 @@ void species::get_charge(FCPIC::field *charge)
         wx = vec[k].x;
         wy = vec[k].y;
 
-        // std::cout << wx << "  " << wy << "\n";
-
         int ix = vec[i].ix;
         int iy = vec[i].iy;
 
-        // if (ix == N_x - 2)
-        //     ij = ij + 3;
-
-        // divide by dx*dy
-        charge->val[POSITION] += (dx - wx) * (dy - wy) * q;
-        charge->val[EAST] += wx * (dy - wy) * q;
-        charge->val[NORTH] += (dx - wx) * wy * q;
-        charge->val[NORTHEAST] += wx * wy * q;
+        charge->val[POSITION] += (dx - wx) * (dy - wy) * q / (dx * dy);
+        charge->val[EAST] += wx * (dy - wy) * q / (dx * dy);
+        charge->val[NORTH] += (dx - wx) * wy * q / (dx * dy);
+        charge->val[NORTHEAST] += wx * wy * q / (dx * dy);
     }
 }
 
@@ -206,7 +185,6 @@ void species::field_inter(FCPIC::field *Ex, FCPIC::field *Ey, float &Ex_i, float
     Ey_i /= (dx * dy);
 }
 
-//!! Define the Efield in each particle: missing feature
 void species::init_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
 {
 
@@ -286,7 +264,6 @@ bool species::advance_cell(int *ranks_mpi)
         {
             if (flag_left)
             {
-                // std::cout << "flag refelction1" << std::endl;
                 vec[counter].x = dx - vec[counter].x;
                 vec[counter].ix = -vec[counter].ix - 1;
                 vec[counter].ux = -vec[counter].ux;
@@ -302,7 +279,6 @@ bool species::advance_cell(int *ranks_mpi)
         {
             if (flag_bottom)
             {
-                // std::cout << "flag refelction2" << std::endl;
                 vec[counter].y = dy - vec[counter].y;
                 vec[counter].iy = -vec[counter].iy - 1;
                 vec[counter].uy = -vec[counter].uy;
@@ -334,7 +310,6 @@ bool species::advance_cell(int *ranks_mpi)
         {
             if (flag_top)
             {
-                // std::cout << "flag refelction4" << std::endl;
                 vec[counter].y = dy - vec[counter].y;
                 vec[counter].iy = 2 * N_int_y - vec[counter].iy + 1;
                 vec[counter].uy = -vec[counter].uy;
@@ -346,8 +321,7 @@ bool species::advance_cell(int *ranks_mpi)
             }
         }
 
-        // if (ranks_mpi[0] != MPI_PROC_NULL) // periodic
-        // {
+        // Periodic and virtual boundary conditions
         // north buffer
         if ((!send_W_true) && (!send_E_true) && send_N_true)
         {
@@ -399,23 +373,8 @@ bool species::advance_cell(int *ranks_mpi)
         else
         {
         }
-        // }
     }
     return changes_made;
-}
-void species::size(int grid_rank)
-{
-    size_send_north = send_buffer_north.size();
-    size_send_south = send_buffer_south.size();
-    size_send_east = send_buffer_east.size();
-    size_send_west = send_buffer_west.size();
-
-    size_send_ne = send_buffer_ne.size();
-    size_send_se = send_buffer_se.size();
-    size_send_nw = send_buffer_nw.size();
-    size_send_sw = send_buffer_sw.size();
-
-    // std::cout << "Spec::grid: " << grid_rank << " n: " << size_send_north << " s: " << size_send_south << " e: " << size_send_east << " sw: " << size_send_west << std::endl;
 }
 
 void species::prepare_buffer()
@@ -430,11 +389,6 @@ void species::prepare_buffer()
     size_send_se = send_buffer_se.size();
     size_send_nw = send_buffer_nw.size();
     size_send_sw = send_buffer_sw.size();
-
-    // std::cout << "grid: "
-    //           << "n: " << size_send_north << " s: " << size_send_south << " e: " << size_send_east
-    //           << " ne: " << size_send_ne << " se: " << size_send_se << " sw: " << size_send_nw
-    //           << " sw: " << size_send_sw << std::endl;
 
     // delete all particles that were sent to exchange array buffers
     vec.erase(std::remove_if(vec.begin(), vec.end(), [this](const part obj)

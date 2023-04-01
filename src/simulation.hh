@@ -11,18 +11,6 @@
 
 namespace FCPIC
 {
-    /*
-    // Patch
-    typedef enum
-    {
-        INSIDE,
-        XMIN,
-        XMAX,
-        YMIN,
-        YMAX
-    } PATCH_type;
-    extern PATCH_type patch;*/
-
     class simulation
     {
     public:
@@ -51,9 +39,6 @@ namespace FCPIC
         void jacobi(field *, field *);
 
         void set_E_value(field *, field *, field *);
-
-        // void write_output_u(domain &, int, int);
-        // void write_output_charge(domain &, int, int);
 
         // MPI variables
         int grid_rank;                                    // rank of the current proces in the virtual grid
