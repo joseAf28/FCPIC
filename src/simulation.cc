@@ -7,6 +7,8 @@
 #include <iomanip>
 #include <unistd.h>
 
+#define epsilon0 55263494.06 // in e^2*eV^-1*m^-1
+
 namespace FCPIC
 {
     /********************************************************
@@ -22,25 +24,22 @@ namespace FCPIC
         MPI_Comm_size(MPI_COMM_WORLD, &n_Procs);
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         readArgs(argc, argv);
+        setParams();
         if (rank == 0)
             printTitle();
-        aspect = 1;  // (INPUT) y_len = aspect (x_len always norm to 1)
-        Npart = 500; // (INPUT)
-        N = Npart / 10;
-        N_int_x = std::sqrt((double)N / aspect);
-        N_int_y = aspect * (double)N_int_x;
 
-        N_int_x = 6; //
-        N_int_y = 6; //
-        N = N_int_x * N_int_y;
-        N_x = N_int_x + 2;
-        N_y = N_int_y + 2;
-
-        dx = 1 / (double)N_x;
-        dy = aspect / (double)N_y;
+        aspect = 1;        // (INPUT) y_len = aspect (x_len always norm to 1)
+        N_int_x = 21;      //
+        N_int_y = 11;      //
+        N_x = N_int_x + 2; //
+        N_y = N_int_y + 2; //
+        N = N_x * N_y;     //
 
         dx = 1; //
         dy = 1; //
+
+        grid[X_DIR] = 2; //
+        grid[Y_DIR] = 2; //
 
         Y_guard_data = new double[N_x];
         X_guard_data = new double[N_int_y];
@@ -49,9 +48,6 @@ namespace FCPIC
         X_guard_data1 = new double[N_int_y]();
         Y_guard_data2 = new double[N_x]();
         X_guard_data2 = new double[N_int_y]();
-
-        bc[X_DIR] = TBD;
-        bc[Y_DIR] = TBD;
     }
 
     simulation::~simulation()
@@ -65,6 +61,36 @@ namespace FCPIC
         delete[] Y_guard_data, X_guard_data,
             Y_guard_data1, X_guard_data1,
             Y_guard_data2, X_guard_data2;
+    }
+
+    std::string simulation::print_SI(double x)
+    {
+        int exponent = floor(log10(x));
+        exponent -= exponent % 3;
+        double mantissa = x / pow(10., exponent);
+
+        std::string output = std::to_string(mantissa);
+
+        if (exponent == -12)
+            output.append(" p");
+        if (exponent == -9)
+            output.append(" n");
+        if (exponent == -6)
+            output.append(" μ");
+        if (exponent == -3)
+            output.append(" m");
+        if (exponent == 0)
+            output.append(" ");
+        if (exponent == 3)
+            output.append(" k");
+        if (exponent == 6)
+            output.append(" M");
+        if (exponent == 9)
+            output.append(" G");
+        if (exponent == 12)
+            output.append(" T");
+
+        return output;
     }
 
     void simulation::printTitle()
@@ -87,14 +113,12 @@ namespace FCPIC
         std::cout << "│ Guilherme Crispim, João Palma, José Afonso, ATCP 2023                       │\n";
         std::cout << "└─────────────────────────────────────────────────────────────────────────────┘\n";
         std::cout << "\n";
-        std::cout << "Simulation size: "
-                  << "\n";
-        std::cout << "Spatial discretization: "
-                  << "\n";
-        std::cout << "MPI process grid: "
-                  << "\n";
-        std::cout << "Number of MPI processes: "
-                  << "\n";
+        std::cout << "Simulation size: " << print_SI(xlen * Lref) << "m x " << print_SI(xlen * aspect * Lref) << "m\n";
+        std::cout << "Spatial discretization: " << N_total_x << "x" << N_total_y << "\n";
+        std::cout << "MPI process grid: " << n_Procs << " processes ("
+                  << grid[X_DIR] << "x" << grid[Y_DIR] << ")\n";
+        std::cout << "Electron Debye length: " << print_SI(Lref) << "m\n";
+        std::cout << "Plasma frequency: " << print_SI(1 / Tref) << "Hz\n";
         std::cout << "\n";
     }
 
@@ -108,21 +132,27 @@ namespace FCPIC
         std::cout << "\n";
         std::cout << "-npart=nn1,nn2,...    Particle number for all species\n";
         std::cout << "                            Default: 1000\n";
-        std::cout << "-qom=qq1,qq2,...      Charge/mass of all species (in q_proton/m_electron)\n";
+        std::cout << "-charge=qq1,qq2,...   Charge of all species (in q_proton/m_electron)\n";
         std::cout << "                            Default: -1\n";
-        std::cout << "-temp=tt1,tt2,...     Temperature of all species (in K)\n";
-        std::cout << "                            Default: 298\n";
-        std::cout << "-nxlen=lll            Horizontal length of the simulation box (in cm)\n";
+        std::cout << "-mass=mm1,mm2,...     Mass of all species (in m_electron)\n";
+        std::cout << "                            Default: 1\n";
+        std::cout << "-temp=tt1,tt2,...     Temperature of all species (in eV)\n";
+        std::cout << "                            Default: 1\n";
+        std::cout << "-vxfluid=vx1,vx2,...  X component of fluid velocity (in v_thermal)\n";
+        std::cout << "                            Default: 0\n";
+        std::cout << "-vyfluid=vy1,vy2,...  Y component of fluid velocity (in v_thermal)\n";
+        std::cout << "                            Default: 0\n";
+        std::cout << "-nxlen=lll            Horizontal length of the simulation box (in m)\n";
         std::cout << "                            Default: 1\n";
         std::cout << "-nxproc=ppp           Number of MPI processes horizontally in the grid\n";
         std::cout << "                            Default: Number of processes/2\n";
         std::cout << "-nxsamples=sss        Number of discretization cells horizontally\n";
-        std::cout << "                            Default: 10\n";
+        std::cout << "                            Default: 100\n";
         std::cout << "-aspect=aaa           Box aspect ratio (ylen = aspect * xlen)\n";
         std::cout << "                            Default: 1\n";
         std::cout << "-simtime=ttt          Simulation time (in secs)\n";
         std::cout << "                            Default: 1\n";
-        std::cout << "-boundcond=bbb        Boundary condition (0->periodic, 1->conductive)\n";
+        std::cout << "-boundcond=bbb        Boundary condition (1->periodic, 2->conductive)\n";
         std::cout << "                            Default: 0\n";
         std::cout << "\n";
     }
@@ -132,6 +162,7 @@ namespace FCPIC
         std::vector<std::string> allArgs(argv, argv + argc);
         std::vector<std::string> numbers;
         std::string line, header, number;
+        std::vector<bool> def_values(12, true);
         int k;
 
         for (auto &arg : allArgs)
@@ -154,7 +185,6 @@ namespace FCPIC
                 if (header.compare("-infile") == 0)
                 {
                     arg.erase(0, 8);
-                    std::cout << arg << "\n";
                     break;
                 }
                 k++;
@@ -167,54 +197,120 @@ namespace FCPIC
 
             if (header.compare("-infile") == 0)
             {
-                getParamsfromFile(arg);
+                def_values.assign(12, true);
+                getParamsfromFile(arg, &def_values);
                 break;
             }
 
             if (header.compare("-npart") == 0)
             {
                 numbers.push_back(number);
-                std::cout << "npart in, getting ";
                 for (auto &num : numbers)
-                    std::cout << num << " ";
-                std::cout << "\n";
+                    Npart.push_back(std::stoi(num));
+                def_values[0] = false;
             }
-            if (header.compare("-qom") == 0)
+            if (header.compare("-charge") == 0)
             {
                 numbers.push_back(number);
-                std::cout << "qom in, getting ";
                 for (auto &num : numbers)
-                    std::cout << num << " ";
-                std::cout << "\n";
+                    charge.push_back(std::stod(num));
+                def_values[1] = false;
+            }
+            if (header.compare("-mass") == 0)
+            {
+                numbers.push_back(number);
+                for (auto &num : numbers)
+                    mass.push_back(std::stod(num));
+                def_values[2] = false;
             }
             if (header.compare("-temp") == 0)
             {
                 numbers.push_back(number);
-                std::cout << "temp in, getting ";
                 for (auto &num : numbers)
-                    std::cout << num << " ";
-                std::cout << "\n";
+                    temp.push_back(std::stod(num));
+                def_values[3] = false;
+            }
+            if (header.compare("-vxfluid") == 0)
+            {
+                numbers.push_back(number);
+                for (auto &num : numbers)
+                    vxfluid.push_back(std::stod(num));
+                def_values[4] = false;
+            }
+            if (header.compare("-vyfluid") == 0)
+            {
+                numbers.push_back(number);
+                for (auto &num : numbers)
+                    vyfluid.push_back(std::stod(num));
+                def_values[5] = false;
             }
             if (header.compare("-xlen") == 0)
-                std::cout << "xlen in, getting " << number << "\n";
+            {
+                xlen = stod(number);
+                def_values[6] = false;
+            }
             if (header.compare("-nxproc") == 0)
-                std::cout << "nxproc in, getting " << number << "\n";
+            {
+                nxproc = stoi(number);
+                def_values[7] = false;
+            }
             if (header.compare("-nxsamples") == 0)
-                std::cout << "nxsamples in, getting " << number << "\n";
+            {
+                N_total_x = stoi(number);
+                def_values[8] = false;
+            }
             if (header.compare("-aspect") == 0)
-                std::cout << "aspect in, getting " << number << "\n";
+            {
+                aspect = stod(number);
+                def_values[9] = false;
+            }
             if (header.compare("-simtime") == 0)
-                std::cout << "aspect in, getting " << number << "\n";
+            {
+                simtime = stoi(number);
+                def_values[10] = false;
+            }
             if (header.compare("-boundcond") == 0)
-                std::cout << "boundcond in, getting " << number << "\n";
+            {
+                bc[X_DIR] = stoi(number);
+                bc[Y_DIR] = stoi(number);
+                def_values[11] = false;
+            }
 
             numbers.clear();
             number.clear();
             header.clear();
         }
+
+        if (def_values[0])
+            Npart.push_back(1000);
+        if (def_values[1])
+            charge.push_back(-1.);
+        if (def_values[2])
+            mass.push_back(1.);
+        if (def_values[3])
+            temp.push_back(1.);
+        if (def_values[4])
+            vxfluid.push_back(0.);
+        if (def_values[5])
+            vyfluid.push_back(0.);
+        if (def_values[6])
+            xlen = 1;
+        if (def_values[7])
+            nxproc = n_Procs / 2;
+        if (def_values[8])
+            N_total_x = 100;
+        if (def_values[9])
+            aspect = 1;
+        if (def_values[10])
+            simtime = 1;
+        if (def_values[11])
+        {
+            bc[X_DIR] = PERIODIC;
+            bc[Y_DIR] = PERIODIC;
+        }
     }
 
-    void simulation::getParamsfromFile(std::string filename)
+    void simulation::getParamsfromFile(std::string filename, std::vector<bool> *def_values)
     {
 
         std::ifstream infile(filename);
@@ -228,9 +324,6 @@ namespace FCPIC
 
         for (auto &fline : filelines)
         {
-            if (fline[0] == '#')
-                continue;
-
             for (char &c : fline)
             {
                 if ((c > 47 && c < 58) || c == '.' || c == '-')
@@ -244,60 +337,250 @@ namespace FCPIC
                     header.push_back(c);
                 if (c > 64 && c < 91)
                     header.push_back(c + 32);
+                if (c == '#')
+                    break;
             }
 
             if (header.compare("npart") == 0)
             {
                 numbers.push_back(number);
-                std::cout << "npart in, getting ";
                 for (auto &num : numbers)
-                    std::cout << num << " ";
-                std::cout << "\n";
+                    Npart.push_back(std::stoi(num));
+                (*def_values)[0] = false;
             }
-            if (header.compare("qom") == 0)
+            if (header.compare("charge") == 0)
             {
                 numbers.push_back(number);
-                std::cout << "qom in, getting ";
                 for (auto &num : numbers)
-                    std::cout << num << " ";
-                std::cout << "\n";
+                    charge.push_back(std::stod(num));
+                (*def_values)[1] = false;
+            }
+            if (header.compare("mass") == 0)
+            {
+                numbers.push_back(number);
+                for (auto &num : numbers)
+                    mass.push_back(std::stod(num));
+                (*def_values)[2] = false;
             }
             if (header.compare("temp") == 0)
             {
                 numbers.push_back(number);
-                std::cout << "temp in, getting ";
                 for (auto &num : numbers)
-                    std::cout << num << " ";
-                std::cout << "\n";
+                    temp.push_back(std::stod(num));
+                (*def_values)[3] = false;
+            }
+            if (header.compare("vxfluid") == 0)
+            {
+                numbers.push_back(number);
+                for (auto &num : numbers)
+                    vxfluid.push_back(std::stod(num));
+                (*def_values)[4] = false;
+            }
+            if (header.compare("vyfluid") == 0)
+            {
+                numbers.push_back(number);
+                for (auto &num : numbers)
+                    vyfluid.push_back(std::stod(num));
+                (*def_values)[5] = false;
             }
             if (header.compare("xlen") == 0)
-                std::cout << "xlen in, getting " << number << "\n";
+            {
+                xlen = stod(number);
+                (*def_values)[6] = false;
+            }
             if (header.compare("nxproc") == 0)
-                std::cout << "nxproc in, getting " << number << "\n";
+            {
+                nxproc = stoi(number);
+                (*def_values)[7] = false;
+            }
             if (header.compare("nxsamples") == 0)
-                std::cout << "nxsamples in, getting " << number << "\n";
+            {
+                N_total_x = stoi(number) + 1;
+                (*def_values)[8] = false;
+            }
             if (header.compare("aspect") == 0)
-                std::cout << "aspect in, getting " << number << "\n";
+            {
+                aspect = stod(number);
+                (*def_values)[9] = false;
+            }
             if (header.compare("simtime") == 0)
-                std::cout << "aspect in, getting " << number << "\n";
+            {
+                simtime = stoi(number);
+                (*def_values)[10] = false;
+            }
             if (header.compare("boundcond") == 0)
-                std::cout << "boundcond in, getting " << number << "\n";
+            {
+                bc[X_DIR] = stoi(number);
+                bc[Y_DIR] = stoi(number);
+                (*def_values)[11] = false;
+            }
 
             numbers.clear();
             number.clear();
             header.clear();
         }
+
+        if (header.compare("npart") == 0)
+        {
+            numbers.push_back(number);
+            std::cout << "npart in, getting ";
+            for (auto &num : numbers)
+                std::cout << num << " ";
+            std::cout << "\n";
+        }
+        if (header.compare("qom") == 0)
+        {
+            numbers.push_back(number);
+            std::cout << "qom in, getting ";
+            for (auto &num : numbers)
+                std::cout << num << " ";
+            std::cout << "\n";
+        }
+        if (header.compare("temp") == 0)
+        {
+            numbers.push_back(number);
+            std::cout << "temp in, getting ";
+            for (auto &num : numbers)
+                std::cout << num << " ";
+            std::cout << "\n";
+        }
+        if (header.compare("xlen") == 0)
+            std::cout << "xlen in, getting " << number << "\n";
+        if (header.compare("nxproc") == 0)
+            std::cout << "nxproc in, getting " << number << "\n";
+        if (header.compare("nxsamples") == 0)
+            std::cout << "nxsamples in, getting " << number << "\n";
+        if (header.compare("aspect") == 0)
+            std::cout << "aspect in, getting " << number << "\n";
+        if (header.compare("simtime") == 0)
+            std::cout << "aspect in, getting " << number << "\n";
+        if (header.compare("boundcond") == 0)
+            std::cout << "boundcond in, getting " << number << "\n";
+
+        numbers.clear();
+        number.clear();
+        header.clear();
+    }
+
+    void simulation::setParams()
+    {
+        if (Npart.size() != charge.size() || Npart.size() != mass.size() ||
+            Npart.size() != temp.size() || Npart.size() != vxfluid.size() ||
+            Npart.size() != vyfluid.size())
+        {
+            std::cout << "ERROR: PLEASE PROVIDE ARGS FOR ALL SPECIES\n";
+        }
+
+        Nspecies = Npart.size();
+
+        for (int k = 0; k < Nspecies; k++)
+        {
+            if (Npart[k] < 1)
+            {
+                std::cout << "ERROR: NON-PHYSICAL NUMBER OF PARTICLES\n";
+            }
+            if (mass[k] <= 0)
+            {
+                std::cout << "ERROR: NON-PHYSICAL TEMPERATURE\n";
+            }
+            if (temp[k] < 0)
+            {
+                std::cout << "ERROR: NON-PHYSICAL TEMPERATURE\n";
+            }
+        }
+        if (xlen <= 0)
+        {
+            std::cout << "ERROR: NON-PHYSICAL BOX LENGTH\n";
+        }
+        if (n_Procs % nxproc != 0)
+        {
+            std::cout << "ERROR: UNABLE TO FORM A PROCESS GRID\n";
+        }
+        if (N_total_x < 10)
+        {
+            std::cout << "ERROR: NOT ENOUGH GRID CELLS\n";
+        }
+        if (aspect <= 0)
+        {
+            std::cout << "ERROR: INVALID ASPECT RATIO\n";
+        }
+        if (simtime <= 0)
+        {
+            std::cout << "ERROR: INVALID SIMULATION TIME\n";
+        }
+        if (bc[X_DIR] != 1 && bc[X_DIR] != 2)
+        {
+            std::cout << "ERROR: INVALID BOUNDARY CONDITIONS\n";
+        }
+
+        // All norms are done in reference to the first species temperature and density
+        Vref = 419382.88 * sqrt(temp[0]); // Normalizing speeds to Vthermal of 1st species (m/s)
+
+        for (int k = 0; k < Nspecies; k++)
+        {
+            temp[k] /= Vref;
+        }
+
+        Nref = (double)Npart[0] / (aspect * xlen * xlen);    // 2D Density (m^-2)
+        Lref = sqrt(55263494.06 * temp[0] / pow(Nref, 1.5)); // Normalizing lengths to electron Debye length (m)
+        Tref = Lref / Vref;                                  // Normalizing times to electron inverse plasma frequency (s)
+
+        simtime /= Tref;
+        xlen /= Lref;
+
+        dx = 1. / 3.; // spatial discretization must be ~ Debye length/3 for stability
+
+        N_total_x = round((double)xlen / (double)dx);
+        N_total_y = round(aspect * (double)N_total_x);
+
+        grid[X_DIR] = nxproc;
+        grid[Y_DIR] = n_Procs / nxproc;
+
+        if (bc[X_DIR] != PERIODIC)
+            N_total_x -= 2;
+        if (bc[X_DIR] != PERIODIC)
+            N_total_y -= 2;
+
+        int k = 0;
+        while (N_total_x % grid[X_DIR] != 0)
+        {
+            k = -k - abs(k) / k;
+            N_total_x += k;
+        }
+
+        N_int_x = N_total_x / grid[X_DIR];
+        N_x = N_int_x + 2;
+
+        k = 0;
+        while (N_total_y % grid[Y_DIR] != 0)
+        {
+            k = -k - abs(k) / k;
+            N_total_y += k;
+        }
+
+        N_int_y = N_total_y / grid[Y_DIR];
+        N_y = N_int_y + 2;
+
+        if (bc[X_DIR] != PERIODIC)
+            N_total_x += 2;
+        if (bc[X_DIR] != PERIODIC)
+            N_total_y += 2;
+
+        N = N_x * N_y;
+
+        dx = xlen / (double)N_total_x;          //
+        dy = aspect * xlen / (double)N_total_y; //
+
+        dt = 1 / (std::max(1., sqrt(vxfluid[0] * vxfluid[0] + vyfluid[0] * vyfluid[0])) * (1 / dx + 1 / dy));
+
+        wrap_around[X_DIR] = bc[X_DIR] == PERIODIC ? 1 : 0;
+        wrap_around[Y_DIR] = bc[Y_DIR] == PERIODIC ? 1 : 0;
     }
 
     // Creating a virtual cartesian topology
     void simulation::setup_proc_grid()
     {
         // number of processes per row and column
-        grid[X_DIR] = 2;
-        grid[Y_DIR] = 2;
-
-        if (grid[X_DIR] * grid[Y_DIR] != n_Procs)
-            std::cout << "Error MPI: Mismatch of number of processes and process grid" << std::endl;
 
         int reorder = 1; // reorder process ranks
 
@@ -536,6 +819,12 @@ namespace FCPIC
         phi->setValue(0.0);
         // Defining a new temporary field (temp is not part of the domain)
         field temp(N_x, N_y);
+
+        if (grid_rank == 4)
+        {
+            phi->print_field(std::cout);
+            charge->print_field(std::cout);
+        }
 
         // Starting the iteration loop
         while (global_res > tol)

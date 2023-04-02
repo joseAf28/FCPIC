@@ -17,9 +17,11 @@ namespace FCPIC
         simulation(int, char **);
         ~simulation();
 
-        void getParamsfromFile(std::string);
         void readArgs(int, char **);
+        void getParamsfromFile(std::string, std::vector<bool>*);
+        void setParams();
         void printHelp();
+        std::string print_SI(double);
         void printTitle();
 
         // Creates a virtual cartesian topology and creates MPI Datatypes
@@ -61,8 +63,12 @@ namespace FCPIC
         MPI_Datatype exchange_part_type;
 
         // Simulation variables
-        int Npart;
-        double aspect, dx, dy;
+        std::vector<int> Npart;
+        std::vector<double> charge, mass, temp, vxfluid, vyfluid;
+        double Lref, Vref, Tref, Nref, aspect, xlen;
+        int Nspecies, nxproc, N_total_x, N_total_y;
+        double simtime;
+        double dx, dy, dt;
         int N_int_x, N_int_y;
         int N_x, N_y, N;
         double *X_guard_data, *Y_guard_data;

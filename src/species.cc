@@ -162,6 +162,9 @@ void species::get_charge(FCPIC::field *charge)
         charge->val[NORTH] += (dx - wx) * wy * q / (dx * dy);
         charge->val[NORTHEAST] += wx * wy * q / (dx * dy);
     }
+
+    //TO BE UPDATED WITH N0
+    
 }
 
 void species::field_inter(FCPIC::field *Ex, FCPIC::field *Ey, float &Ex_i, float &Ey_i, int counter)
