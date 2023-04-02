@@ -17,7 +17,7 @@ int main(int argc, char **argv)
     float *vfb = new float[3];
     float vth[3] = {0., 0., 0.};
     vfa[0] = 0.;
-    vfa[1] = 0.9;
+    vfa[1] = 0.3;
     vfa[2] = 0.;
     vfb[0] = 0.;
     vfb[1] = 0.;
@@ -27,7 +27,7 @@ int main(int argc, char **argv)
     if (sim->grid_rank == 0) // 0
     {
         vfa[0] = 0.;
-        vfa[1] = 0.19;
+        vfa[1] = 0.5;
         vfa[2] = 0;
         vfb[0] = 0.;
         vfb[1] = 0.;
@@ -36,7 +36,7 @@ int main(int argc, char **argv)
     if (sim->grid_rank == 1) // 1
     {
         vfa[0] = 0.;
-        vfa[1] = 0.12;
+        vfa[1] = 0.5;
         vfa[2] = 0.;
         vfb[0] = 0.;
         vfb[1] = 0.;
@@ -45,7 +45,7 @@ int main(int argc, char **argv)
     if (sim->grid_rank == 2) // 2
     {
         vfa[0] = 0.;
-        vfa[1] = -0.23;
+        vfa[1] = 0.3;
         vfa[2] = 0.;
         vfb[0] = 0.;
         vfb[1] = 0.;
@@ -54,7 +54,7 @@ int main(int argc, char **argv)
     if (sim->grid_rank == 3) // 3
     {
         vfa[0] = 0.;
-        vfa[1] = -0.3;
+        vfa[1] = 0.3;
         vfa[2] = 0.;
         vfb[0] = 0.;
         vfb[1] = 0.;

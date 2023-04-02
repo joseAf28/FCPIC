@@ -554,7 +554,7 @@ namespace FCPIC
                 {
 
                     temp.val[POSITION] = .25 * (phi->val[NORTH] + phi->val[SOUTH] + phi->val[EAST] + phi->val[WEST] -
-                                                charge->val[POSITION] / 1000.);
+                                                charge->val[POSITION] / 1000);
 
                     e = fabs(temp.val[POSITION] - phi->val[POSITION]);
                     if (e > res) // norm infty: supremo
