@@ -575,7 +575,7 @@ namespace FCPIC
 
         exchange_phi_buffers(phi);
 
-        // std::cout << "Maximum residual: " << res << "  | Number of iterations: " << loop << " | rank: " << grid_rank << std::endl;
+        std::cout << "Maximum residual: " << res << "  | Number of iterations: " << loop << " | rank: " << grid_rank << std::endl;
     }
 
     void simulation::set_E_value(field *phi, field *Ex_field, field *Ey_field)

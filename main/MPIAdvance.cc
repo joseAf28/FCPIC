@@ -64,48 +64,27 @@ int main(int argc, char **argv)
     // fields definition
     FCPIC::field *Ex = new FCPIC::field(range[0] + 1, range[1] + 1);
     FCPIC::field *Ey = new FCPIC::field(range[0] + 1, range[1] + 1);
-    FCPIC::field *charge;
+    FCPIC::field *charge = new FCPIC::field(range[0] + 1, range[1] + 1); // intialize to zero in all entries
     FCPIC::field *phi = new FCPIC::field(range[0] + 1, range[1] + 1);
 
     // initializing species
-    species specA(name, ppc, range, vfa, vth, 1.);
-    species specB(name, ppc, range, vfa, vth, -0.9);
+    int nb_spec = 2;
+    float q[2] = {1, -0.9};
 
-    specA.set_x();
-    specA.set_u();
-    specB.set_x();
-    specB.set_u();
+    std::vector<species> spec_vec;
 
-    // //! one particle Case
-    //  if (sim->grid_rank == 0)
-    //  {
-    //      for (int i = 1; i < specA.vec.size(); i++)
-    //          specA.vec[i].flag = SEND;
-    //     specA.vec.erase(std::remove_if(specA.vec.begin(), specA.vec.end(), [&specA](const part obj)
-    //                                    { return (obj.flag == SEND); }),
-    //                     specA.vec.end());
-    //     std::cout << sim->grid_rank << "vec.size: " << specA.vec.size() << std::endl;
-    // }
-    // if (sim->grid_rank != 0)
-    // {
-    //     for (int i = 0; i < specA.vec.size(); i++)
-    //         specA.vec[i].flag = SEND;
-    //     specA.vec.erase(std::remove_if(specA.vec.begin(), specA.vec.end(), [&specA](const part obj)
-    //                                    { return (obj.flag == SEND); }),
-    //                     specA.vec.end());
-    //     std::cout << sim->grid_rank << "vec.size: " << specA.vec.size() << std::endl;
-    // }
+    for (int i = 0; i < nb_spec; i++)
+    {
+        species test(name, ppc, range, vfa, vth, q[i]);
+        spec_vec.push_back(test);
+    }
 
-    // specA.vec[0].ix = 3;
-    // specA.vec[0].iy = 3;
-    // specA.write_output_vec(-1, sim->grid_rank);
-
-    // std::cout << "grid: " << sim->grid_rank << " vec.sizeA: " << specA.vec.size() << " vec.size B: " << specB.vec.size() << std::endl;
-    // //!
-
-    charge = new FCPIC::field(range[0] + 1, range[1] + 1);
-    specA.get_charge(charge); // getting initial charge field
-    specB.get_charge(charge);
+    for (int i = 0; i < nb_spec; i++)
+    {
+        spec_vec[i].set_x();
+        spec_vec[i].set_u();
+        spec_vec[i].get_charge(charge);
+    }
 
     std::fstream charge_file;
     std::string charge_filename = "../results/charge_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(0) + ".txt";
@@ -119,8 +98,8 @@ int main(int argc, char **argv)
     sim->set_E_value(phi, Ex, Ey);
 
     // first iteration of the particle pusher
-    specA.init_pusher(Ex, Ey);
-    specB.init_pusher(Ex, Ey);
+    for (int i = 0; i < nb_spec; i++)
+        spec_vec[i].init_pusher(Ex, Ey);
 
     for (int counter = 0; counter < 700; counter++)
     {
@@ -144,42 +123,28 @@ int main(int argc, char **argv)
         charge_file.open(charge_filename, std::ios::out);
         charge->print_field(charge_file);
         charge_file.close();
+
+        for (int i = 0; i < nb_spec; i++)
+            spec_vec[i].write_output_vec(sim->grid_rank, i, counter);
         // //!
-        // specA.write_output_vec(counter, sim->grid_rank); // debugging
 
         int flags_coords_mpi[5] = {sim->grid_rank, sim->grid_top, sim->grid_bottom, sim->grid_right, sim->grid_left};
 
-        // while (specA.advance_cell(flags_coords_mpi)) // Source of the MPI error
-        // {
-        //     test.write_output_vec(counter, sim.grid_rank); // debugging
-        //     specA.size(sim->grid_rank);
-        //     specA.prepare_buffer();
-        //     std::cout << "grid: " << sim->grid_rank << " vec.sizeA: " << specA.vec.size() << " vec.size B: " << specB.vec.size() << std::endl;
-        //     sim->exchange_particles_buffers(&specA);
-        //     specA.update_part_list(); // update the list of particles of each ptocess because of the MPI exchange
-        //     std::cout << "****************" << std::endl;
-        // }
-
-        specA.particle_pusher(Ex, Ey); // includes field interpolation at particle position
-        specA.advance_cell(flags_coords_mpi);
-        specA.prepare_buffer();
-
-        sim->exchange_particles_buffers(&specA);
-        specA.update_part_list();
-
-        specB.particle_pusher(Ex, Ey); // includes field interpolation at particle position
-        specB.advance_cell(flags_coords_mpi);
-        specB.prepare_buffer();
-
-        sim->exchange_particles_buffers(&specB);
-        specB.update_part_list();
-
-        // getting charge distribution and doing the sum at the same time
         charge->setValue(0.f);
-        specA.get_charge(charge);
-        specB.get_charge(charge);
 
-        // jacobi with all the species charge
+        for (int i = 0; i < nb_spec; i++)
+        {
+            spec_vec[i].particle_pusher(Ex, Ey);
+            spec_vec[i].advance_cell(flags_coords_mpi);
+            spec_vec[i].prepare_buffer();
+
+            sim->exchange_particles_buffers(&(spec_vec[i]));
+
+            spec_vec[i].update_part_list();
+            spec_vec[i].get_charge(charge);
+        }
+
+        // //!jacobi with all the species charge
         sim->jacobi(phi, charge);
         sim->set_E_value(phi, Ex, Ey);
     }
@@ -190,6 +155,8 @@ int main(int argc, char **argv)
     delete charge, phi;
     delete vfa;
     delete vfb;
+    spec_vec.clear();
     delete sim;
+
     return 0;
 }

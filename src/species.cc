@@ -478,27 +478,34 @@ void species::print()
     }
 }
 
-void species::write_output_vec(const int rank, const int time)
+void species::write_output_vec(const int rank, const int spec, const int counter)
 {
     std::fstream Output_file;
     std::string filename;
 
-    filename = "../results/grid_" + std::to_string(rank) + "__t_" + std::to_string(time) + ".txt";
+    filename = "../results/phase_space/particles_" + std::to_string(rank) + "_spec_" + std::to_string(spec) + "_counter_" + std::to_string(counter) + ".txt";
     std::string space = "   ";
 
     Output_file.open(filename, std::ios::out);
-    Output_file << "**************Grid**************" << std::endl;
+    Output_file << "x:  y:  ux:  uy:" << std::endl;
 
     int precision = 4;
     for (int i = 0; i < vec.size(); i++)
     {
-        Output_file << "cell (" << vec[i].ix << ", " << vec[i].iy << ")" << space;
-        Output_file << "x:" << std::setw(precision) << vec[i].x << space;
-        Output_file << "y: " << std::setw(precision) << vec[i].y << space;
-        Output_file << "ux: " << std::setw(precision) << vec[i].ux << space;
-        Output_file << "uy: " << std::setw(precision) << vec[i].uy << space;
-        Output_file << "flag: " << std::setw(precision) << vec[i].flag << space;
-        Output_file << std::endl;
+        float posx = vec[i].ix + dx + vec[i].x;
+        float posy = vec[i].iy + dy + vec[i].y;
+
+        Output_file << posx << space;
+        Output_file << posy << space;
+        Output_file << vec[i].ux << space << vec[i].uy << std::endl;
+
+        // Output_file << "cell (" << vec[i].ix << ", " << vec[i].iy << ")" << space;
+        // Output_file << "x:" << std::setw(precision) << vec[i].x << space;
+        // Output_file << "y: " << std::setw(precision) << vec[i].y << space;
+        // Output_file << "ux: " << std::setw(precision) << vec[i].ux << space;
+        // Output_file << "uy: " << std::setw(precision) << vec[i].uy << space;
+        // Output_file << "flag: " << std::setw(precision) << vec[i].flag << space;
+        // Output_file << std::endl;
     }
     Output_file << std::endl
                 << std::endl;

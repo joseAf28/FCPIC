@@ -70,7 +70,7 @@ public:
 
     //!!!!!!!!!!!!!!!! emporary methods for debugging
     void print();
-    void write_output_vec(const int, const int);
+    void write_output_vec(const int, const int, const int);
     void write_output_buffer(const int, const int);
     void write_input_buffer(const int, const int);
 
