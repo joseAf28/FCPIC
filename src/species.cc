@@ -160,11 +160,21 @@ void species::get_charge(FCPIC::field *charge)
         //     ij = ij + 3;
 
         // divide by dx*dy
-        charge->val[POSITION] += (dx - wx) * (dy - wy) * q;
-        charge->val[EAST] += wx * (dy - wy) * q;
-        charge->val[NORTH] += (dx - wx) * wy * q;
-        charge->val[NORTHEAST] += wx * wy * q;
+        charge->val[POSITION] += (dx - wx) * (dy - wy);
+        charge->val[EAST] += wx * (dy - wy);
+        charge->val[NORTH] += (dx - wx) * wy;
+        charge->val[NORTHEAST] += wx * wy;
+
     }
+
+    //TO BE UPDATED WITH N0
+    
+    for(int i=0; i<N_y; i++){
+        for(int j=0; j<N_x; j++){
+            charge->val[POSITION] = q*(charge->val[POSITION]);
+        }
+    }
+    
 }
 
 void species::field_inter(FCPIC::field *Ex, FCPIC::field *Ey, float &Ex_i, float &Ey_i, int counter)
