@@ -2,7 +2,7 @@
 #include "math.h"
 #include "mpi.h"
 
-species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, float *vth_a) : name(name_a)
+species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, float *vth_a, float charge) : name(name_a), q(charge)
 {
     ppc[0] = ppc_a[0];
     ppc[1] = ppc_a[1];
@@ -18,6 +18,8 @@ species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, floa
     vth[1] = vth_a[1];
     vth[2] = vth_a[2];
 
+    // std::cout << "vth[0]: " << vth[0] << " vth[1]: " << vth[1] << " vth[2]: " << vth[2] << std::endl;
+
     // number of cells in each direction of the process domain
     N_int_x = range[0] + 1;
     N_int_y = range[1] + 1;
@@ -31,7 +33,7 @@ species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, floa
     // reserve space for the arrays of particles
     part A;
     A.flag = BULK;
-    vec.reserve(3 * np); // assumotion for the minimum reserved space
+    vec.reserve(3 * np); // assumption for the minimum reserved space
     vec.assign(np, A);
     send_buffer_north.reserve(np); // assumption for the space
     send_buffer_south.reserve(np); // ! Think about it later
@@ -60,7 +62,7 @@ species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, floa
     rng = rng_aux;
     rand_gauss = norm_aux;
 
-    //std::cout << __PRETTY_FUNCTION__ << std::endl;
+    // std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
 
 species::~species()
@@ -140,40 +142,28 @@ void species::set_x()
 
 void species::get_charge(FCPIC::field *charge)
 {
-    charge->setValue(0.f);
+    //! Done in simulation: avoid creating a new field and doing the sum of all components
+    // charge->setValue(0.f);
 
     int i, j;
     float wx, wy;
-    for (int k = 0; k < np; k++)
+    for (int k = 0; k < vec.size(); k++)
     {
         i = vec[k].iy;
         j = vec[k].ix;
         wx = vec[k].x;
         wy = vec[k].y;
 
-        // std::cout << wx << "  " << wy << "\n";
-
         int ix = vec[i].ix;
         int iy = vec[i].iy;
 
-        // if (ix == N_x - 2)
-        //     ij = ij + 3;
-
-        // divide by dx*dy
-        charge->val[POSITION] += (dx - wx) * (dy - wy);
-        charge->val[EAST] += wx * (dy - wy);
-        charge->val[NORTH] += (dx - wx) * wy;
-        charge->val[NORTHEAST] += wx * wy;
-
+        charge->val[POSITION] += (dx - wx) * (dy - wy) * q / (dx * dy);
+        charge->val[EAST] += wx * (dy - wy) * q / (dx * dy);
+        charge->val[NORTH] += (dx - wx) * wy * q / (dx * dy);
+        charge->val[NORTHEAST] += wx * wy * q / (dx * dy);
     }
 
     //TO BE UPDATED WITH N0
-    
-    for(int i=0; i<N_y; i++){
-        for(int j=0; j<N_x; j++){
-            charge->val[POSITION] = q*(charge->val[POSITION]);
-        }
-    }
     
 }
 
@@ -198,7 +188,6 @@ void species::field_inter(FCPIC::field *Ex, FCPIC::field *Ey, float &Ex_i, float
     Ey_i /= (dx * dy);
 }
 
-//!! Define the Efield in each particle: missing feature
 void species::init_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
 {
 
@@ -334,63 +323,62 @@ bool species::advance_cell(int *ranks_mpi)
             }
         }
 
-        if (ranks_mpi[0] != MPI_PROC_NULL) // periodic
+        // Periodic and virtual boundary conditions
+        // north buffer
+        if ((!send_W_true) && (!send_E_true) && send_N_true)
         {
-            // north buffer
-            if ((!send_W_true) && (!send_E_true) && send_N_true)
-            {
-                send_buffer_north.push_back(vec[counter]);
-                vec[counter].flag = SEND;
-            }
-            // ne buffer
-            else if (send_N_true && send_E_true)
-            {
-                send_buffer_ne.push_back(vec[counter]);
-                vec[counter].flag = SEND;
-            }
-            // nw buffer
-            else if (send_N_true && send_W_true)
-            {
-                send_buffer_nw.push_back(vec[counter]);
-                vec[counter].flag = SEND;
-            }
-            // south buffer
-            else if ((!send_W_true) && (!send_E_true) && send_S_true)
-            {
-                send_buffer_south.push_back(vec[counter]);
-                vec[counter].flag = SEND;
-            }
-            // se buffer
-            else if (send_S_true && send_E_true)
-            {
-                send_buffer_se.push_back(vec[counter]);
-                vec[counter].flag = SEND;
-            }
-            // sw buffer
-            else if (send_S_true && send_W_true)
-            {
-                send_buffer_sw.push_back(vec[counter]);
-                vec[counter].flag = SEND;
-            }
-            // east buffer
-            else if (send_E_true && (!send_N_true) && (!send_S_true))
-            {
-                send_buffer_east.push_back(vec[counter]);
-                vec[counter].flag = SEND;
-            }
-            // west
-            else if (send_W_true && (!send_N_true) && (!send_S_true))
-            {
-                send_buffer_west.push_back(vec[counter]);
-                vec[counter].flag = SEND;
-            }
-            else
-            {
-            }
+            send_buffer_north.push_back(vec[counter]);
+            vec[counter].flag = SEND;
+        }
+        // ne buffer
+        else if (send_N_true && send_E_true)
+        {
+            send_buffer_ne.push_back(vec[counter]);
+            vec[counter].flag = SEND;
+        }
+        // nw buffer
+        else if (send_N_true && send_W_true)
+        {
+            send_buffer_nw.push_back(vec[counter]);
+            vec[counter].flag = SEND;
+        }
+        // south buffer
+        else if ((!send_W_true) && (!send_E_true) && send_S_true)
+        {
+            send_buffer_south.push_back(vec[counter]);
+            vec[counter].flag = SEND;
+        }
+        // se buffer
+        else if (send_S_true && send_E_true)
+        {
+            send_buffer_se.push_back(vec[counter]);
+            vec[counter].flag = SEND;
+        }
+        // sw buffer
+        else if (send_S_true && send_W_true)
+        {
+            send_buffer_sw.push_back(vec[counter]);
+            vec[counter].flag = SEND;
+        }
+        // east buffer
+        else if (send_E_true && (!send_N_true) && (!send_S_true))
+        {
+            send_buffer_east.push_back(vec[counter]);
+            vec[counter].flag = SEND;
+        }
+        // west
+        else if (send_W_true && (!send_N_true) && (!send_S_true))
+        {
+            send_buffer_west.push_back(vec[counter]);
+            vec[counter].flag = SEND;
+        }
+        else
+        {
         }
     }
     return changes_made;
 }
+
 void species::prepare_buffer()
 {
     // determine the size of the arrays that Exchange particles in MPI
@@ -462,7 +450,7 @@ void species::update_part_list()
     recv_buffer_south.clear();
     recv_buffer_east.clear();
     recv_buffer_west.clear();
-
+    //
     recv_buffer_ne.clear();
     recv_buffer_se.clear();
     recv_buffer_nw.clear();
@@ -493,27 +481,34 @@ void species::print()
     }
 }
 
-void species::write_output_vec(const int rank, const int time)
+void species::write_output_vec(const int rank, const int spec, const int counter)
 {
     std::fstream Output_file;
     std::string filename;
 
-    filename = "../results/grid_" + std::to_string(rank) + "__t_" + std::to_string(time) + ".txt";
+    filename = "../results/phase_space/particles_" + std::to_string(rank) + "_spec_" + std::to_string(spec) + "_counter_" + std::to_string(counter) + ".txt";
     std::string space = "   ";
 
     Output_file.open(filename, std::ios::out);
-    Output_file << "**************Grid**************" << std::endl;
+    Output_file << "x:  y:  ux:  uy:" << std::endl;
 
     int precision = 4;
     for (int i = 0; i < vec.size(); i++)
     {
-        Output_file << "cell (" << vec[i].ix << ", " << vec[i].iy << ")" << space;
-        Output_file << "x:" << std::setw(precision) << vec[i].x << space;
-        Output_file << "y: " << std::setw(precision) << vec[i].y << space;
-        Output_file << "ux: " << std::setw(precision) << vec[i].ux << space;
-        Output_file << "uy: " << std::setw(precision) << vec[i].uy << space;
-        Output_file << "flag: " << std::setw(precision) << vec[i].flag << space;
-        Output_file << std::endl;
+        float posx = vec[i].ix + dx + vec[i].x;
+        float posy = vec[i].iy + dy + vec[i].y;
+
+        Output_file << posx << space;
+        Output_file << posy << space;
+        Output_file << vec[i].ux << space << vec[i].uy << std::endl;
+
+        // Output_file << "cell (" << vec[i].ix << ", " << vec[i].iy << ")" << space;
+        // Output_file << "x:" << std::setw(precision) << vec[i].x << space;
+        // Output_file << "y: " << std::setw(precision) << vec[i].y << space;
+        // Output_file << "ux: " << std::setw(precision) << vec[i].ux << space;
+        // Output_file << "uy: " << std::setw(precision) << vec[i].uy << space;
+        // Output_file << "flag: " << std::setw(precision) << vec[i].flag << space;
+        // Output_file << std::endl;
     }
     Output_file << std::endl
                 << std::endl;

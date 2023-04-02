@@ -113,7 +113,8 @@ namespace FCPIC
         std::cout << "\n";
     }
 
-    void simulation::printHelp(){
+    void simulation::printHelp()
+    {
         std::cout << "\n";
         std::cout << ">> mpiexec ./FCPIC.exec -infile=infile.txt\n";
         std::cout << ">> mpiexec ./FCPIC.exec -npart=1000,2000 -charge=1,-1  ...\n";
@@ -144,11 +145,12 @@ namespace FCPIC
         std::cout << "                            Default: 1\n";
         std::cout << "-boundcond=bbb        Boundary condition (1->periodic, 2->conductive)\n";
         std::cout << "                            Default: 0\n";
-        std::cout << "\n"; 
+        std::cout << "\n";
     }
 
-    void simulation::readArgs(int argc, char **argv){
-        std::vector<std::string> allArgs(argv, argv+argc);
+    void simulation::readArgs(int argc, char **argv)
+    {
+        std::vector<std::string> allArgs(argv, argv + argc);
         std::vector<std::string> numbers;
         std::string line, header, number;
         std::vector<bool> def_values(12, true);
@@ -362,7 +364,48 @@ namespace FCPIC
                 number.clear();
                 header.clear();
             }
-    }
+
+            if (header.compare("npart") == 0)
+            {
+                numbers.push_back(number);
+                std::cout << "npart in, getting ";
+                for (auto &num : numbers)
+                    std::cout << num << " ";
+                std::cout << "\n";
+            }
+            if (header.compare("qom") == 0)
+            {
+                numbers.push_back(number);
+                std::cout << "qom in, getting ";
+                for (auto &num : numbers)
+                    std::cout << num << " ";
+                std::cout << "\n";
+            }
+            if (header.compare("temp") == 0)
+            {
+                numbers.push_back(number);
+                std::cout << "temp in, getting ";
+                for (auto &num : numbers)
+                    std::cout << num << " ";
+                std::cout << "\n";
+            }
+            if (header.compare("xlen") == 0)
+                std::cout << "xlen in, getting " << number << "\n";
+            if (header.compare("nxproc") == 0)
+                std::cout << "nxproc in, getting " << number << "\n";
+            if (header.compare("nxsamples") == 0)
+                std::cout << "nxsamples in, getting " << number << "\n";
+            if (header.compare("aspect") == 0)
+                std::cout << "aspect in, getting " << number << "\n";
+            if (header.compare("simtime") == 0)
+                std::cout << "aspect in, getting " << number << "\n";
+            if (header.compare("boundcond") == 0)
+                std::cout << "boundcond in, getting " << number << "\n";
+
+            numbers.clear();
+            number.clear();
+            header.clear();
+        }
 
     void simulation::setParams(){
         if(Npart.size() != charge.size() || Npart.size() != mass.size() || 
@@ -518,7 +561,7 @@ namespace FCPIC
         get_diagonal_rank(coords_nw, grid_nw);
         get_diagonal_rank(coords_sw, grid_sw);
 
-        //std::cout << "grid_rank: " << grid_rank << " ne: " << grid_ne << " se: " << grid_se << " sw: " << grid_sw << " nw: " << grid_nw << std::endl;
+        // std::cout << "grid_rank: " << grid_rank << " ne: " << grid_ne << " se: " << grid_se << " sw: " << grid_sw << " nw: " << grid_nw << std::endl;
 
         /////////////////////777////////////
 
@@ -558,8 +601,8 @@ namespace FCPIC
     {
         bc[X_DIR] = PERIODIC;
         bc[Y_DIR] = PERIODIC;
-        wrap_around[X_DIR] = 1;
-        wrap_around[Y_DIR] = 1;
+        wrap_around[X_DIR] = 0;
+        wrap_around[Y_DIR] = 0;
 
         setup_proc_grid();
     }
@@ -577,7 +620,7 @@ namespace FCPIC
     void simulation::exchange_phi_buffers(field *phi)
     {
         int i, j;
-        
+
         i = 1;
         j = 0;
 
@@ -630,7 +673,17 @@ namespace FCPIC
 
     void simulation::exchange_particles_buffers(species *lepton)
     {
-        // Communication to determine the size of the arrays of each buffer
+        lepton->size_recv_north = 0;
+        lepton->size_recv_south = 0;
+        lepton->size_recv_east = 0;
+        lepton->size_recv_west = 0;
+
+        lepton->size_recv_ne = 0;
+        lepton->size_recv_se = 0;
+        lepton->size_recv_nw = 0;
+        lepton->size_recv_sw = 0;
+
+        // Communication to determine the size of the arrays of each buffe
         MPI_Sendrecv(&(lepton->size_send_north), 1, MPI_INT, grid_top, 0, &(lepton->size_recv_south), 1, MPI_INT, grid_bottom, 0, grid_comm, &status);
         MPI_Sendrecv(&(lepton->size_send_south), 1, MPI_INT, grid_bottom, 0, &(lepton->size_recv_north), 1, MPI_INT, grid_top, 0, grid_comm, &status);
         MPI_Sendrecv(&(lepton->size_send_west), 1, MPI_INT, grid_left, 0, &(lepton->size_recv_east), 1, MPI_INT, grid_right, 0, grid_comm, &status);
@@ -640,30 +693,31 @@ namespace FCPIC
         MPI_Sendrecv(&(lepton->size_send_sw), 1, MPI_INT, grid_sw, 0, &(lepton->size_recv_ne), 1, MPI_INT, grid_ne, 0, grid_comm, &status);
         MPI_Sendrecv(&(lepton->size_send_nw), 1, MPI_INT, grid_nw, 0, &(lepton->size_recv_se), 1, MPI_INT, grid_se, 0, grid_comm, &status);
         MPI_Sendrecv(&(lepton->size_send_se), 1, MPI_INT, grid_se, 0, &(lepton->size_recv_nw), 1, MPI_INT, grid_nw, 0, grid_comm, &status);
-        //
+
         // allocate memory for the vectors that are going to receive the MPI particles
         part recv_dummy;
         recv_dummy.ix = -1; // set to -1 as a way to check later if there was "actual" communication
         recv_dummy.iy = -1;
-        lepton->recv_buffer_east.assign(lepton->size_recv_east, recv_dummy);
-        lepton->recv_buffer_west.assign(lepton->size_recv_west, recv_dummy);
-        lepton->recv_buffer_north.assign(lepton->size_recv_north, recv_dummy);
-        lepton->recv_buffer_south.assign(lepton->size_recv_south, recv_dummy);
+        int over = 0;
+        lepton->recv_buffer_east.assign(lepton->size_recv_east + over, recv_dummy);
+        lepton->recv_buffer_west.assign(lepton->size_recv_west + over, recv_dummy);
+        lepton->recv_buffer_north.assign(lepton->size_recv_north + over, recv_dummy);
+        lepton->recv_buffer_south.assign(lepton->size_recv_south + over, recv_dummy);
 
-        lepton->recv_buffer_ne.assign(lepton->size_recv_ne, recv_dummy);
-        lepton->recv_buffer_nw.assign(lepton->size_recv_nw, recv_dummy);
-        lepton->recv_buffer_se.assign(lepton->size_recv_se, recv_dummy);
-        lepton->recv_buffer_sw.assign(lepton->size_recv_sw, recv_dummy);
+        lepton->recv_buffer_ne.assign(lepton->size_recv_ne + over, recv_dummy);
+        lepton->recv_buffer_nw.assign(lepton->size_recv_nw + over, recv_dummy);
+        lepton->recv_buffer_se.assign(lepton->size_recv_se + over, recv_dummy);
+        lepton->recv_buffer_sw.assign(lepton->size_recv_sw + over, recv_dummy);
 
-        //! Buffers Communication
+        // Buffers Communication
         // All traffic in direction "top"
-        MPI_Sendrecv(&(lepton->send_buffer_north[0]), lepton->send_buffer_north.size(), exchange_part_type, grid_top, 0, &(lepton->recv_buffer_south[0]), lepton->size_recv_south, exchange_part_type, grid_bottom, 0, grid_comm, &status);
-        // All traf\fic in direction "bottom"
-        MPI_Sendrecv(&(lepton->send_buffer_south[0]), lepton->send_buffer_south.size(), exchange_part_type, grid_bottom, 0, &(lepton->recv_buffer_north[0]), lepton->size_recv_north, exchange_part_type, grid_top, 0, grid_comm, &status);
-        // All traf\fic in direction "bottom"
-        MPI_Sendrecv(&(lepton->send_buffer_west[0]), lepton->send_buffer_west.size(), exchange_part_type, grid_left, 0, &(lepton->recv_buffer_east[0]), lepton->size_recv_east, exchange_part_type, grid_right, 0, grid_comm, &status);
+        MPI_Sendrecv(&(lepton->send_buffer_north[0]), lepton->send_buffer_north.size(), exchange_part_type, grid_top, 0, &(lepton->recv_buffer_south[0]), lepton->size_recv_south, exchange_part_type, grid_bottom, 0, grid_comm, MPI_STATUS_IGNORE);
+        // All traffic in direction "bottom"
+        MPI_Sendrecv(&(lepton->send_buffer_south[0]), lepton->send_buffer_south.size(), exchange_part_type, grid_bottom, 0, &(lepton->recv_buffer_north[0]), lepton->size_recv_north, exchange_part_type, grid_top, 0, grid_comm, MPI_STATUS_IGNORE);
         // All traffic in direction "right"
-        MPI_Sendrecv(&(lepton->send_buffer_east[0]), lepton->send_buffer_east.size(), exchange_part_type, grid_right, 0, &(lepton->recv_buffer_west[0]), lepton->size_recv_west, exchange_part_type, grid_left, 0, grid_comm, &status);
+        MPI_Sendrecv(&(lepton->send_buffer_west[0]), lepton->send_buffer_west.size(), exchange_part_type, grid_left, 0, &(lepton->recv_buffer_east[0]), lepton->size_recv_east, exchange_part_type, grid_right, 0, grid_comm, MPI_STATUS_IGNORE);
+        // All traffic in direction "left"
+        MPI_Sendrecv(&(lepton->send_buffer_east[0]), lepton->send_buffer_east.size(), exchange_part_type, grid_right, 0, &(lepton->recv_buffer_west[0]), lepton->size_recv_west, exchange_part_type, grid_left, 0, grid_comm, MPI_STATUS_IGNORE);
 
         // All traffic in direction "ne-sw"
         MPI_Sendrecv(&(lepton->send_buffer_ne[0]), lepton->send_buffer_ne.size(), exchange_part_type, grid_ne, 0, &(lepton->recv_buffer_sw[0]), lepton->size_recv_sw, exchange_part_type, grid_sw, 0, grid_comm, &status);
@@ -673,11 +727,19 @@ namespace FCPIC
         MPI_Sendrecv(&(lepton->send_buffer_se[0]), lepton->send_buffer_se.size(), exchange_part_type, grid_se, 0, &(lepton->recv_buffer_nw[0]), lepton->size_recv_nw, exchange_part_type, grid_nw, 0, grid_comm, &status);
         // All traffic in direction "nw-se"
         MPI_Sendrecv(&(lepton->send_buffer_nw[0]), lepton->send_buffer_nw.size(), exchange_part_type, grid_nw, 0, &(lepton->recv_buffer_se[0]), lepton->size_recv_se, exchange_part_type, grid_se, 0, grid_comm, &status);
+
+        // // Another approach to handle MPI with a dynamic message
+        //  MPI_Send(&(lepton->send_buffer_west[0]), lepton->send_buffer_west.size(), exchange_part_type, grid_left, 0, grid_comm);
+        //  MPI_Probe(grid_right, 0, grid_comm, &status);
+        //  MPI_Get_count(&status, exchange_part_type, &(lepton->size_recv_east));
+        //  lepton->recv_buffer_east.assign(lepton->size_recv_east, recv_dummy);
+        //  MPI_Recv(&(lepton->recv_buffer_east[0]), lepton->size_recv_east, exchange_part_type, grid_right, 0, grid_comm, MPI_STATUS_IGNORE);
     }
 
     // Jacobi solver
     void simulation::jacobi(field *phi, field *charge)
     {
+        // std::cout << __PRETTY_FUNCTION__ << std::endl;
         double res, e;
         double global_res = 1.0;
         double tol = 1e-7;
@@ -708,9 +770,9 @@ namespace FCPIC
             for (int i = 1; i <= N_int_y; i++)
                 for (int j = 1; j <= N_int_x; j++)
                 {
-                    temp.val[POSITION] = .25 * (phi->val[NORTH] + phi->val[SOUTH] +
-                                                phi->val[EAST] + phi->val[WEST] -
-                                                charge->val[POSITION]);
+
+                    temp.val[POSITION] = .25 * (phi->val[NORTH] + phi->val[SOUTH] + phi->val[EAST] + phi->val[WEST] -
+                                                charge->val[POSITION]/1000);
 
                     e = fabs(temp.val[POSITION] - phi->val[POSITION]);
                     if (e > res) // norm infty: supremo
@@ -726,11 +788,12 @@ namespace FCPIC
                 MPI_Allreduce(&res, &global_res, 1, MPI_DOUBLE, MPI_MAX, grid_comm);
 
             loop++;
+            // std::cout << "loop: " << loop << std::endl;
         }
 
         exchange_phi_buffers(phi);
 
-         std::cout << "Maximum residual: " << res << "  | Number of iterations: " << loop << " | rank: " << grid_rank << std::endl;
+        std::cout << "Maximum residual: " << res << "  | Number of iterations: " << loop << " | rank: " << grid_rank << std::endl;
     }
 
     void simulation::set_E_value(field *phi, field *Ex_field, field *Ey_field)
@@ -794,69 +857,4 @@ namespace FCPIC
         exchange_phi_buffers(Ey_field);
     }
 
-    /*
-
-    // bit dumb: use bool to choose u or charge
-    void simulation::write_output_u(domain &subdomain, int rank, int time)
-    {
-        int l, m;
-        int N_local = subdomain.u->N;
-        int N_local_x = subdomain.u->Nx;
-        int N_local_y = subdomain.u->Ny;
-        std::fstream Output_file;
-
-        std::string filename;
-
-        // offset of cell numbering for the subdomain
-        offset[X_DIR] = grid_coord[X_DIR] * (N_local_x - 2);
-        offset[Y_DIR] = grid_coord[Y_DIR] * (N_local_y - 2);
-
-        filename = "../results/subdomain_" + std::to_string(rank) + "__t_" + std::to_string(time) + ".txt";
-        std::string space = "        ";
-        Output_file.open(filename, std::ios::out);
-        Output_file << "x position" << space << "y position" << space << "field value" << std::endl;
-
-        for (int i = 0; i < N_local; i++)
-        {
-            if (subdomain.u->bc[i] == NONE)
-            {
-                l = i % N_local_x;
-                m = (int)i / N_local_x;
-
-                double value_x = (l + offset[X_DIR]) * (subdomain.charge->h);
-                double value_y = (m + offset[Y_DIR]) * (subdomain.charge->h);
-
-                Output_file << "    " << value_x << space << value_y << space << subdomain.u->val[i] << std::endl;
-            }
-        }
-
-        Output_file.close();
-    }
-    void simulation::write_output_charge(domain &subdomain, int rank, int time)
-    {
-        std::fstream Output_file;
-        std::string filename;
-        int l, m;
-        int N_local = subdomain.u->N;
-        int N_local_x = subdomain.u->Nx;
-        int N_local_y = subdomain.u->Ny;
-
-        filename = "../results/charge_" + std::to_string(rank) + "__t_" + std::to_string(time) + ".txt";
-        std::string space = "   ";
-
-        Output_file.open(filename, std::ios::out);
-        int precision = 4;
-
-        for (int i = 0; i < N_local; i++)
-        {
-            if (i % (N_local_x) == 0)
-                Output_file << std::endl;
-
-            Output_file << std::setw(precision) << subdomain.charge->val[i] << space;
-            // if (i % 4 == 0)
-        }
-
-        Output_file.close();
-    }
-    */
 }

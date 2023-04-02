@@ -50,7 +50,7 @@ typedef struct Particle
 class species
 {
 public:
-    species(std::string, int *, int *, float *, float *);
+    species(std::string, int *, int *, float *, float *, float);
     ~species();
 
     void set_x();
@@ -59,7 +59,6 @@ public:
     void get_charge(FCPIC::field *);
 
     // methods used for MPI communication
-    // !Integrate these methods with the particle pusher
     void prepare_buffer();
     void update_part_list();
     bool advance_cell(int *);
@@ -69,17 +68,14 @@ public:
     void init_pusher(FCPIC::field *, FCPIC::field *);
     void particle_pusher(FCPIC::field *, FCPIC::field *);
 
-    //!!!!!!!!!!!!!!!! methods for debugging
+    //!!!!!!!!!!!!!!!! emporary methods for debugging
     void print();
-    void write_output_vec(const int, const int);
+    void write_output_vec(const int, const int, const int);
     void write_output_buffer(const int, const int);
     void write_input_buffer(const int, const int);
 
     // array of particles
     std::vector<part> vec;
-
-    // charge field: Used for the jacobi iteration
-    //FCPIC::field *charge;
 
     // buffers to send data from MPI's data exchange
     std::vector<part> send_buffer_north;
@@ -123,9 +119,8 @@ public:
     int size_recv_se = 0;
     int size_recv_nw = 0;
     int size_recv_sw = 0;
-    ///
 
-    int np; // total number of particles in the simulation
+    int np; // total number of particles in the simulation (after each iteration: it is updated)
 
     // simulation box info
     int N_x; // number of x grid points
@@ -140,9 +135,9 @@ private:
 
     // mass and charge
     float m = 1; //!! to define in the constructor later
-    float q = 1;
+    float q;
 
-    // number of particles per cell at beggining
+    // number of particles per cell at beggining of simulation
     int ppc[2];
 
     // number of cells in each direction

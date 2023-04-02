@@ -1,12 +1,13 @@
 // #include "simulation.hh"
 #include "field.hh"
+#include <stdexcept>
 
 namespace FCPIC
 {
     // Constructors
     // allocates memory to the field variables equal to the number of cells in the domain
-    field::field(){
-
+    field::field()
+    {
     }
 
     field::field(int Nx, int Ny)
@@ -41,6 +42,19 @@ namespace FCPIC
         N = N_x * N_y;
         val.reserve(N);
         val = arr;
+    }
+
+    void field::add_field(field *chargeA)
+    {
+        if ((N_x == chargeA->N_x) && (N_y == chargeA->N_y))
+        {
+            for (int i = 0; i < N; i++)
+                val[i] = val[i] + chargeA->val[i];
+        }
+        else
+        {
+            throw std::invalid_argument("field - out of bound - check dimensions");
+        }
     }
 
     field::~field()
