@@ -43,7 +43,7 @@ namespace FCPIC
         void set_E_value(field *, field *, field *);
 
         // MPI variables
-        int grid_rank;                                    // rank of the current proces in the virtual grid
+        int grid_rank, rank;                              // rank of the current proces in the virtual grid
         int grid_top, grid_bottom, grid_left, grid_right; // ranks of the neighbouring processes
         int grid_ne, grid_se, grid_nw, grid_sw;           // ranks of diagonal processes: NE, SE, NW, SW
         int wrap_around[2];                               // public for the class species particle pusher can see it

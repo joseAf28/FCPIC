@@ -7,7 +7,7 @@ int main(int argc, char **argv)
     // initializaing simulation fields and MPI
     FCPIC::simulation *sim = new FCPIC::simulation(argc, argv);
     sim->set_conductive_field_bc();
-
+    
     // declaring species object
     std::string name = "electron";
     int ppc[2] = {1, 1};
@@ -156,7 +156,7 @@ int main(int argc, char **argv)
     delete vfa;
     delete vfb;
     spec_vec.clear();
+    
     delete sim;
-
     return 0;
 }
