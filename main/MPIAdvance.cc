@@ -106,26 +106,26 @@ int main(int argc, char **argv)
         // std::cout << "grid_rank: " << sim->grid_rank << "counter:" << counter << std::endl;
 
         // //! Writting in file;
-        std::fstream Ex_file;
-        std::string Ex_filename = "../results/Ex_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(counter) + ".txt";
-        Ex_file.open(Ex_filename, std::ios::out);
-        Ex->print_field(Ex_file);
-        Ex_file.close();
+        // std::fstream Ex_file;
+        // std::string Ex_filename = "../results/Ex_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(counter) + ".txt";
+        // Ex_file.open(Ex_filename, std::ios::out);
+        // Ex->print_field(Ex_file);
+        // Ex_file.close();
 
-        std::fstream Ey_file;
-        std::string Ey_filename = "../results/Ey_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(counter) + ".txt";
-        Ey_file.open(Ey_filename, std::ios::out);
-        Ey->print_field(Ey_file);
-        Ey_file.close();
+        // std::fstream Ey_file;
+        // std::string Ey_filename = "../results/Ey_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(counter) + ".txt";
+        // Ey_file.open(Ey_filename, std::ios::out);
+        // Ey->print_field(Ey_file);
+        // Ey_file.close();
 
-        std::fstream charge_file;
-        std::string charge_filename = "../results/charge_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(counter + 1) + ".txt";
-        charge_file.open(charge_filename, std::ios::out);
-        charge->print_field(charge_file);
-        charge_file.close();
+        // std::fstream charge_file;
+        // std::string charge_filename = "../results/charge_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(counter + 1) + ".txt";
+        // charge_file.open(charge_filename, std::ios::out);
+        // charge->print_field(charge_file);
+        // charge_file.close();
 
-        for (int i = 0; i < nb_spec; i++)
-            spec_vec[i].write_output_vec(sim->grid_rank, i, counter);
+        // for (int i = 0; i < nb_spec; i++)
+        //     spec_vec[i].write_output_vec(sim->grid_rank, i, counter);
         // //!
 
         int flags_coords_mpi[5] = {sim->grid_rank, sim->grid_top, sim->grid_bottom, sim->grid_right, sim->grid_left};

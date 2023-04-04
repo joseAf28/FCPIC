@@ -1,5 +1,6 @@
 #include "species.hh"
 #include "mpi.h"
+#include "simulation.hh"
 
 // Direction
 typedef enum
@@ -33,7 +34,7 @@ int main(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &n_Procs);
 
     // number of processes per row and column
-    P_grid[X_DIR] = 2;
+    P_grid[X_DIR] = 3;
     P_grid[Y_DIR] = 2;
 
     if (P_grid[X_DIR] * P_grid[Y_DIR] != n_Procs)
@@ -76,6 +77,7 @@ int main(int argc, char **argv)
 
     MPI_Type_create_struct(nitems, blocklengths, offsets, types, &mpi_part);
     MPI_Type_commit(&mpi_part);
+
     ///!MPI COMMUNICATION**************************
 
     // Initialize the Species Class
@@ -86,6 +88,10 @@ int main(int argc, char **argv)
 
     float *vf = new float[3];
     float vth[3] = {0.0, 0.0, 0.0};
+
+    vf[0] = 1.;
+    vf[1] = 1.;
+    vf[2] = 1.;
 
     // differentiate vectors
     if (proc_rank == 0) // 0
@@ -115,43 +121,46 @@ int main(int argc, char **argv)
 
     FCPIC::field *Ex = new FCPIC::field(range[0] + 1, range[1] + 1);
     FCPIC::field *Ey = new FCPIC::field(range[0] + 1, range[1] + 1);
-    int counter = 1;
 
-    int flags_coords_mpi[5] = {P_grid_rank, P_grid_top, P_grid_bottom, P_grid_right, P_grid_left};
+    FCPIC::field *charge = new FCPIC::field(range[0] + 1, range[1] + 1); // intialize to zero in all entries
+    FCPIC::field *phi = new FCPIC::field(range[0] + 1, range[1] + 1);
 
     species test(name, ppc, range, vf, vth, 1);
-    if (proc_rank == 0)
-    {
-        for (int i = 1; i < test.vec.size(); i++)
-            test.vec[i].flag = SEND;
+    // if (proc_rank == 0)
+    // {
+    //     for (int i = 1; i < test.vec.size(); i++)
+    //         test.vec[i].flag = SEND;
 
-        test.vec.erase(std::remove_if(test.vec.begin(), test.vec.end(), [&test](const part obj)
-                                      { return (obj.flag == SEND); }),
-                       test.vec.end());
+    //     test.vec.erase(std::remove_if(test.vec.begin(), test.vec.end(), [&test](const part obj)
+    //                                   { return (obj.flag == SEND); }),
+    //                    test.vec.end());
 
-        std::cout << proc_rank << "vec.size: " << test.vec.size() << std::endl;
-    }
+    //     std::cout << proc_rank << "vec.size: " << test.vec.size() << std::endl;
+    // }
 
-    if (proc_rank != 0)
-    {
-        for (int i = 0; i < test.vec.size(); i++)
-            test.vec[i].flag = SEND;
+    // if (proc_rank != 0)
+    // {
+    //     for (int i = 0; i < test.vec.size(); i++)
+    //         test.vec[i].flag = SEND;
 
-        test.vec.erase(std::remove_if(test.vec.begin(), test.vec.end(), [&test](const part obj)
-                                      { return (obj.flag == SEND); }),
-                       test.vec.end());
-        std::cout << proc_rank << "vec.size: " << test.vec.size() << std::endl;
-    }
+    //     test.vec.erase(std::remove_if(test.vec.begin(), test.vec.end(), [&test](const part obj)
+    //                                   { return (obj.flag == SEND); }),
+    //                    test.vec.end());
+    //     std::cout << proc_rank << "vec.size: " << test.vec.size() << std::endl;
+    // }
     test.set_x();
     test.set_u();
 
-    test.write_output_vec(0, P_grid_rank);
+    // test.write_output_vec(0, P_grid_rank);
 
+    // sim->set_E_value(phi, Ex, Ey);
     // //
-    for (int i = 0; i < 20; i++)
+    for (int i = 0; i < 500; i++)
     {
+        int flags_coords_mpi[5] = {P_grid_rank, P_grid_top, P_grid_bottom, P_grid_right, P_grid_left};
+
         test.update_part_list();
-        test.write_output_vec(i, P_grid_rank);
+        test.write_output_vec(P_grid_rank, 0, P_grid_rank);
         test.init_pusher(Ex, Ey);
         test.particle_pusher(Ex, Ey);
         test.advance_cell(flags_coords_mpi);
@@ -192,6 +201,10 @@ int main(int argc, char **argv)
 
         // test.write_input_buffer(8, P_grid_rank);
         // test.update_part_list();
+
+        charge->setValue(0.f);
+
+        test.get_charge(charge);
     }
 
     MPI_Finalize();

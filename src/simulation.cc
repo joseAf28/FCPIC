@@ -23,10 +23,10 @@ namespace FCPIC
         // retrieve the number of processes
         MPI_Comm_size(MPI_COMM_WORLD, &n_Procs);
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        readArgs(argc, argv);
-        setParams();
-        if (rank == 0)
-            printTitle();
+        // readArgs(argc, argv);
+        // setParams();
+        // if (rank == 0)
+        //     printTitle();
 
         aspect = 1;        // (INPUT) y_len = aspect (x_len always norm to 1)
         N_int_x = 21;      //
@@ -38,7 +38,7 @@ namespace FCPIC
         dx = 1; //
         dy = 1; //
 
-        grid[X_DIR] = 2; //
+        grid[X_DIR] = 3; //
         grid[Y_DIR] = 2; //
 
         Y_guard_data = new double[N_x];
@@ -820,11 +820,11 @@ namespace FCPIC
         // Defining a new temporary field (temp is not part of the domain)
         field temp(N_x, N_y);
 
-        if (grid_rank == 4)
-        {
-            phi->print_field(std::cout);
-            charge->print_field(std::cout);
-        }
+        // if (grid_rank == 4)
+        // {
+        //     phi->print_field(std::cout);
+        //     charge->print_field(std::cout);
+        // }
 
         // Starting the iteration loop
         while (global_res > tol)
@@ -859,7 +859,6 @@ namespace FCPIC
                 MPI_Allreduce(&res, &global_res, 1, MPI_DOUBLE, MPI_MAX, grid_comm);
 
             loop++;
-            // std::cout << "loop: " << loop << std::endl;
         }
 
         exchange_phi_buffers(phi);

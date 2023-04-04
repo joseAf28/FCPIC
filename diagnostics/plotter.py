@@ -67,95 +67,95 @@ ly = 11
 
 # ###!! SPACE CASE
 
-# # #!Phase Space case
-# field_type = "phase_space"
-# phase_0_field = []
+# #!Phase Space case
+field_type = "phase_space"
+phase_0_field = []
 
-# for i in range(0, nb_ranks):
-#     field_dummy = []
-#     readSpace_rank(i, field_dummy, field_type, 0)
-#     phase_0_field.append(field_dummy)
-
-
-# field_type = "phase_space"
-# phase_1_field = []
-
-# for i in range(0, nb_ranks):
-#     field_dummy = []
-#     readSpace_rank(i, field_dummy, field_type, 1)
-#     phase_1_field.append(field_dummy)
+for i in range(0, nb_ranks):
+    field_dummy = []
+    readSpace_rank(i, field_dummy, field_type, 0)
+    phase_0_field.append(field_dummy)
 
 
-# snapshot_x = []
-# snapshot_y = []
+field_type = "phase_space"
+phase_1_field = []
 
-# for count_plot in range(0, counter_space):
-#     x_data = []
-#     y_data = []
+for i in range(0, nb_ranks):
+    field_dummy = []
+    readSpace_rank(i, field_dummy, field_type, 1)
+    phase_1_field.append(field_dummy)
 
-#     for i in range(0, len(phase_0_field[0][count_plot][:])):
-#         x_data.append(phase_0_field[0][count_plot][i][0])
-#         y_data.append(phase_0_field[0][count_plot][i][1])
 
-#     for i in range(0, len(phase_0_field[1][count_plot][:])):
-#         x_data.append(lx + phase_0_field[1][count_plot][i][0])
-#         y_data.append(phase_0_field[1][count_plot][i][1])
+snapshot_x = []
+snapshot_y = []
 
-#     for i in range(0, len(phase_0_field[2][count_plot][:])):
-#         x_data.append(phase_0_field[2][count_plot][i][0])
-#         y_data.append(ly + phase_0_field[2][count_plot][i][1])
+for count_plot in range(0, counter_space):
+    x_data = []
+    y_data = []
 
-#     for i in range(0, len(phase_0_field[3][count_plot][:])):
-#         x_data.append(lx + phase_0_field[3][count_plot][i][0])
-#         y_data.append(ly + phase_0_field[3][count_plot][i][1])
+    for i in range(0, len(phase_0_field[0][count_plot][:])):
+        x_data.append(phase_0_field[0][count_plot][i][0])
+        y_data.append(phase_0_field[0][count_plot][i][1])
 
-#     for i in range(0, len(phase_1_field[0][count_plot][:])):
-#         x_data.append(phase_1_field[0][count_plot][i][0])
-#         y_data.append(phase_1_field[0][count_plot][i][1])
+    for i in range(0, len(phase_0_field[1][count_plot][:])):
+        x_data.append(lx + phase_0_field[1][count_plot][i][0])
+        y_data.append(phase_0_field[1][count_plot][i][1])
 
-#     for i in range(0, len(phase_1_field[1][count_plot][:])):
-#         x_data.append(lx + phase_1_field[1][count_plot][i][0])
-#         y_data.append(phase_1_field[1][count_plot][i][1])
+    for i in range(0, len(phase_0_field[2][count_plot][:])):
+        x_data.append(phase_0_field[2][count_plot][i][0])
+        y_data.append(ly + phase_0_field[2][count_plot][i][1])
 
-#     for i in range(0, len(phase_1_field[2][count_plot][:])):
-#         x_data.append(phase_1_field[2][count_plot][i][0])
-#         y_data.append(ly + phase_1_field[2][count_plot][i][1])
+    for i in range(0, len(phase_0_field[3][count_plot][:])):
+        x_data.append(lx + phase_0_field[3][count_plot][i][0])
+        y_data.append(ly + phase_0_field[3][count_plot][i][1])
 
-#     for i in range(0, len(phase_1_field[3][count_plot][:])):
-#         x_data.append(lx + phase_1_field[3][count_plot][i][0])
-#         y_data.append(ly + phase_1_field[3][count_plot][i][1])
+    for i in range(0, len(phase_1_field[0][count_plot][:])):
+        x_data.append(phase_1_field[0][count_plot][i][0])
+        y_data.append(phase_1_field[0][count_plot][i][1])
 
-#     snapshot_x.append(x_data)
-#     snapshot_y.append(y_data)
+    for i in range(0, len(phase_1_field[1][count_plot][:])):
+        x_data.append(lx + phase_1_field[1][count_plot][i][0])
+        y_data.append(phase_1_field[1][count_plot][i][1])
 
-# ##! Particle animation
-# fps = 30
-# nSeconds = math.floor(counter_space/fps)
-# print(nSeconds)
-# # First set up the figure, the axis, and the plot element we want to animate
-# fig = plt.figure( figsize=(8,8) )
+    for i in range(0, len(phase_1_field[2][count_plot][:])):
+        x_data.append(phase_1_field[2][count_plot][i][0])
+        y_data.append(ly + phase_1_field[2][count_plot][i][1])
 
-# im = plt.scatter(snapshot_x[0], snapshot_y[0], marker=".")
+    for i in range(0, len(phase_1_field[3][count_plot][:])):
+        x_data.append(lx + phase_1_field[3][count_plot][i][0])
+        y_data.append(ly + phase_1_field[3][count_plot][i][1])
 
-# plt.xlabel(r"$x$")
-# plt.ylabel(r"$y$")
-# plt.title(r"$Particles$")
+    snapshot_x.append(x_data)
+    snapshot_y.append(y_data)
 
-# def animate_func(i):
-#     if i % fps == 0:
-#         print( '.', end ='' )
+##! Particle animation
+fps = 30
+nSeconds = math.floor(counter_space/fps)
+print(nSeconds)
+# First set up the figure, the axis, and the plot element we want to animate
+fig = plt.figure( figsize=(8,8) )
 
-#     im.set_offsets(np.transpose([snapshot_x[i], snapshot_y[i]]))
-#     return [im]
+im = plt.scatter(snapshot_x[0], snapshot_y[0], marker=".")
 
-# anim = animation.FuncAnimation(fig, animate_func, 
-#                                frames = nSeconds * fps,
-#                                interval = 1000 / fps, # in ms
-#                                )
+plt.xlabel(r"$x$")
+plt.ylabel(r"$y$")
+plt.title(r"$Particles$")
 
-# anim.save(results_path+'videos/particles_anim_4_weak.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+def animate_func(i):
+    if i % fps == 0:
+        print( '.', end ='' )
 
-# print('Particles Anim Done!')
+    im.set_offsets(np.transpose([snapshot_x[i], snapshot_y[i]]))
+    return [im]
+
+anim = animation.FuncAnimation(fig, animate_func, 
+                               frames = nSeconds * fps,
+                               interval = 1000 / fps, # in ms
+                               )
+
+anim.save(results_path+'videos/particles_5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+
+print('Particles Anim Done!')
 
 
 ###!! FIELDS CASE
@@ -280,7 +280,7 @@ anim = animation.FuncAnimation(fig, animate_func,
                                frames = nSeconds * fps,
                                interval = 1000 / fps, # in ms
                                )
-anim.save(results_path+'videos/charge_4_weak_rev_10_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+'videos/charge_5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
 print('Charge Anim Done!')
 
 ##!Ex_field Animation
@@ -303,7 +303,7 @@ anim = animation.FuncAnimation(fig, animate_func,
                                frames = nSeconds * fps,
                                interval = 1000 / fps, # in ms
                                )
-anim.save(results_path+'videos/Ex_field_4_weak_rev_10_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+'videos/Ex_field_5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
 print('Ex field Anim Done!')
 
 ##!Ey_field Animation
@@ -327,5 +327,5 @@ anim = animation.FuncAnimation(fig, animate_func,
                                frames = nSeconds * fps,
                                interval = 1000 / fps, # in ms
                                )
-anim.save(results_path+'videos/Ey_field_4_weak_rev_10_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+'videos/Ey_field_5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
 print('Ey field Anim Done!')
