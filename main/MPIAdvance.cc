@@ -8,7 +8,7 @@ int main(int argc, char **argv)
     // initializaing simulation fields and MPI
     FCPIC::simulation *sim = new FCPIC::simulation(argc, argv);
     sim->set_conductive_field_bc();
-    
+
     // declaring species object
     std::string name = "electron";
     int ppc[2] = {1, 1};
@@ -89,22 +89,40 @@ int main(int argc, char **argv)
 
     sim->jacobi(phi, charge);
     sim->set_E_value(phi, Ex, Ey);
+    // sim->exchange_charge_buffers(charge);
 
     //! HDF5 Initialization
-    std::string h5_name = "../results/test_rank_" + std::to_string(sim->grid_rank) + ".h5";
+    std::string h5_name = "../results/data_rank_" + std::to_string(sim->grid_rank) + ".h5";
     const char *h5_char = h5_name.c_str();
 
-    hid_t file_id, group_id, dataset_id, dataspace_id, group; /* identifiers */
+    hid_t file_field, dataset_field, dataspace_field;
+    hid_t dataspace_part, dataset_part;
+    hid_t group_charge, group_Ex, group_Ey, group_particles;
     hsize_t dims[2];
     herr_t status;
 
-    file_id = H5Fcreate(h5_char, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    hid_t part_id;
+    part_id = H5Tcreate(H5T_COMPOUND, sizeof(part));
+    H5Tinsert(part_id, "ix", HOFFSET(part, ix), H5T_NATIVE_INT);
+    H5Tinsert(part_id, "iy", HOFFSET(part, iy), H5T_NATIVE_INT);
+    H5Tinsert(part_id, "x", HOFFSET(part, x), H5T_NATIVE_FLOAT);
+    H5Tinsert(part_id, "y", HOFFSET(part, y), H5T_NATIVE_FLOAT);
+    H5Tinsert(part_id, "ux", HOFFSET(part, ux), H5T_NATIVE_FLOAT);
+    H5Tinsert(part_id, "uy", HOFFSET(part, uy), H5T_NATIVE_FLOAT);
+    H5Tinsert(part_id, "uz", HOFFSET(part, uz), H5T_NATIVE_FLOAT);
+    H5Tinsert(part_id, "flag", HOFFSET(part, flag), H5T_NATIVE_INT);
+
+    file_field = H5Fcreate(h5_char, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
     dims[0] = phi->N_x;
     dims[1] = phi->N_y;
-    dataspace_id = H5Screate_simple(2, dims, NULL);
+    dataspace_field = H5Screate_simple(2, dims, nullptr);
+
+    group_charge = H5Gcreate(file_field, "/charge", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    group_Ex = H5Gcreate(file_field, "/Ex", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    group_Ey = H5Gcreate(file_field, "/Ey", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    group_particles = H5Gcreate(file_field, "/particles", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     //!!!
 
-    // sim->exchange_charge_buffers(charge);
     // first iteration of the particle pusher
     for (int i = 0; i < nb_spec; i++)
         spec_vec[i].init_pusher(Ex, Ey);
@@ -122,18 +140,32 @@ int main(int argc, char **argv)
         // ! Writting in H5 file;
         std::string Ey_name = "Ey_count_" + std::to_string(counter);
         const char *Ey_char = Ey_name.c_str();
-        dataset_id = H5Dcreate2(file_id, Ey_char, H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        status = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(Ey->val[0]));
+        dataset_field = H5Dcreate2(group_Ey, Ey_char, H5T_NATIVE_DOUBLE, dataspace_field, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        status = H5Dwrite(dataset_field, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(Ey->val[0]));
 
         std::string Ex_name = "Ex_count_" + std::to_string(counter);
         const char *Ex_char = Ex_name.c_str();
-        dataset_id = H5Dcreate2(file_id, Ex_char, H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        status = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(Ex->val[0]));
+        dataset_field = H5Dcreate2(group_Ex, Ex_char, H5T_NATIVE_DOUBLE, dataspace_field, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        status = H5Dwrite(dataset_field, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(Ex->val[0]));
 
         std::string charge_name = "charge_count_" + std::to_string(counter);
         const char *charge_char = charge_name.c_str();
-        dataset_id = H5Dcreate2(file_id, charge_char, H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        status = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(charge->val[0]));
+        dataset_field = H5Dcreate2(group_charge, charge_char, H5T_NATIVE_DOUBLE, dataspace_field, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        status = H5Dwrite(dataset_field, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(charge->val[0]));
+
+        // loop over all species
+        for (int i = 0; i < nb_spec; i++)
+        {
+            std::string part_name = "part_" + std::to_string(i) + "_count_" + std::to_string(counter);
+            const char *part_char = part_name.c_str();
+            hsize_t vec_size = spec_vec[i].vec.size();
+            dataspace_part = H5Screate_simple(1, &vec_size, nullptr);
+            dataset_part = H5Dcreate2(group_particles, part_char, part_id, dataspace_part, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+            status = H5Dwrite(dataset_part, part_id, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(spec_vec[i].vec[0]));
+
+            H5Dclose(dataset_part);
+            H5Sclose(dataspace_part);
+        }
         //!
 
         // // Writting in file;
@@ -157,7 +189,7 @@ int main(int argc, char **argv)
 
         // for (int i = 0; i < nb_spec; i++)
         //     spec_vec[i].write_output_vec(sim->grid_rank, i, counter);
-        // //!
+        // //
 
         int flags_coords_mpi[5] = {sim->grid_rank, sim->grid_top, sim->grid_bottom, sim->grid_right, sim->grid_left};
 
@@ -181,9 +213,15 @@ int main(int argc, char **argv)
     }
     // std::cout << "End Loop" << std::endl;
 
-    status = H5Sclose(dataspace_id);
-    status = H5Dclose(dataset_id);
-    status = H5Fclose(file_id);
+    status = H5Gclose(group_charge);
+    status = H5Gclose(group_Ex);
+    status = H5Gclose(group_Ey);
+    status = H5Gclose(group_particles);
+
+    status = H5Tclose(part_id);
+    status = H5Sclose(dataspace_field);
+    status = H5Dclose(dataset_field);
+    status = H5Fclose(file_field);
 
     delete Ex;
     delete Ey;
@@ -191,7 +229,7 @@ int main(int argc, char **argv)
     delete vfa;
     delete vfb;
     spec_vec.clear();
-    
+
     delete sim;
     return 0;
 }

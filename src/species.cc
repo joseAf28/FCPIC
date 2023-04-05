@@ -89,7 +89,7 @@ species::~species()
     recv_buffer_sw.clear();
     recv_buffer_nw.clear();
 
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    // std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
 
 void species::set_u()
@@ -163,8 +163,7 @@ void species::get_charge(FCPIC::field *charge)
         charge->val[NORTHEAST] += wx * wy * q / (dx * dy);
     }
 
-    //TO BE UPDATED WITH N0
-    
+    // TO BE UPDATED WITH N0
 }
 
 void species::field_inter(FCPIC::field *Ex, FCPIC::field *Ey, float &Ex_i, float &Ey_i, int counter)
