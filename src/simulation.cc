@@ -7,8 +7,6 @@
 #include <iomanip>
 #include <unistd.h>
 
-#define epsilon0 55263494.06 // in e^2*eV^-1*m^-1
-
 namespace FCPIC
 {
     /********************************************************
@@ -18,7 +16,6 @@ namespace FCPIC
 
     simulation::simulation(int argc, char **argv)
     {
-        int rank;
         MPI_Init(&argc, &argv);
         // retrieve the number of processes
         MPI_Comm_size(MPI_COMM_WORLD, &n_Procs);
@@ -66,7 +63,7 @@ namespace FCPIC
     std::string simulation::print_SI(double x)
     {
         int exponent = floor(log10(x));
-        exponent -= exponent % 3;
+        exponent -= (exponent % 3 + 3) % 3;
         double mantissa = x / pow(10., exponent);
 
         std::string output = std::to_string(mantissa);
@@ -114,7 +111,8 @@ namespace FCPIC
         std::cout << "└─────────────────────────────────────────────────────────────────────────────┘\n";
         std::cout << "\n";
         std::cout << "Simulation size: " << print_SI(xlen * Lref) << "m x " << print_SI(xlen * aspect * Lref) << "m\n";
-        std::cout << "Spatial discretization: " << N_total_x << "x" << N_total_y << "\n";
+        std::cout << "Spatial discretization: " << print_SI(dx * Lref) << "m x " << print_SI(dy * Lref) << "m"
+                  << " (" << N_total_x << "x" << N_total_y << " cells)\n";
         std::cout << "MPI process grid: " << n_Procs << " processes ("
                   << grid[X_DIR] << "x" << grid[Y_DIR] << ")\n";
         std::cout << "Electron Debye length: " << print_SI(Lref) << "m\n";
@@ -176,6 +174,22 @@ namespace FCPIC
                 {
                     numbers.push_back(number);
                     number.clear();
+                }
+                if ((c > 96 && c < 123) || (c == '-' && k == 0))
+                    header.push_back(c);
+                if (c > 64 && c < 91)
+                    header.push_back(c + 32);
+
+                if (header.compare("-infile") == 0)
+                {
+                    arg.erase(0, 8);
+                    break;
+                }
+                k++;
+
+                if (header.compare("-help") == 0 && rank == 0)
+                {
+                    printHelp();
                 }
                 if ((c > 96 && c < 123) || (c == '-' && k == 0))
                     header.push_back(c);
@@ -275,11 +289,11 @@ namespace FCPIC
                 bc[Y_DIR] = stoi(number);
                 def_values[11] = false;
             }
-
-            numbers.clear();
-            number.clear();
-            header.clear();
         }
+
+        numbers.clear();
+        number.clear();
+        header.clear();
 
         if (def_values[0])
             Npart.push_back(1000);
@@ -340,84 +354,6 @@ namespace FCPIC
                 if (c == '#')
                     break;
             }
-
-            if (header.compare("npart") == 0)
-            {
-                numbers.push_back(number);
-                for (auto &num : numbers)
-                    Npart.push_back(std::stoi(num));
-                (*def_values)[0] = false;
-            }
-            if (header.compare("charge") == 0)
-            {
-                numbers.push_back(number);
-                for (auto &num : numbers)
-                    charge.push_back(std::stod(num));
-                (*def_values)[1] = false;
-            }
-            if (header.compare("mass") == 0)
-            {
-                numbers.push_back(number);
-                for (auto &num : numbers)
-                    mass.push_back(std::stod(num));
-                (*def_values)[2] = false;
-            }
-            if (header.compare("temp") == 0)
-            {
-                numbers.push_back(number);
-                for (auto &num : numbers)
-                    temp.push_back(std::stod(num));
-                (*def_values)[3] = false;
-            }
-            if (header.compare("vxfluid") == 0)
-            {
-                numbers.push_back(number);
-                for (auto &num : numbers)
-                    vxfluid.push_back(std::stod(num));
-                (*def_values)[4] = false;
-            }
-            if (header.compare("vyfluid") == 0)
-            {
-                numbers.push_back(number);
-                for (auto &num : numbers)
-                    vyfluid.push_back(std::stod(num));
-                (*def_values)[5] = false;
-            }
-            if (header.compare("xlen") == 0)
-            {
-                xlen = stod(number);
-                (*def_values)[6] = false;
-            }
-            if (header.compare("nxproc") == 0)
-            {
-                nxproc = stoi(number);
-                (*def_values)[7] = false;
-            }
-            if (header.compare("nxsamples") == 0)
-            {
-                N_total_x = stoi(number) + 1;
-                (*def_values)[8] = false;
-            }
-            if (header.compare("aspect") == 0)
-            {
-                aspect = stod(number);
-                (*def_values)[9] = false;
-            }
-            if (header.compare("simtime") == 0)
-            {
-                simtime = stoi(number);
-                (*def_values)[10] = false;
-            }
-            if (header.compare("boundcond") == 0)
-            {
-                bc[X_DIR] = stoi(number);
-                bc[Y_DIR] = stoi(number);
-                (*def_values)[11] = false;
-            }
-
-            numbers.clear();
-            number.clear();
-            header.clear();
         }
 
         if (header.compare("npart") == 0)
@@ -514,16 +450,15 @@ namespace FCPIC
         }
 
         // All norms are done in reference to the first species temperature and density
-        Vref = 419382.88 * sqrt(temp[0]); // Normalizing speeds to Vthermal of 1st species (m/s)
-
-        for (int k = 0; k < Nspecies; k++)
-        {
-            temp[k] /= Vref;
-        }
-
+        Vref = 419382.88 * sqrt(temp[0]);                    // Normalizing speeds to Vthermal of 1st species (m/s)
         Nref = (double)Npart[0] / (aspect * xlen * xlen);    // 2D Density (m^-2)
         Lref = sqrt(55263494.06 * temp[0] / pow(Nref, 1.5)); // Normalizing lengths to electron Debye length (m)
         Tref = Lref / Vref;                                  // Normalizing times to electron inverse plasma frequency (s)
+
+        for (int k = 0; k < Nspecies; k++)
+        {
+            temp[k] /= temp[0];
+        }
 
         simtime /= Tref;
         xlen /= Lref;
@@ -537,9 +472,9 @@ namespace FCPIC
         grid[Y_DIR] = n_Procs / nxproc;
 
         if (bc[X_DIR] != PERIODIC)
-            N_total_x -= 2;
+            N_total_x -= 1;
         if (bc[X_DIR] != PERIODIC)
-            N_total_y -= 2;
+            N_total_y -= 1;
 
         int k = 0;
         while (N_total_x % grid[X_DIR] != 0)
@@ -562,9 +497,9 @@ namespace FCPIC
         N_y = N_int_y + 2;
 
         if (bc[X_DIR] != PERIODIC)
-            N_total_x += 2;
+            N_total_x += 1;
         if (bc[X_DIR] != PERIODIC)
-            N_total_y += 2;
+            N_total_y += 1;
 
         N = N_x * N_y;
 
@@ -926,5 +861,4 @@ namespace FCPIC
         exchange_phi_buffers(Ex_field);
         exchange_phi_buffers(Ey_field);
     }
-
 }

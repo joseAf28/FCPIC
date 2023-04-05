@@ -1,13 +1,13 @@
 # THIS FILE IS AN INPUT FILE
 # Note: scientific notation not supported
 # INPUTS
-npart = 1000,200,300,1
+npart = 10000,200,300,1
 mass = 1,1,4,2
 charge = 1,-1,4,2
 temp = 1,200,2,4
 vxfluid= 0,0,0,0
 vyfluid=0,0,0,0
-xlen=0.001
+xlen=0.0001
 boundcond= 2
 nxproc=4
 aspect=.25
