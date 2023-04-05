@@ -1,6 +1,7 @@
 #include "simulation.hh"
 #include "species.hh"
 #include <unistd.h>
+#include "hdf5.h"
 
 int main(int argc, char **argv)
 {
@@ -86,26 +87,56 @@ int main(int argc, char **argv)
         spec_vec[i].get_charge(charge);
     }
 
-    std::fstream charge_file;
-    std::string charge_filename = "../results/charge_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(0) + ".txt";
-    charge_file.open(charge_filename, std::ios::out);
-    charge->print_field(charge_file);
-    charge_file.close();
-
-    // sim->exchange_charge_buffers(charge);
-
     sim->jacobi(phi, charge);
     sim->set_E_value(phi, Ex, Ey);
 
+    //! HDF5 Initialization
+    std::string h5_name = "../results/test_rank_" + std::to_string(sim->grid_rank) + ".h5";
+    const char *h5_char = h5_name.c_str();
+
+    hid_t file_id, group_id, dataset_id, dataspace_id, group; /* identifiers */
+    hsize_t dims[2];
+    herr_t status;
+
+    file_id = H5Fcreate(h5_char, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    dims[0] = phi->N_x;
+    dims[1] = phi->N_y;
+    dataspace_id = H5Screate_simple(2, dims, NULL);
+    //!!!
+
+    // sim->exchange_charge_buffers(charge);
     // first iteration of the particle pusher
     for (int i = 0; i < nb_spec; i++)
         spec_vec[i].init_pusher(Ex, Ey);
 
+    // // Old Writting
+    // std::fstream charge_file;
+    // std::string charge_filename = "../results/charge_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(0) + ".txt";
+    // charge_file.open(charge_filename, std::ios::out);
+    // charge->print_field(charge_file);
+    // charge_file.close();
+    // //
+
     for (int counter = 0; counter < 700; counter++)
     {
-        // std::cout << "grid_rank: " << sim->grid_rank << "counter:" << counter << std::endl;
+        // ! Writting in H5 file;
+        std::string Ey_name = "Ey_count_" + std::to_string(counter);
+        const char *Ey_char = Ey_name.c_str();
+        dataset_id = H5Dcreate2(file_id, Ey_char, H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        status = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(Ey->val[0]));
 
-        // //! Writting in file;
+        std::string Ex_name = "Ex_count_" + std::to_string(counter);
+        const char *Ex_char = Ex_name.c_str();
+        dataset_id = H5Dcreate2(file_id, Ex_char, H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        status = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(Ex->val[0]));
+
+        std::string charge_name = "charge_count_" + std::to_string(counter);
+        const char *charge_char = charge_name.c_str();
+        dataset_id = H5Dcreate2(file_id, charge_char, H5T_NATIVE_DOUBLE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        status = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(charge->val[0]));
+        //!
+
+        // // Writting in file;
         // std::fstream Ex_file;
         // std::string Ex_filename = "../results/Ex_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(counter) + ".txt";
         // Ex_file.open(Ex_filename, std::ios::out);
@@ -149,6 +180,10 @@ int main(int argc, char **argv)
         sim->set_E_value(phi, Ex, Ey);
     }
     // std::cout << "End Loop" << std::endl;
+
+    status = H5Sclose(dataspace_id);
+    status = H5Dclose(dataset_id);
+    status = H5Fclose(file_id);
 
     delete Ex;
     delete Ey;
