@@ -154,8 +154,17 @@ void species::get_charge(FCPIC::field *charge)
         wx = vec[k].x;
         wy = vec[k].y;
 
-        int ix = vec[i].ix;
-        int iy = vec[i].iy;
+        if (i > range[1])
+            i = range[1];
+
+        if (j > range[0])
+            j = range[0];
+
+        if (i < 0)
+            i = 0;
+
+        if (j < 0)
+            j = 0;
 
         charge->val[POSITION] += (dx - wx) * (dy - wy) * q / (dx * dy);
         charge->val[EAST] += wx * (dy - wy) * q / (dx * dy);
@@ -178,6 +187,18 @@ void species::field_inter(FCPIC::field *Ex, FCPIC::field *Ey, float &Ex_i, float
     float A_e = wx * (dy - wy);
     float A_n = (dx - wx) * wy;
     float A_ne = wx * wy;
+
+    if (i > range[1])
+        i = range[1];
+
+    if (j > range[0])
+        j = range[0];
+
+    if (i < 0)
+        i = 0;
+
+    if (j < 0)
+        j = 0;
 
     Ex_i = A_pos * Ex->val[POSITION] + A_e * Ex->val[EAST] + A_n * Ex->val[NORTH] + A_ne * Ex->val[NORTHEAST];
 

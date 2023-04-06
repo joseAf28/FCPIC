@@ -11,7 +11,7 @@ int main(int argc, char **argv)
 
     // declaring species object
     std::string name = "electron";
-    int ppc[2] = {1, 1};
+    int ppc[2] = {2, 2};
     int range[2] = {20, 10}; // number of cells in each direction
 
     float *vfa = new float[3];
