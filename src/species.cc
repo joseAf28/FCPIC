@@ -33,27 +33,28 @@ species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, floa
     // reserve space for the arrays of particles
     part A;
     A.flag = BULK;
-    vec.reserve(3 * np); // assumption for the minimum reserved space
+    int max_size = 20;
+    vec.reserve(max_size * np); // assumption for the minimum reserved space
     vec.assign(np, A);
-    send_buffer_north.reserve(np); // assumption for the space
-    send_buffer_south.reserve(np); // ! Think about it later
-    send_buffer_east.reserve(np);
-    send_buffer_west.reserve(np);
+    send_buffer_north.reserve(max_size * np); // assumption for the space
+    send_buffer_south.reserve(max_size * np); // ! Think about it later
+    send_buffer_east.reserve(max_size * np);
+    send_buffer_west.reserve(max_size * np);
 
-    send_buffer_ne.reserve(np); // assumption for the space
-    send_buffer_se.reserve(np); // ! Think about it later
-    send_buffer_nw.reserve(np);
-    send_buffer_sw.reserve(np);
+    send_buffer_ne.reserve(max_size * np); // assumption for the space
+    send_buffer_se.reserve(max_size * np); // ! Think about it later
+    send_buffer_nw.reserve(max_size * np);
+    send_buffer_sw.reserve(max_size * np);
 
-    recv_buffer_north.reserve(np);
-    recv_buffer_south.reserve(np);
-    recv_buffer_east.reserve(np);
-    recv_buffer_west.reserve(np);
+    recv_buffer_north.reserve(max_size * np);
+    recv_buffer_south.reserve(max_size * np);
+    recv_buffer_east.reserve(max_size * np);
+    recv_buffer_west.reserve(max_size * np);
 
-    recv_buffer_ne.reserve(np);
-    recv_buffer_se.reserve(np);
-    recv_buffer_nw.reserve(np);
-    recv_buffer_sw.reserve(np);
+    recv_buffer_ne.reserve(max_size * np);
+    recv_buffer_se.reserve(max_size * np);
+    recv_buffer_nw.reserve(max_size * np);
+    recv_buffer_sw.reserve(max_size * np);
 
     // random number generator
     std::random_device dev;
@@ -140,22 +141,30 @@ void species::set_x()
     loccell.clear();
 }
 
-void species::get_charge(FCPIC::field *charge)
+void species::get_charge(FCPIC::field *charge, int sim)
 {
     //! Done in simulation: avoid creating a new field and doing the sum of all components
     // charge->setValue(0.f);
-
+    // std::cout << __PRETTY_FUNCTION__ << std::endl;
     int i, j;
     float wx, wy;
     for (int k = 0; k < vec.size(); k++)
     {
-        i = vec[k].iy;
-        j = vec[k].ix;
+        // i = vec[k].iy;
+        // j = vec[k].ix;
         wx = vec[k].x;
         wy = vec[k].y;
 
         int ix = vec[i].ix;
         int iy = vec[i].iy;
+        if (ix > range[0])
+            std::cout << "ix: " << ix << std::endl;
+
+        if (iy > range[1])
+            std::cout << "iy: " << iy << std::endl;
+
+        i = iy;
+        j = ix;
 
         charge->val[POSITION] += (dx - wx) * (dy - wy) * q / (dx * dy);
         charge->val[EAST] += wx * (dy - wy) * q / (dx * dy);
@@ -163,11 +172,18 @@ void species::get_charge(FCPIC::field *charge)
         charge->val[NORTHEAST] += wx * wy * q / (dx * dy);
     }
 
+    // if (sim == 3)
+    // {
+    std::cout << "????????????init?????????" << std::endl;
+    std::cout << __PRETTY_FUNCTION__ << " grid: " << sim << std::endl;
+    std::cout << "???????????fim??????????" << std::endl;
+    // }
     // TO BE UPDATED WITH N0
 }
 
 void species::field_inter(FCPIC::field *Ex, FCPIC::field *Ey, float &Ex_i, float &Ey_i, int counter)
 {
+    // std::cout << __PRETTY_FUNCTION__ << std::endl;
     int i = vec[counter].iy;
     int j = vec[counter].ix;
 
@@ -204,7 +220,7 @@ void species::init_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
 
 void species::particle_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
 {
-
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
     for (int i = 0; i < np; i++)
     {
         float Ex_i = 0.f;
@@ -224,6 +240,7 @@ bool species::advance_cell(int *ranks_mpi)
 { // ranks_mpi[0] - rank, ranks_mpi[1] - top, ranks_mpi[2] - bottom,
     //  ranks_mpi[3] - right, ranks_mpi[4] - left
     bool changes_made = false;
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
     for (int counter = 0; counter < np; counter++)
     {
         if (vec[counter].x >= 0 && vec[counter].x < dx && vec[counter].y >= 0 && vec[counter].y < dx)
@@ -375,11 +392,13 @@ bool species::advance_cell(int *ranks_mpi)
         {
         }
     }
+    std::cout << "end advnace**********************" << std::endl;
     return changes_made;
 }
 
 void species::prepare_buffer()
 {
+    // std::cout << "enter prepare" << std::endl;
     // determine the size of the arrays that Exchange particles in MPI
     size_send_north = send_buffer_north.size();
     size_send_south = send_buffer_south.size();
@@ -391,14 +410,29 @@ void species::prepare_buffer()
     size_send_nw = send_buffer_nw.size();
     size_send_sw = send_buffer_sw.size();
 
+    // std::cout << __PRETTY_FUNCTION__ << std::endl;
+    // std::cout << "size n:" << size_send_north << std::endl;
+    // std::cout << "size s:" << size_send_south << std::endl;
+    // std::cout << "size e:" << size_send_east << std::endl;
+    // std::cout << "size w:" << size_send_west << std::endl;
+    // std::cout << "size ne:" << size_send_ne << std::endl;
+    // std::cout << "size nw:" << size_send_nw << std::endl;
+    // std::cout << "size se:" << size_send_se << std::endl;
+    // std::cout << "size sw:" << size_send_sw << std::endl;
+    // std::cout << "vec size: " << vec.size() << std::endl;
+    // std::cout << "*************************" << std::endl;
+
     // delete all particles that were sent to exchange array buffers
     vec.erase(std::remove_if(vec.begin(), vec.end(), [this](const part obj)
                              { return (obj.flag == SEND); }),
               vec.end());
+
+    // std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
 
 void species::update_part_list()
 {
+    // std::cout << "enter update" << std::endl;
     // include the new particles after the MPI data exchange
     for (int i = 0; i < recv_buffer_north.size(); i++)
     {
@@ -464,6 +498,31 @@ void species::update_part_list()
     send_buffer_se.clear();
     send_buffer_nw.clear();
     send_buffer_sw.clear();
+
+    int max_size = 20;
+    int np1 = 1000;
+
+    send_buffer_north.reserve(max_size * np1); // assumption for the space
+    send_buffer_south.reserve(max_size * np1); // ! Think about it later
+    send_buffer_east.reserve(max_size * np1);
+    send_buffer_west.reserve(max_size * np1);
+
+    send_buffer_ne.reserve(max_size * np1); // assumption for the space
+    send_buffer_se.reserve(max_size * np1); // ! Think about it later
+    send_buffer_nw.reserve(max_size * np1);
+    send_buffer_sw.reserve(max_size * np1);
+
+    recv_buffer_north.reserve(max_size * np1);
+    recv_buffer_south.reserve(max_size * np1);
+    recv_buffer_east.reserve(max_size * np1);
+    recv_buffer_west.reserve(max_size * np1);
+
+    recv_buffer_ne.reserve(max_size * np1);
+    recv_buffer_se.reserve(max_size * np1);
+    recv_buffer_nw.reserve(max_size * np1);
+    recv_buffer_sw.reserve(max_size * np1);
+
+    // std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
 
 //!!!!!!!!!!!!!!!!!! temporary methods for debugging methods

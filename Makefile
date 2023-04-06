@@ -3,7 +3,7 @@ BINDIR := bin
 LIBDIR := lib
 
 CCFLAGS :=  -Wextra -Wfloat-equal -Wundef -Werror -fverbose-asm  -Wshadow -Wpointer-arith -Wcast-align -Wconversion
-DEBUG := -g -pedantic -Wall
+DEBUG := -g -pedantic -Wall -fsanitize=address
 
 CC :=  mpic++ -std=c++14 -g -pedantic
 

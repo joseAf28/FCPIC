@@ -16,7 +16,7 @@ int main(int argc, char **argv)
 
     float *vfa = new float[3];
     float *vfb = new float[3];
-    float vth[3] = {0., 0., 0.};
+    float vth[3] = {0.5, 0.5, 0.5};
     vfa[0] = 0.;
     vfa[1] = 0.3;
     vfa[2] = 0.;
@@ -24,43 +24,43 @@ int main(int argc, char **argv)
     vfb[1] = 0.;
     vfb[2] = 0.;
 
-    // // differentiate vectors
-    if (sim->grid_rank == 0) // 0
-    {
-        vfa[0] = 0.;
-        vfa[1] = 0.5;
-        vfa[2] = 0;
-        vfb[0] = 0.;
-        vfb[1] = 0.;
-        vfb[2] = 0;
-    }
-    if (sim->grid_rank == 1) // 1
-    {
-        vfa[0] = 0.;
-        vfa[1] = 0.5;
-        vfa[2] = 0.;
-        vfb[0] = 0.;
-        vfb[1] = 0.;
-        vfb[2] = 0.;
-    }
-    if (sim->grid_rank == 2) // 2
-    {
-        vfa[0] = 0.;
-        vfa[1] = 0.3;
-        vfa[2] = 0.;
-        vfb[0] = 0.;
-        vfb[1] = 0.;
-        vfb[2] = 0.;
-    }
-    if (sim->grid_rank == 3) // 3
-    {
-        vfa[0] = 0.;
-        vfa[1] = 0.3;
-        vfa[2] = 0.;
-        vfb[0] = 0.;
-        vfb[1] = 0.;
-        vfb[2] = 0.;
-    }
+    // // // differentiate vectors
+    // if (sim->grid_rank == 0) // 0
+    // {
+    //     vfa[0] = 0.;
+    //     vfa[1] = 0.5;
+    //     vfa[2] = 0;
+    //     vfb[0] = 0.;
+    //     vfb[1] = 0.;
+    //     vfb[2] = 0;
+    // }
+    // if (sim->grid_rank == 1) // 1
+    // {
+    //     vfa[0] = 0.;
+    //     vfa[1] = 0.5;
+    //     vfa[2] = 0.;
+    //     vfb[0] = 0.;
+    //     vfb[1] = 0.;
+    //     vfb[2] = 0.;
+    // }
+    // if (sim->grid_rank == 2) // 2
+    // {
+    //     vfa[0] = 0.;
+    //     vfa[1] = 0.3;
+    //     vfa[2] = 0.;
+    //     vfb[0] = 0.;
+    //     vfb[1] = 0.;
+    //     vfb[2] = 0.;
+    // }
+    // if (sim->grid_rank == 3) // 3
+    // {
+    //     vfa[0] = 0.;
+    //     vfa[1] = 0.3;
+    //     vfa[2] = 0.;
+    //     vfb[0] = 0.;
+    //     vfb[1] = 0.;
+    //     vfb[2] = 0.;
+    // }
 
     // fields definition
     FCPIC::field *Ex = new FCPIC::field(range[0] + 1, range[1] + 1);
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
     {
         spec_vec[i].set_x();
         spec_vec[i].set_u();
-        spec_vec[i].get_charge(charge);
+        spec_vec[i].get_charge(charge, sim->grid_rank);
     }
 
     sim->jacobi(phi, charge);
@@ -140,7 +140,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < nb_spec; i++)
         spec_vec[i].init_pusher(Ex, Ey);
 
-    for (int counter = 0; counter < 700; counter++)
+    for (int counter = 0; counter < 300; counter++)
     {
         // ! Writting in H5 file;
         std::string Ey_name = "Ey_count_" + std::to_string(counter);
@@ -186,12 +186,18 @@ int main(int argc, char **argv)
             sim->exchange_particles_buffers(&(spec_vec[i]));
 
             spec_vec[i].update_part_list();
-            spec_vec[i].get_charge(charge);
+            spec_vec[i].get_charge(charge, sim->grid_rank);
         }
 
+        std::cout << "==================Next Iter====================" << counter << "*****************" << std::endl;
+
         // //!jacobi with all the species charge
+
         sim->jacobi(phi, charge);
         sim->set_E_value(phi, Ex, Ey);
+
+        // std::cout << "Iter: " << counter << std::endl;
+        // charge->print_field(std::cout);
     }
     // std::cout << "End Loop" << std::endl;
 

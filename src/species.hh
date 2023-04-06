@@ -56,7 +56,7 @@ public:
     void set_x();
     void set_u();
 
-    void get_charge(FCPIC::field *);
+    void get_charge(FCPIC::field *, int);
 
     // methods used for MPI communication
     void prepare_buffer();

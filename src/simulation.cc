@@ -744,8 +744,8 @@ namespace FCPIC
     // Jacobi solver
     void simulation::jacobi(field *phi, field *charge)
     {
-        // std::cout << __PRETTY_FUNCTION__ << std::endl;
-        double res, e;
+        double e;
+        double res;
         double global_res = 1.0;
         double tol = 1e-7;
 
@@ -755,12 +755,6 @@ namespace FCPIC
         // Defining a new temporary field (temp is not part of the domain)
         field temp(N_x, N_y);
 
-        // if (grid_rank == 4)
-        // {
-        //     phi->print_field(std::cout);
-        //     charge->print_field(std::cout);
-        // }
-
         // Starting the iteration loop
         while (global_res > tol)
         {
@@ -768,6 +762,8 @@ namespace FCPIC
             res = 0.0;
 
             // Making the temp field zero after every iteration
+            // field temp(N_x, N_y);
+            // phi->setValue(0.f);
             temp.setValue(0.0);
 
             // exchanges buffer cells
@@ -776,9 +772,8 @@ namespace FCPIC
             for (int i = 1; i <= N_int_y; i++)
                 for (int j = 1; j <= N_int_x; j++)
                 {
-
                     temp.val[POSITION] = .25 * (phi->val[NORTH] + phi->val[SOUTH] + phi->val[EAST] + phi->val[WEST] -
-                                                charge->val[POSITION] / 1000);
+                                                charge->val[POSITION] / 100.);
 
                     e = fabs(temp.val[POSITION] - phi->val[POSITION]);
                     if (e > res) // norm infty: supremo
@@ -789,12 +784,15 @@ namespace FCPIC
             for (int i = 1; i <= N_int_y; i++)
                 for (int j = 1; j <= N_int_x; j++)
                     phi->val[POSITION] = temp.val[POSITION];
-
             if (loop % 10 == 0) // balance to be found...
                 MPI_Allreduce(&res, &global_res, 1, MPI_DOUBLE, MPI_MAX, grid_comm);
 
+            // std::cout << "mpi error: " << mpi_error << std::endl;
             loop++;
         }
+
+        // std::cout << "******************chega aqui 8000"
+        //           << "rank: " << grid_rank << std::endl;
 
         exchange_phi_buffers(phi);
 
@@ -803,8 +801,11 @@ namespace FCPIC
 
     void simulation::set_E_value(field *phi, field *Ex_field, field *Ey_field)
     {
-        for (int i = 1; i <= N_int_y; i++)
-            for (int j = 1; j <= N_int_x; j++)
+        // std::cout << __PRETTY_FUNCTION__ << std::endl;
+
+        int i, j;
+        for (i = 1; i <= N_int_y; i++)
+            for (j = 1; j <= N_int_x; j++)
             {
                 Ex_field->val[POSITION] = (phi->val[WEST] - phi->val[EAST]) / (2.f * dx);
                 Ey_field->val[POSITION] = (phi->val[SOUTH] - phi->val[NORTH]) / (2.f * dy);
@@ -860,5 +861,7 @@ namespace FCPIC
 
         exchange_phi_buffers(Ex_field);
         exchange_phi_buffers(Ey_field);
+
+        // std::cout << "End_Field" << std::endl;
     }
 }
