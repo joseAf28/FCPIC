@@ -35,7 +35,7 @@ namespace FCPIC
         dx = 1; //
         dy = 1; //
 
-        grid[X_DIR] = 3; //
+        grid[X_DIR] = 2; //
         grid[Y_DIR] = 2; //
 
         Y_guard_data = new double[N_x];

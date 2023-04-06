@@ -101,6 +101,8 @@ int main(int argc, char **argv)
     hsize_t dims[2];
     herr_t status;
 
+    std::vector<hid_t> h5_vec_group;
+
     hid_t part_id;
     part_id = H5Tcreate(H5T_COMPOUND, sizeof(part));
     H5Tinsert(part_id, "ix", HOFFSET(part, ix), H5T_NATIVE_INT);
@@ -117,10 +119,22 @@ int main(int argc, char **argv)
     dims[1] = phi->N_y;
     dataspace_field = H5Screate_simple(2, dims, nullptr);
 
-    group_charge = H5Gcreate(file_field, "/charge", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    group_Ex = H5Gcreate(file_field, "/Ex", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    group_Ey = H5Gcreate(file_field, "/Ey", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-    group_particles = H5Gcreate(file_field, "/particles", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    hid_t group_creation_plist;
+    group_creation_plist = H5Pcreate(H5P_GROUP_CREATE);
+    status = H5Pset_link_creation_order(group_creation_plist, H5P_CRT_ORDER_TRACKED | H5P_CRT_ORDER_INDEXED);
+
+    group_charge = H5Gcreate(file_field, "/charge", H5P_DEFAULT, group_creation_plist, H5P_DEFAULT);
+    group_Ex = H5Gcreate(file_field, "/Ex", H5P_DEFAULT, group_creation_plist, H5P_DEFAULT);
+    group_Ey = H5Gcreate(file_field, "/Ey", H5P_DEFAULT, group_creation_plist, H5P_DEFAULT);
+
+    for (int i = 0; i < nb_spec; i++)
+    {
+        std::string h5_vec_name = "/part_" + std::to_string(i);
+        const char *h5_vec_char = h5_vec_name.c_str();
+        hid_t group_idaux = H5Gcreate(file_field, h5_vec_char, H5P_DEFAULT, group_creation_plist, H5P_DEFAULT);
+        h5_vec_group.push_back(group_idaux);
+    }
+
     //!!!
 
     // first iteration of the particle pusher
@@ -156,11 +170,11 @@ int main(int argc, char **argv)
         // loop over all species
         for (int i = 0; i < nb_spec; i++)
         {
-            std::string part_name = "part_" + std::to_string(i) + "_count_" + std::to_string(counter);
+            std::string part_name = "part_count_" + std::to_string(counter);
             const char *part_char = part_name.c_str();
             hsize_t vec_size = spec_vec[i].vec.size();
             dataspace_part = H5Screate_simple(1, &vec_size, nullptr);
-            dataset_part = H5Dcreate2(group_particles, part_char, part_id, dataspace_part, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+            dataset_part = H5Dcreate2(h5_vec_group[i], part_char, part_id, dataspace_part, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
             status = H5Dwrite(dataset_part, part_id, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(spec_vec[i].vec[0]));
 
             H5Dclose(dataset_part);
@@ -216,12 +230,16 @@ int main(int argc, char **argv)
     status = H5Gclose(group_charge);
     status = H5Gclose(group_Ex);
     status = H5Gclose(group_Ey);
-    status = H5Gclose(group_particles);
+
+    for (int i = 0; i < nb_spec; i++)
+        status = H5Gclose(h5_vec_group[i]);
 
     status = H5Tclose(part_id);
     status = H5Sclose(dataspace_field);
     status = H5Dclose(dataset_field);
     status = H5Fclose(file_field);
+
+    status = H5Pclose(group_creation_plist);
 
     delete Ex;
     delete Ey;
@@ -229,7 +247,9 @@ int main(int argc, char **argv)
     delete vfa;
     delete vfb;
     spec_vec.clear();
+    h5_vec_group.clear();
 
     delete sim;
+
     return 0;
 }
