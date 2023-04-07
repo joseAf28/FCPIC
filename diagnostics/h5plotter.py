@@ -46,8 +46,8 @@ def readH5(filename, Ex_field, Ey_field, charge_field, vec_part1, vec_part2):
 ##########! varibles to change 
 results_path = "/home/jose/Desktop/FCPIC/results/"
 number_ranks = 4
-counter = 300
-counter_space = 700
+counter = 400
+counter_space = 400
 lx = 21
 ly = 11
 
@@ -84,16 +84,16 @@ for count_plot in range(0, counter_space):
         y_data.append(vec_part1[0][count_plot][i][1]*dy + vec_part1[0][count_plot][i][3])
 
     for i in range(0, len(vec_part1[1][count_plot])):
-        x_data.append(lx + vec_part1[1][count_plot][i][0]*dx + vec_part1[1][count_plot][i][2])
+        x_data.append(lx - 1 + vec_part1[1][count_plot][i][0]*dx + vec_part1[1][count_plot][i][2])
         y_data.append(vec_part1[1][count_plot][i][1]*dy + vec_part1[1][count_plot][i][3])
 
     for i in range(0, len(vec_part1[2][count_plot])):
         x_data.append(vec_part1[2][count_plot][i][0]*dx + vec_part1[2][count_plot][i][2])
-        y_data.append(ly + vec_part1[2][count_plot][i][1]*dy + vec_part1[2][count_plot][i][3])
+        y_data.append(ly - 1 + vec_part1[2][count_plot][i][1]*dy + vec_part1[2][count_plot][i][3])
 
     for i in range(0, len(vec_part1[3][count_plot])):
-        x_data.append(lx + vec_part1[3][count_plot][i][0]*dx + vec_part1[3][count_plot][i][2])
-        y_data.append(ly + vec_part1[3][count_plot][i][1]*dy + vec_part1[3][count_plot][i][3])
+        x_data.append(lx -1 + vec_part1[3][count_plot][i][0]*dx + vec_part1[3][count_plot][i][2])
+        y_data.append(ly -1 + vec_part1[3][count_plot][i][1]*dy + vec_part1[3][count_plot][i][3])
 
 
     for i in range(0, len(vec_part2[0][count_plot])):
@@ -117,7 +117,7 @@ for count_plot in range(0, counter_space):
     snapshot_y.append(y_data)
 
 ##! Particle animation
-fps = 30
+fps = 5
 nSeconds = math.floor(counter_space/fps)
 print(nSeconds)
 # First set up the figure, the axis, and the plot element we want to animate
@@ -142,7 +142,7 @@ anim = animation.FuncAnimation(fig, animate_func,
                                interval = 1000 / fps, # in ms
                                )
 
-anim.save(results_path+'videos/test_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+'videos/test5_part_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
 
 print('Particles Anim Done!')
 
@@ -162,24 +162,24 @@ for count_plot in range(0, counter):
 
     for i in range(len(charge_field[2][count_plot])-1, 0, -1):
     # for i in range(0, len(charge_field[2][count_plot])):
-        charge_aux = np.concatenate((charge_field[2][count_plot][i][1:-2], charge_field[3][count_plot][i][1:-2]))
+        charge_aux = np.concatenate((charge_field[2][count_plot][i][0:-2], charge_field[3][count_plot][i][0:-2]))
         big_charge_dummy.append(charge_aux)
 
-        Ex_aux = np.concatenate((Ex_field[2][count_plot][i][1:-2], Ex_field[3][count_plot][i][1:-2]))
+        Ex_aux = np.concatenate((Ex_field[2][count_plot][i][0:-2], Ex_field[3][count_plot][i][0:-2]))
         Ex_dummy.append(Ex_aux)
 
-        Ey_aux = np.concatenate((Ey_field[2][count_plot][i][1:-2], Ey_field[3][count_plot][i][1:-2]))
+        Ey_aux = np.concatenate((Ey_field[2][count_plot][i][0:-2], Ey_field[3][count_plot][i][0:-2]))
         Ey_dummy.append(Ey_aux)
 
     for i in range(len(charge_field[0][count_plot])-1, 0, -1):
     # for i in range(0, len(charge_field[0][count_plot])):
-        charge_aux = np.concatenate((charge_field[0][count_plot][i][1:-2], charge_field[1][count_plot][i][1:-2]))
+        charge_aux = np.concatenate((charge_field[0][count_plot][i][0:-2], charge_field[1][count_plot][i][0:-2]))
         big_charge_dummy.append(charge_aux)
 
-        Ex_aux = np.concatenate((Ex_field[0][count_plot][i][1:-2], Ex_field[1][count_plot][i][1:-2]))
+        Ex_aux = np.concatenate((Ex_field[0][count_plot][i][0:-2], Ex_field[1][count_plot][i][0:-2]))
         Ex_dummy.append(Ex_aux)
 
-        Ey_aux = np.concatenate((Ey_field[0][count_plot][i][1:-2], Ey_field[1][count_plot][i][1:-2]))
+        Ey_aux = np.concatenate((Ey_field[0][count_plot][i][0:-2], Ey_field[1][count_plot][i][0:-2]))
         Ey_dummy.append(Ey_aux)
 
     snapshots_charge.append(big_charge_dummy)
@@ -239,7 +239,7 @@ anim = animation.FuncAnimation(fig, animate_func,
                                frames = nSeconds * fps,
                                interval = 1000 / fps, # in ms
                                )
-anim.save(results_path+'videos/test_charge_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+'videos/test5_charge_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
 print('Charge Anim Done!')
 
 ##!Ex_field Animation
@@ -262,7 +262,7 @@ anim = animation.FuncAnimation(fig, animate_func,
                                frames = nSeconds * fps,
                                interval = 1000 / fps, # in ms
                                )
-anim.save(results_path+'videos/Ex_field_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+'videos/test5_Ex_field_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
 print('Ex field Anim Done!')
 
 ##!Ey_field Animation
@@ -286,7 +286,7 @@ anim = animation.FuncAnimation(fig, animate_func,
                                frames = nSeconds * fps,
                                interval = 1000 / fps, # in ms
                                )
-anim.save(results_path+'videos/Ey_field_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+'videos/test5_Ey_field_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
 print('Ey field Anim Done!')
 
 

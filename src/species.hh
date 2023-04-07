@@ -152,7 +152,7 @@ private:
     float dx = 1.0; // x grid cell size
     float dy = 1.0; // y grid cell size
 
-    float dt = 1.; // time-step - change later
+    float dt = 1.0; // time-step - change later
 
     // Generator of random numbers the thermal boltzmann distribution
     std::mt19937_64 rng;

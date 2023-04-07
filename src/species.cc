@@ -154,17 +154,17 @@ void species::get_charge(FCPIC::field *charge)
         wx = vec[k].x;
         wy = vec[k].y;
 
-        if (i > range[1])
-            i = range[1];
+        // if (i > range[1])
+        //     i = range[1];
 
-        if (j > range[0])
-            j = range[0];
+        // if (j > range[0])
+        //     j = range[0];
 
-        if (i < 0)
-            i = 0;
+        // if (i < 0)
+        //     i = 0;
 
-        if (j < 0)
-            j = 0;
+        // if (j < 0)
+        //     j = 0;
 
         charge->val[POSITION] += (dx - wx) * (dy - wy) * q / (dx * dy);
         charge->val[EAST] += wx * (dy - wy) * q / (dx * dy);
@@ -188,17 +188,17 @@ void species::field_inter(FCPIC::field *Ex, FCPIC::field *Ey, float &Ex_i, float
     float A_n = (dx - wx) * wy;
     float A_ne = wx * wy;
 
-    if (i > range[1])
-        i = range[1];
+    // if (i > range[1])
+    //     i = range[1];
 
-    if (j > range[0])
-        j = range[0];
+    // if (j > range[0])
+    //     j = range[0];
 
-    if (i < 0)
-        i = 0;
+    // if (i < 0)
+    //     i = 0;
 
-    if (j < 0)
-        j = 0;
+    // if (j < 0)
+    //     j = 0;
 
     Ex_i = A_pos * Ex->val[POSITION] + A_e * Ex->val[EAST] + A_n * Ex->val[NORTH] + A_ne * Ex->val[NORTHEAST];
 
@@ -247,7 +247,7 @@ bool species::advance_cell(int *ranks_mpi)
     bool changes_made = false;
     for (int counter = 0; counter < np; counter++)
     {
-        if (vec[counter].x >= 0 && vec[counter].x < dx && vec[counter].y >= 0 && vec[counter].y < dx)
+        if (vec[counter].x >= 0 && vec[counter].x < dx && vec[counter].y >= 0 && vec[counter].y < dx && vec[counter].ix >= 0 && vec[counter].ix < range[0] && vec[counter].iy >= 0 && vec[counter].iy < range[1])
             continue;
 
         changes_made = true;
@@ -256,17 +256,13 @@ bool species::advance_cell(int *ranks_mpi)
         vec[counter].x = fmod(vec[counter].x, dx);
 
         if (vec[counter].x < 0)
-        {
             vec[counter].x += dx;
-        }
 
         vec[counter].iy += floor(vec[counter].y / dy);
         vec[counter].y = fmod(vec[counter].y, dy);
 
         if (vec[counter].y < 0)
-        {
             vec[counter].y += dy;
-        }
 
         bool flag_top = ranks_mpi[1] == MPI_PROC_NULL;
         bool flag_bottom = ranks_mpi[2] == MPI_PROC_NULL;
@@ -274,9 +270,9 @@ bool species::advance_cell(int *ranks_mpi)
         bool flag_left = ranks_mpi[4] == MPI_PROC_NULL;
 
         bool ixmin_cond = vec[counter].ix <= -1;
-        bool ixmax_cond = vec[counter].ix > N_int_x;
+        bool ixmax_cond = vec[counter].ix > range[0];
         bool iymin_cond = vec[counter].iy <= -1;
-        bool iymax_cond = vec[counter].iy > N_int_y;
+        bool iymax_cond = vec[counter].iy > range[1];
 
         bool send_N_true = false;
         bool send_S_true = false;
@@ -288,13 +284,30 @@ bool species::advance_cell(int *ranks_mpi)
             if (flag_left)
             {
                 vec[counter].x = dx - vec[counter].x;
-                vec[counter].ix = -vec[counter].ix - 1;
-                vec[counter].ux = -vec[counter].ux;
+                // vec[counter].ix = -vec[counter].ix - 1;
+                while (vec[counter].ix < 0)
+                    vec[counter].ix = vec[counter].ix + range[0];
+
+                vec[counter].ix = range[0] - vec[counter].ix;
+
+                vec[counter].ix = 0;
+                vec[counter].ux = fabs(vec[counter].ux);
+
+                if (vec[counter].ix < 0)
+                {
+                    std::cout << "flag_left ix: " << vec[counter].ix << std::endl;
+                }
             }
             else
             {
-                vec[counter].ix = vec[counter].ix + N_int_x;
+                while (vec[counter].ix < 0)
+                    vec[counter].ix = vec[counter].ix + range[0];
+                // vec[counter].ix = fabs(vec[counter].ix + N_int_x) - 1;
                 send_W_true = true;
+                if (vec[counter].ix < 0)
+                {
+                    std::cout << "flag_left guard ix: " << vec[counter].ix << std::endl;
+                }
             }
         }
 
@@ -303,13 +316,32 @@ bool species::advance_cell(int *ranks_mpi)
             if (flag_bottom)
             {
                 vec[counter].y = dy - vec[counter].y;
-                vec[counter].iy = -vec[counter].iy - 1;
-                vec[counter].uy = -vec[counter].uy;
+                // vec[counter].iy = -vec[counter].iy - 1;
+
+                while (vec[counter].iy < 0)
+                    vec[counter].iy = vec[counter].iy + range[1];
+
+                vec[counter].iy = range[1] - vec[counter].iy;
+
+                vec[counter].uy = fabs(vec[counter].uy);
+
+                if (vec[counter].iy < 0)
+                {
+                    std::cout << "flag_bottom iy: " << vec[counter].iy << std::endl;
+                }
             }
             else
             {
-                vec[counter].iy = vec[counter].iy + N_int_y;
+                while (vec[counter].iy < 0)
+                    vec[counter].iy = vec[counter].iy + range[1];
+
+                // vec[counter].iy = fabs(vec[counter].iy + N_int_y) - 1;
                 send_S_true = true;
+
+                if (vec[counter].iy < 0)
+                {
+                    std::cout << "flag_bottom guard iy: " << vec[counter].iy << std::endl;
+                }
             }
         }
 
@@ -318,13 +350,31 @@ bool species::advance_cell(int *ranks_mpi)
             if (flag_right)
             {
                 vec[counter].x = dx - vec[counter].x;
-                vec[counter].ix = 2 * N_int_x - vec[counter].ix + 1;
-                vec[counter].ux = -vec[counter].ux;
+                // vec[counter].ix = 2 * N_int_x - vec[counter].ix;
+
+                while (vec[counter].ix > range[0])
+                    vec[counter].ix = vec[counter].ix - range[0];
+
+                vec[counter].ix = range[0] - vec[counter].ix;
+
+                vec[counter].ux = -fabs(vec[counter].ux);
+
+                if (vec[counter].ix < 0)
+                {
+                    std::cout << "flag_right ix: " << vec[counter].ix << std::endl;
+                }
             }
             else
             {
-                vec[counter].ix = vec[counter].ix - N_int_x;
+                while (vec[counter].ix > range[0])
+                    vec[counter].ix = vec[counter].ix - range[0];
+
+                // vec[counter].ix = fabs(vec[counter].ix - N_int_x) + 1;
                 send_E_true = true;
+                if (vec[counter].ix < 0)
+                {
+                    std::cout << "flag_right guard ix: " << vec[counter].ix << std::endl;
+                }
             }
         }
 
@@ -333,13 +383,32 @@ bool species::advance_cell(int *ranks_mpi)
             if (flag_top)
             {
                 vec[counter].y = dy - vec[counter].y;
-                vec[counter].iy = 2 * N_int_y - vec[counter].iy + 1;
-                vec[counter].uy = -vec[counter].uy;
+                // vec[counter].iy = 2 * N_int_y - vec[counter].iy;
+
+                while (vec[counter].iy > range[1])
+                    vec[counter].iy = vec[counter].iy - range[1];
+
+                vec[counter].iy = range[1] - vec[counter].iy;
+
+                vec[counter].uy = -fabs(vec[counter].uy);
+
+                if (vec[counter].iy < 0)
+                {
+                    std::cout << "flag_top iy: " << vec[counter].iy << std::endl;
+                }
             }
             else
             {
-                vec[counter].iy = vec[counter].iy - N_int_y;
+                while (vec[counter].iy > range[1])
+                    vec[counter].iy = vec[counter].iy - range[1];
+
+                // vec[counter].iy = fabs(vec[counter].iy - N_int_y) + 1;
                 send_N_true = true;
+
+                if (vec[counter].iy < 0)
+                {
+                    std::cout << "flag_top guard iy: " << vec[counter].iy << std::endl;
+                }
             }
         }
 

@@ -11,8 +11,8 @@ int main(int argc, char **argv)
 
     // declaring species object
     std::string name = "electron";
-    int ppc[2] = {2, 2};
-    int range[2] = {20, 10}; // number of cells in each direction
+    int ppc[2] = {1, 1};
+    int range[2] = {20, 20}; // number of cells in each direction
 
     float *vfa = new float[3];
     float *vfb = new float[3];
@@ -25,42 +25,42 @@ int main(int argc, char **argv)
     vfb[2] = 0.;
 
     // // differentiate vectors
-    if (sim->grid_rank == 0) // 0
-    {
-        vfa[0] = 0.;
-        vfa[1] = 0.5;
-        vfa[2] = 0;
-        vfb[0] = 0.;
-        vfb[1] = 0.;
-        vfb[2] = 0;
-    }
-    if (sim->grid_rank == 1) // 1
-    {
-        vfa[0] = 0.;
-        vfa[1] = 0.5;
-        vfa[2] = 0.;
-        vfb[0] = 0.;
-        vfb[1] = 0.;
-        vfb[2] = 0.;
-    }
-    if (sim->grid_rank == 2) // 2
-    {
-        vfa[0] = 0.;
-        vfa[1] = 0.3;
-        vfa[2] = 0.;
-        vfb[0] = 0.;
-        vfb[1] = 0.;
-        vfb[2] = 0.;
-    }
-    if (sim->grid_rank == 3) // 3
-    {
-        vfa[0] = 0.;
-        vfa[1] = 0.3;
-        vfa[2] = 0.;
-        vfb[0] = 0.;
-        vfb[1] = 0.;
-        vfb[2] = 0.;
-    }
+    // if (sim->grid_rank == 0) // 0
+    // {
+    //     vfa[0] = 0.;
+    //     vfa[1] = 0.5;
+    //     vfa[2] = 0;
+    //     vfb[0] = 0.;
+    //     vfb[1] = 0.;
+    //     vfb[2] = 0;
+    // }
+    // if (sim->grid_rank == 1) // 1
+    // {
+    //     vfa[0] = 0.;
+    //     vfa[1] = 0.5;
+    //     vfa[2] = 0.;
+    //     vfb[0] = 0.;
+    //     vfb[1] = 0.;
+    //     vfb[2] = 0.;
+    // }
+    // if (sim->grid_rank == 2) // 2
+    // {
+    //     vfa[0] = 0.;
+    //     vfa[1] = 0.3;
+    //     vfa[2] = 0.;
+    //     vfb[0] = 0.;
+    //     vfb[1] = 0.;
+    //     vfb[2] = 0.;
+    // }
+    // if (sim->grid_rank == 3) // 3
+    // {
+    //     vfa[0] = 0.;
+    //     vfa[1] = 0.3;
+    //     vfa[2] = 0.;
+    //     vfb[0] = 0.;
+    //     vfb[1] = 0.;
+    //     vfb[2] = 0.;
+    // }
 
     // fields definition
     FCPIC::field *Ex = new FCPIC::field(range[0] + 1, range[1] + 1);
@@ -140,7 +140,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < nb_spec; i++)
         spec_vec[i].init_pusher(Ex, Ey);
 
-    for (int counter = 0; counter < 700; counter++)
+    for (int counter = 0; counter < 500; counter++)
     {
         // ! Writting in H5 file;
         std::string Ey_name = "Ey_count_" + std::to_string(counter);

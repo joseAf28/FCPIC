@@ -27,7 +27,7 @@ namespace FCPIC
 
         aspect = 1;        // (INPUT) y_len = aspect (x_len always norm to 1)
         N_int_x = 21;      //
-        N_int_y = 11;      //
+        N_int_y = 21;      //
         N_x = N_int_x + 2; //
         N_y = N_int_y + 2; //
         N = N_x * N_y;     //
@@ -778,7 +778,7 @@ namespace FCPIC
                 {
 
                     temp.val[POSITION] = .25 * (phi->val[NORTH] + phi->val[SOUTH] + phi->val[EAST] + phi->val[WEST] -
-                                                charge->val[POSITION]);
+                                                charge->val[POSITION] / 100.);
 
                     e = fabs(temp.val[POSITION] - phi->val[POSITION]);
                     if (e > res) // norm infty: supremo
