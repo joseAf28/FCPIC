@@ -6,7 +6,6 @@ int main(int argc, char **argv)
 {
     // initializaing simulation fields and MPI
     FCPIC::simulation *sim = new FCPIC::simulation(argc, argv);
-    sim->set_conductive_field_bc();
     
     // declaring species object
     std::string name = "electron";
@@ -15,7 +14,7 @@ int main(int argc, char **argv)
 
     float *vfa = new float[3];
     float *vfb = new float[3];
-    float vth[3] = {0., 0., 0.};
+    float temp = 0.;
     vfa[0] = 0.;
     vfa[1] = 0.9;
     vfa[2] = 0.;
@@ -62,29 +61,30 @@ int main(int argc, char **argv)
     }
 
     // fields definition
-    FCPIC::field *Ex = new FCPIC::field(range[0] + 1, range[1] + 1);
-    FCPIC::field *Ey = new FCPIC::field(range[0] + 1, range[1] + 1);
-    FCPIC::field *charge = new FCPIC::field(range[0] + 1, range[1] + 1); // intialize to zero in all entries
-    FCPIC::field *phi = new FCPIC::field(range[0] + 1, range[1] + 1);
+    FCPIC::field *Ex = new FCPIC::field(sim);
+    FCPIC::field *Ey = new FCPIC::field(sim);
+    FCPIC::field *charge = new FCPIC::field(sim); // intialize to zero in all entries
+    FCPIC::field *phi = new FCPIC::field(sim);
 
     // initializing species
     int nb_spec = 2;
     float q[2] = {1, -0.9};
 
-    std::vector<species> spec_vec;
+    std::vector<FCPIC::species> spec_vec;
 
     for (int i = 0; i < nb_spec; i++)
     {
-        species test(name, ppc, range, vfa, vth, q[i]);
+        FCPIC::species test(name, q[i], 1., temp, vfa, ppc, sim);
         spec_vec.push_back(test);
     }
 
     for (int i = 0; i < nb_spec; i++)
     {
-        spec_vec[i].set_x();
-        spec_vec[i].set_u();
-        spec_vec[i].get_charge(charge);
+        sim->get_charge(charge, &spec_vec[i]);
     }
+
+    sim->exchange_charge_buffers(charge);
+    
 
     std::fstream charge_file;
     std::string charge_filename = "../results/charge_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(0) + ".txt";
@@ -104,7 +104,8 @@ int main(int argc, char **argv)
     for (int counter = 0; counter < 700; counter++)
     {
         // std::cout << "grid_rank: " << sim->grid_rank << "counter:" << counter << std::endl;
-
+        if(sim->grid_rank == 0)
+            sim->printProgress(((float) counter)/700.);
         // //! Writting in file;
         std::fstream Ex_file;
         std::string Ex_filename = "../results/Ex_field/rank:_" + std::to_string(sim->grid_rank) + "_counter_" + std::to_string(counter) + ".txt";
@@ -135,6 +136,7 @@ int main(int argc, char **argv)
         for (int i = 0; i < nb_spec; i++)
         {
             spec_vec[i].particle_pusher(Ex, Ey);
+            /*
             spec_vec[i].advance_cell(flags_coords_mpi);
             spec_vec[i].prepare_buffer();
 
@@ -142,14 +144,24 @@ int main(int argc, char **argv)
 
             spec_vec[i].update_part_list();
             spec_vec[i].get_charge(charge);
-        }
+            */
+            while(spec_vec[i].advance_cell(flags_coords_mpi)){
 
+            spec_vec[i].prepare_buffer();
+            sim->exchange_particles_buffers(&(spec_vec[i]));
+            spec_vec[i].update_part_list();
+
+            }
+            
+            sim->get_charge(charge, &spec_vec[i]);
+        }
+        sim->exchange_charge_buffers(charge);
         // //!jacobi with all the species charge
         sim->jacobi(phi, charge);
         sim->set_E_value(phi, Ex, Ey);
     }
     // std::cout << "End Loop" << std::endl;
-
+    
     delete Ex;
     delete Ey;
     delete charge, phi;

@@ -14,7 +14,7 @@ namespace FCPIC
     N_int_x and N_int_y are the number of inner grid points in x and y direction respectively
     ***********************************************************/
 
-    simulation::simulation(int argc, char **argv)
+    simulation::simulation(int argc, char **argv):FCPIC_base()
     {
         MPI_Init(&argc, &argv);
         // retrieve the number of processes
@@ -25,19 +25,29 @@ namespace FCPIC
         if(rank ==0)
             printTitle();
 
-        
-        aspect = 1; // (INPUT) y_len = aspect (x_len always norm to 1)
+        /*
+        aspect = 1; // 
         N_int_x = 21; //
         N_int_y = 11; //
         N_x = N_int_x + 2;//
         N_y = N_int_y + 2;//
         N = N_x * N_y;//
+        N_total_x = N_int_x*2+1;//
+        N_total_y = N_int_y*2+1;//
 
-        dx = 1; //
-        dy = 1; //
+        dx = .3; //
+        dy = .3; //
+        dt=.1; //
 
         grid[X_DIR] = 2;//
         grid[Y_DIR] = 2;//
+
+        bc[X_DIR] = CONDUCTIVE; //
+        bc[Y_DIR] = CONDUCTIVE; //
+        wrap_around[X_DIR] = 0; //
+        wrap_around[Y_DIR] = 0; //
+
+        */
 
         Y_guard_data = new double[N_x];
         X_guard_data = new double[N_int_y];
@@ -46,6 +56,8 @@ namespace FCPIC
         X_guard_data1 = new double[N_int_y]();
         Y_guard_data2 = new double[N_x]();
         X_guard_data2 = new double[N_int_y]();
+
+        setup_proc_grid();
     }
 
     simulation::~simulation()
@@ -68,6 +80,7 @@ namespace FCPIC
 
         std::string output = std::to_string(mantissa);
 
+        if(exponent == -15) output.append(" f");
         if(exponent == -12) output.append(" p");
         if(exponent == -9) output.append(" n");
         if(exponent == -6) output.append(" μ");
@@ -77,6 +90,7 @@ namespace FCPIC
         if(exponent == 6) output.append(" M");
         if(exponent == 9) output.append(" G");
         if(exponent == 12) output.append(" T");
+        if(exponent == 15) output.append(" P");
     
         return output;
     }
@@ -103,11 +117,35 @@ namespace FCPIC
         std::cout << "Simulation size: " << print_SI(xlen*Lref) << "m x " << print_SI(xlen*aspect*Lref) << "m\n";
         std::cout << "Spatial discretization: " << print_SI(dx*Lref) << "m x " << print_SI(dy*Lref) << "m"
                   << " ("<< N_total_x << "x" << N_total_y << " cells)\n";
+        std::cout << "Simulation time: " << print_SI(simtime*Tref) << "s\n";
+        std::cout << "Time discretization: " << print_SI(dt*Tref) << "s (" << (int) (simtime/dt) << " time steps)\n";
         std::cout << "MPI process grid: " << n_Procs << " processes (" 
                   << grid[X_DIR]<< "x" << grid[Y_DIR] <<  ")\n";
         std::cout << "Electron Debye length: " << print_SI(Lref) << "m\n";
         std::cout << "Plasma frequency: " << print_SI(1/Tref) << "Hz\n";
         std::cout << "\n";
+    }
+
+    void simulation::printProgress(float prog){
+        int perc= round(prog*100);
+        static bool finished = false;
+        if(!finished){
+            std::cout << "\r\033[?25l";
+            std::cout << "RUNNING: │";
+            for(int k = 0; k < 100; k+=4){
+                if(perc-k >=4) std::cout << "█";
+                else if(perc-k == 2 || perc-k == 3) std::cout << "▌";
+                else std::cout << " ";
+            }
+            std::cout << "│ " << perc << "%";
+            if(perc == 100){
+                std::cout << "\n\n";
+                std::cout << "Simulation finished successfully";
+                std::cout << "\n\n";
+                std::cout << "\033[?25h";
+                finished = true;
+            }
+        }
     }
 
     void simulation::printHelp()
@@ -134,14 +172,12 @@ namespace FCPIC
         std::cout << "                            Default: 1\n";
         std::cout << "-nxproc=ppp           Number of MPI processes horizontally in the grid\n";
         std::cout << "                            Default: Number of processes/2\n";
-        std::cout << "-nxsamples=sss        Number of discretization cells horizontally\n";
-        std::cout << "                            Default: 100\n";
         std::cout << "-aspect=aaa           Box aspect ratio (ylen = aspect * xlen)\n";
         std::cout << "                            Default: 1\n";
         std::cout << "-simtime=ttt          Simulation time (in secs)\n";
         std::cout << "                            Default: 1\n";
         std::cout << "-boundcond=bbb        Boundary condition (1->periodic, 2->conductive)\n";
-        std::cout << "                            Default: 0\n";
+        std::cout << "                            Default: 1\n";
         std::cout << "\n";
     }
 
@@ -150,7 +186,7 @@ namespace FCPIC
         std::vector<std::string> allArgs(argv, argv + argc);
         std::vector<std::string> numbers;
         std::string line, header, number;
-        std::vector<bool> def_values(12, true);
+        std::vector<bool> def_values(11, true);
         int k;
 
         for(auto & arg : allArgs){
@@ -179,7 +215,7 @@ namespace FCPIC
                 }
 
                 if(header.compare("-infile")==0){
-                    def_values.assign(12,true);
+                    def_values.assign(11,true);
                     getParamsfromFile(arg, &def_values);
                     break;
                 }
@@ -225,25 +261,21 @@ namespace FCPIC
                     def_values[6]=false;
                 }
                 if(header.compare("-nxproc")==0){
-                    nxproc = stoi(number);
+                    grid[X_DIR] = stoi(number);
                     def_values[7]=false;
-                }
-                if(header.compare("-nxsamples")==0){
-                    N_total_x = stoi(number);
-                    def_values[8]=false;
                 }
                 if(header.compare("-aspect")==0){
                     aspect = stod(number);
-                    def_values[9]=false;
+                    def_values[8]=false;
                 }
                 if(header.compare("-simtime")==0){
-                    simtime = stoi(number);
-                    def_values[10]=false;
+                    simtime = stod(number);
+                    def_values[9]=false;
                 }
                 if(header.compare("-boundcond")==0){
                     bc[X_DIR] = stoi(number);
                     bc[Y_DIR] = stoi(number);
-                    def_values[11]=false;
+                    def_values[10]=false;
                 }
                 
                 numbers.clear();
@@ -258,11 +290,10 @@ namespace FCPIC
         if(def_values[4]) vxfluid.push_back(0.);
         if(def_values[5]) vyfluid.push_back(0.);
         if(def_values[6]) xlen=1;
-        if(def_values[7]) nxproc = n_Procs/2;
-        if(def_values[8]) N_total_x = 100;
-        if(def_values[9]) aspect = 1;
-        if(def_values[10]) simtime = 1;
-        if(def_values[11]){
+        if(def_values[7]) grid[X_DIR] = n_Procs/2;
+        if(def_values[8]) aspect = 1;
+        if(def_values[9]) simtime = 1;
+        if(def_values[10]){
             bc[X_DIR] = PERIODIC;
             bc[Y_DIR] = PERIODIC;
         }
@@ -336,25 +367,21 @@ namespace FCPIC
                     (*def_values)[6]=false;
                 }
                 if(header.compare("nxproc")==0){
-                    nxproc = stoi(number);
+                    grid[X_DIR] = stoi(number);
                     (*def_values)[7]=false;
-                }
-                if(header.compare("nxsamples")==0){
-                    N_total_x = stoi(number)+1;
-                    (*def_values)[8]=false;
                 }
                 if(header.compare("aspect")==0){
                     aspect = stod(number);
-                    (*def_values)[9]=false;
+                    (*def_values)[8]=false;
                 }
                 if(header.compare("simtime")==0){
-                    simtime = stoi(number);
-                    (*def_values)[10]=false;
+                    simtime = stod(number);
+                    (*def_values)[9]=false;
                 }
                 if(header.compare("boundcond")==0){
                     bc[X_DIR] = stoi(number);
                     bc[Y_DIR] = stoi(number);
-                    (*def_values)[11]=false;
+                    (*def_values)[10]=false;
                 }
                 
                 numbers.clear();
@@ -386,11 +413,8 @@ namespace FCPIC
         if(xlen <= 0){
             std::cout << "ERROR: NON-PHYSICAL BOX LENGTH\n";
         }
-        if(n_Procs%nxproc != 0){
+        if(n_Procs%grid[X_DIR] != 0){
             std::cout << "ERROR: UNABLE TO FORM A PROCESS GRID\n";
-        }
-        if(N_total_x < 10){
-            std::cout << "ERROR: NOT ENOUGH GRID CELLS\n";
         }
         if(aspect <= 0){
             std::cout << "ERROR: INVALID ASPECT RATIO\n";
@@ -410,6 +434,8 @@ namespace FCPIC
 
         for(int k = 0; k < Nspecies; k++){
                 temp[k] /= temp[0];
+                vxfluid[k] *= sqrt(temp[k]/temp[0]);
+                vyfluid[k] *= sqrt(temp[k]/temp[0]);
         }
 
         simtime /= Tref;
@@ -420,8 +446,7 @@ namespace FCPIC
         N_total_x = round((double)xlen/ (double)dx);
         N_total_y = round(aspect*(double)N_total_x);
 
-        grid[X_DIR] = nxproc;
-        grid[Y_DIR] = n_Procs/nxproc;
+        grid[Y_DIR] = n_Procs/grid[X_DIR];
 
         if(bc[X_DIR] != PERIODIC)
             N_total_x -= 1;
@@ -515,32 +540,6 @@ namespace FCPIC
         get_diagonal_rank(coords_se, grid_se);
         get_diagonal_rank(coords_nw, grid_nw);
         get_diagonal_rank(coords_sw, grid_sw);
-
-        // std::cout << "grid_rank: " << grid_rank << " ne: " << grid_ne << " se: " << grid_se << " sw: " << grid_sw << " nw: " << grid_nw << std::endl;
-
-        /////////////////////777////////////
-
-        //---TESTES---
-        // PARA TESTAR COISAS USAR ESTE SÍTIO
-        /*
-        std::cout << "Grid rank: " << grid_rank << std::endl;
-        std::cout << "N_int_x: " << N_int_x << "   N_int_y: " << N_int_y << std::endl;
-        std::cout << "N_x: " << N_x << "   N_y: " << N_y << std::endl;
-        double array[25] = { 0, 1, 2, 3, 4,
-                             5, 6, 7, 8, 9,
-                            10,11,12,13,14,
-                            15,16,17,18,19,
-                            20,21,22,23,24};
-        for(int k = 0; k<25; k++)
-            array[k] += grid_rank*25;
-        field phi(N_int_x, N_int_y, array);
-        //phi.setValue((double) grid_rank);
-        sleep(grid_rank);
-        phi.print_field(std::cout);
-        exchange_charge_buffers(&phi);
-        sleep(grid_rank);
-        phi.print_field(std::cout);
-        */
     }
 
     void simulation::get_diagonal_rank(int *coords, int &id_proc)
@@ -550,26 +549,6 @@ namespace FCPIC
             id_proc = MPI_PROC_NULL;
         else
             MPI_Cart_rank(grid_comm, coords, &id_proc);
-    }
-
-    void simulation::set_periodic_field_bc()
-    {
-        bc[X_DIR] = PERIODIC;
-        bc[Y_DIR] = PERIODIC;
-        wrap_around[X_DIR] = 0;
-        wrap_around[Y_DIR] = 0;
-
-        setup_proc_grid();
-    }
-
-    void simulation::set_conductive_field_bc()
-    {
-        bc[X_DIR] = CONDUCTIVE;
-        bc[Y_DIR] = CONDUCTIVE;
-        wrap_around[X_DIR] = 0;
-        wrap_around[Y_DIR] = 0;
-
-        setup_proc_grid();
     }
 
     void simulation::exchange_phi_buffers(field *phi)
@@ -691,10 +670,32 @@ namespace FCPIC
         //  MPI_Recv(&(lepton->recv_buffer_east[0]), lepton->size_recv_east, exchange_part_type, grid_right, 0, grid_comm, MPI_STATUS_IGNORE);
     }
 
+    void simulation::get_charge(field *charge, species* part)
+    {
+        int i, j;
+        float wx, wy;
+        float density0 = part->np_sim/(N_int_x*N_int_y);
+        for (int k = 0; k < part->np; k++)
+        {
+            i = part->vec[k].iy;
+            j = part->vec[k].ix;
+            wx = part->vec[k].x;
+            wy = part->vec[k].y;
+
+            charge->val[POSITION] += (dx - wx) * (dy - wy) * part->q / (dx * dy * density0);
+            charge->val[EAST] += wx * (dy - wy) * part->q / (dx * dy * density0);
+            charge->val[NORTH] += (dx - wx) * wy * part->q / (dx * dy * density0);
+            charge->val[NORTHEAST] += wx * wy * part->q / (dx * dy * density0);
+        }
+
+        for(int i=0; i<N_y; i++)
+            for(int j=0; j<N_x; j++)
+                charge->val[POSITION]-=part->q;
+    }
+
     // Jacobi solver
     void simulation::jacobi(field *phi, field *charge)
     {
-        // std::cout << __PRETTY_FUNCTION__ << std::endl;
         double res, e;
         double global_res = 1.0;
         double tol = 1e-7;
@@ -703,16 +704,12 @@ namespace FCPIC
 
         phi->setValue(0.0);
         // Defining a new temporary field (temp is not part of the domain)
-        field temp(N_x, N_y);
-
-        if(grid_rank==4){
-            phi->print_field(std::cout);
-            charge->print_field(std::cout);
-        }
+        field temp(this);
 
         // Starting the iteration loop
         while (global_res > tol)
         {
+            
             // making res 0 so that any error greater than 0 can be equated to this
             res = 0.0;
 
@@ -726,8 +723,9 @@ namespace FCPIC
                 for (int j = 1; j <= N_int_x; j++)
                 {
 
-                    temp.val[POSITION] = .25 * (phi->val[NORTH] + phi->val[SOUTH] + phi->val[EAST] + phi->val[WEST] -
-                                                charge->val[POSITION]/1000);
+                    temp.val[POSITION] = .25 * (phi->val[NORTH] + phi->val[SOUTH] 
+                                              + phi->val[EAST] + phi->val[WEST] 
+                                              - dx*dx*charge->val[POSITION]);
 
                     e = fabs(temp.val[POSITION] - phi->val[POSITION]);
                     if (e > res) // norm infty: supremo
@@ -748,7 +746,7 @@ namespace FCPIC
 
         exchange_phi_buffers(phi);
 
-        std::cout << "Maximum residual: " << res << "  | Number of iterations: " << loop << " | rank: " << grid_rank << std::endl;
+        //std::cout << "Maximum residual: " << res << "  | Number of iterations: " << loop << " | rank: " << grid_rank << std::endl;
     }
 
     void simulation::set_E_value(field *phi, field *Ex_field, field *Ey_field)
