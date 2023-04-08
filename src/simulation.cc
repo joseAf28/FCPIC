@@ -52,11 +52,6 @@ namespace FCPIC
         Y_guard_data = new double[N_x];
         X_guard_data = new double[N_int_y];
 
-        Y_guard_data1 = new double[N_x]();
-        X_guard_data1 = new double[N_int_y]();
-        Y_guard_data2 = new double[N_x]();
-        X_guard_data2 = new double[N_int_y]();
-
         setup_proc_grid();
     }
 
@@ -68,9 +63,7 @@ namespace FCPIC
 
         MPI_Finalize();
 
-        delete[] Y_guard_data, X_guard_data,
-                 Y_guard_data1, X_guard_data1,
-                 Y_guard_data2, X_guard_data2;
+        delete[] Y_guard_data, X_guard_data;
     }
 
     std::string simulation::print_SI(double x){
@@ -675,6 +668,7 @@ namespace FCPIC
         int i, j;
         float wx, wy;
         float density0 = part->np_sim/(N_int_x*N_int_y);
+        float q = part->q;
         for (int k = 0; k < part->np; k++)
         {
             i = part->vec[k].iy;
@@ -682,15 +676,15 @@ namespace FCPIC
             wx = part->vec[k].x;
             wy = part->vec[k].y;
 
-            charge->val[POSITION] += (dx - wx) * (dy - wy) * part->q / (dx * dy * density0);
-            charge->val[EAST] += wx * (dy - wy) * part->q / (dx * dy * density0);
-            charge->val[NORTH] += (dx - wx) * wy * part->q / (dx * dy * density0);
-            charge->val[NORTHEAST] += wx * wy * part->q / (dx * dy * density0);
+            charge->val[POSITION] += (dx - wx) * (dy - wy) * q / (dx * dy * density0);
+            charge->val[EAST] += wx * (dy - wy) * q / (dx * dy * density0);
+            charge->val[NORTH] += (dx - wx) * wy * q / (dx * dy * density0);
+            charge->val[NORTHEAST] += wx * wy * q / (dx * dy * density0);
         }
 
         for(int i=0; i<N_y; i++)
             for(int j=0; j<N_x; j++)
-                charge->val[POSITION]-=part->q;
+                charge->val[POSITION]-=q;
     }
 
     // Jacobi solver
@@ -808,6 +802,69 @@ namespace FCPIC
 
         exchange_phi_buffers(Ex_field);
         exchange_phi_buffers(Ey_field);
+    }
+
+    void simulation::field_interpolate(field *Ex, field *Ey, float &Ex_i, float &Ey_i, part *prt){
+        int i = prt->iy;
+        int j = prt->ix;
+
+        float wx = prt->x;
+        float wy = prt->y;
+
+        float A_pos = (dx - wx) * (dy - wy);
+        float A_e = wx * (dy - wy);
+        float A_n = (dx - wx) * wy;
+        float A_ne = wx * wy;
+
+        Ex_i = A_pos * Ex->val[POSITION] + 
+               A_e * Ex->val[EAST] + 
+               A_n * Ex->val[NORTH] + 
+               A_ne * Ex->val[NORTHEAST];
+
+        Ey_i = A_pos * Ey->val[POSITION] + 
+               A_e * Ey->val[EAST] + 
+               A_n * Ey->val[NORTH] + 
+               A_ne * Ey->val[NORTHEAST];
+
+        Ex_i /= (dx * dy);
+        Ey_i /= (dx * dy);
+    }
+
+    void simulation::init_pusher(field *Ex, field *Ey, species *spec){
+    
+    int Np = spec->np;
+    float q = spec->q;
+    float m = spec->m;
+    for (int i = 0; i < Np; i++)
+    {
+        float Ex_i = 0.f;
+        float Ey_i = 0.f;
+
+        field_interpolate(Ex, Ey, Ex_i, Ey_i, &spec->vec[i]);
+
+        spec->vec[i].ux += - 0.5 * q / m * Ex_i * dt;
+        spec->vec[i].uy += - 0.5 * q / m * Ey_i * dt;
+    }
+}
+
+    void simulation::particle_pusher(field *Ex, field *Ey, species *spec){
+        
+        int Np = spec->np;
+        float q = spec->q;
+        float m = spec->m;
+        for (int i = 0; i < Np; i++)
+        {
+            float Ex_i = 0.f;
+            float Ey_i = 0.f;
+
+            field_interpolate(Ex, Ey, Ex_i, Ey_i, &spec->vec[i]);
+
+            spec->vec[i].ux += q / m * Ex_i * dt;
+            spec->vec[i].uy += q / m * Ey_i * dt;
+
+            spec->vec[i].x += spec->vec[i].ux * dt;
+            spec->vec[i].y += spec->vec[i].uy * dt;
+        }
     }
 
 }

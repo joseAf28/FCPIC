@@ -168,14 +168,14 @@ species::~species()
     recv_buffer_sw.clear();
     recv_buffer_nw.clear();
 }
-
-void species::field_inter(field *Ex, field *Ey, float &Ex_i, float &Ey_i, int counter)
+/*
+void species::field_interpolate(field *Ex, field *Ey, float &Ex_i, float &Ey_i, part *prt)
 {
-    int i = vec[counter].iy;
-    int j = vec[counter].ix;
+    int i = prt->iy;
+    int j = prt->ix;
 
-    float wx = vec[counter].x;
-    float wy = vec[counter].y;
+    float wx = prt->x;
+    float wy = prt->y;
 
     float A_pos = (dx - wx) * (dy - wy);
     float A_e = wx * (dy - wy);
@@ -198,7 +198,7 @@ void species::init_pusher(field *Ex, field *Ey)
         float Ex_i = 0.f;
         float Ey_i = 0.f;
 
-        field_inter(Ex, Ey, Ex_i, Ey_i, i);
+        field_interpolate(Ex, Ey, Ex_i, Ey_i, &vec[i]);
 
         vec[i].ux = vec[i].ux - 0.5 * q / m * Ex_i * dt;
         vec[i].uy = vec[i].uy - 0.5 * q / m * Ey_i * dt;
@@ -213,7 +213,7 @@ void species::particle_pusher(field *Ex, field *Ey)
         float Ex_i = 0.f;
         float Ey_i = 0.f;
 
-        field_inter(Ex, Ey, Ex_i, Ey_i, i);
+        field_interpolate(Ex, Ey, Ex_i, Ey_i, &vec[i]);
 
         vec[i].ux = vec[i].ux + q / m * Ex_i * dt;
         vec[i].uy = vec[i].uy + q / m * Ey_i * dt;
@@ -222,7 +222,7 @@ void species::particle_pusher(field *Ex, field *Ey)
         vec[i].y = vec[i].y + vec[i].uy * dt;
     }
 }
-
+*/
 int species::advance_cell(int *ranks_mpi)
 { // ranks_mpi[0] - rank, ranks_mpi[1] - top, ranks_mpi[2] - bottom,
     //  ranks_mpi[3] - right, ranks_mpi[4] - left

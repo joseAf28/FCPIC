@@ -7,7 +7,6 @@
 #include <iostream>
 #include "species.hh"
 #include "field.hh"
-//#include "domain.hh"
 #include "FCPIC_base.hh"
 
 namespace FCPIC
@@ -41,6 +40,10 @@ namespace FCPIC
 
         void set_E_value(field *, field *, field *);
 
+        void field_interpolate(field *, field *, float &, float &, part *);
+        void init_pusher(field *, field *, species *);
+        void particle_pusher(field *, field *, species *);
+
         // MPI variables
         int grid_rank, rank;                              // rank of the current proces in the virtual grid
         int grid_top, grid_bottom, grid_left, grid_right; // ranks of the neighbouring processes
@@ -64,8 +67,6 @@ namespace FCPIC
         std::vector<double> charge, mass, temp, vxfluid, vyfluid;
         double aspect, xlen;
         double *X_guard_data, *Y_guard_data;
-        double *X_guard_data1, *Y_guard_data1;
-        double *X_guard_data2, *Y_guard_data2;
     };
 }
 #endif

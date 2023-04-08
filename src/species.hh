@@ -61,9 +61,9 @@ public:
     int advance_cell(int *);
 
     // particle pusher - leap frog method
-    void field_inter(field *, field *, float &, float &, int);
-    void init_pusher(field *, field *);
-    void particle_pusher(field *, field *);
+    //void field_interpolate(field *, field *, float &, float &, part *);
+    //void init_pusher(field *, field *);
+    //void particle_pusher(field *, field *);
 
     //!!!!!!!!!!!!!!!! emporary methods for debugging
     void print();
@@ -119,14 +119,11 @@ public:
 
     int np, np_sim; // total number of particles in the process and in the simulation
 
-    float q;
+    const float q, m;
 
 private:
     // species name
     std::string name;
-
-    // mass and charge
-    float m; //!! to define in the constructor later
 };
 }
 #endif

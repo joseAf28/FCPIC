@@ -99,7 +99,8 @@ int main(int argc, char **argv)
 
     // first iteration of the particle pusher
     for (int i = 0; i < nb_spec; i++)
-        spec_vec[i].init_pusher(Ex, Ey);
+        sim->init_pusher(Ex, Ey, &spec_vec[i]);
+    //spec_vec[i].init_pusher(Ex, Ey);
 
     for (int counter = 0; counter < 700; counter++)
     {
@@ -135,7 +136,7 @@ int main(int argc, char **argv)
 
         for (int i = 0; i < nb_spec; i++)
         {
-            spec_vec[i].particle_pusher(Ex, Ey);
+            sim->particle_pusher(Ex, Ey, &spec_vec[i]);
             /*
             spec_vec[i].advance_cell(flags_coords_mpi);
             spec_vec[i].prepare_buffer();
