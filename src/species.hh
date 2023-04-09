@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <fstream>
 #include "field.hh"
+#include "FCPIC_base.hh"
 
 ////////////////////////////////////////////////////////
 // Axis Defintion (same conention inside the cell and in the domain as well)
@@ -23,7 +24,7 @@
 //  | (0,0) | (0,1) | (0,2) ...
 //  0 ------------------------------> x
 ////////////////////////////////////////////////////////
-
+namespace FCPIC{
 typedef enum // flag to check which particles are going be deleted after MPI communication
 {
     BULK,
@@ -47,26 +48,22 @@ typedef struct Particle
 
 } part;
 
-class species
+class species : public FCPIC_base
 {
 public:
-    species(std::string, int *, int *, float *, float *, float);
-    ~species();
-
-    void set_x();
-    void set_u();
-
-    void get_charge(FCPIC::field *);
+    species(std::string, float, float, float, float *, int *, FCPIC_base const *);
+    species(std::string, float, float, float, float *, int, FCPIC_base const *);
+    ~species() override;
 
     // methods used for MPI communication
     void prepare_buffer();
     void update_part_list();
-    bool advance_cell(int *);
+    int advance_cell(int *);
 
     // particle pusher - leap frog method
-    void field_inter(FCPIC::field *, FCPIC::field *, float &, float &, int);
-    void init_pusher(FCPIC::field *, FCPIC::field *);
-    void particle_pusher(FCPIC::field *, FCPIC::field *);
+    //void field_interpolate(field *, field *, float &, float &, part *);
+    //void init_pusher(field *, field *);
+    //void particle_pusher(field *, field *);
 
     //!!!!!!!!!!!!!!!! emporary methods for debugging
     void print();
@@ -120,43 +117,13 @@ public:
     int size_recv_nw = 0;
     int size_recv_sw = 0;
 
-    int np; // total number of particles in the simulation (after each iteration: it is updated)
+    int np, np_sim; // total number of particles in the process and in the simulation
 
-    // simulation box info
-    int N_x; // number of x grid points
-    int N_y; // number of y grid points
-
-    int N_int_x; // number of x grid points
-    int N_int_y; // number of y grid points
+    const float q, m;
 
 private:
     // species name
     std::string name;
-
-    // mass and charge
-    float m = 1; //!! to define in the constructor later
-    float q;
-
-    // number of particles per cell at beggining of simulation
-    int ppc[2];
-
-    // number of cells in each direction
-    int range[2]; // range[0] -> nb cells in x direction
-                  // range[1] -> nb cells in y direction
-
-    // initial general particles momentum
-    float vf[3];  // initial fluid velocity
-    float vth[3]; // inital thermal velocity
-
-    //!! dx and dy set to 1.0 for now
-    float dx = 1.0; // x grid cell size
-    float dy = 1.0; // y grid cell size
-
-    float dt = 1.0; // time-step - change later
-
-    // Generator of random numbers the thermal boltzmann distribution
-    std::mt19937_64 rng;
-    std::normal_distribution<double> rand_gauss;
 };
-
+}
 #endif

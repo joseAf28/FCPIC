@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include "FCPIC_base.hh"
 
 // Cycle in j from 0 to N_x (NOT INCLUDING) for(int j=0; j<N_x; j++)
 #define SOUTH_GUARD j
@@ -53,25 +54,17 @@ namespace FCPIC
         Y_DIR,
     } Direction;
 
-    // Direction
-    typedef enum
-    {
-        REPLACE,
-        ADD,
-    } Operation;
-
     // Field class
-    class field
+    class field : public FCPIC_base
     {
     public:
         // Constructors
         // allocates memory to the field variables equal to the number of cells in the domain
-        field();
-        field(int, int);
-        field(int, int, double *);
-        field(int, int, std::vector<double> &);
+        field(FCPIC_base const *);
+        field(double *, FCPIC_base const *);
+        field(std::vector<double> &, FCPIC_base const *);
 
-        ~field(); // Destructor
+        ~field() override; // Destructor
 
         void setValue(double);
 
@@ -94,14 +87,6 @@ namespace FCPIC
         // void get_Efield(part &, float &, float &); // Interpolates the field inside the cell at particles' position
 
         std::vector<double> val;
-
-        // worth putting public instead of get and set stuff
-        int N;        // total size x*y
-        int N_x, N_y; // total size
-
-    private:
-        // Members
-        int N_int_x, N_int_y; // inner size
     };
 }
 

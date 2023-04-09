@@ -1,13 +1,14 @@
 # THIS FILE IS AN INPUT FILE
 # Note: scientific notation not supported
 # INPUTS
-npart = 10000,200,300,1
-mass = 1,1,4,2
-charge = 1,-1,4,2
-temp = 1,200,2,4
-vxfluid= 0,0,0,0
-vyfluid=0,0,0,0
-xlen=0.0001
-boundcond= 2
-nxproc=4
-aspect=.25
+npart = 1000,1000
+mass = 1.,1.
+charge = -1.0,-1.0
+temp = 1.0,1.0
+vxfluid= 5.,-5.
+vyfluid= 0.,0.
+xlen=0.000005
+boundcond= 1
+nxproc=2
+aspect=1
+simtime=.0000000001

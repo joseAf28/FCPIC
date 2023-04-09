@@ -14,37 +14,45 @@ namespace FCPIC
     N_int_x and N_int_y are the number of inner grid points in x and y direction respectively
     ***********************************************************/
 
-    simulation::simulation(int argc, char **argv)
+    simulation::simulation(int argc, char **argv):FCPIC_base()
     {
         MPI_Init(&argc, &argv);
         // retrieve the number of processes
         MPI_Comm_size(MPI_COMM_WORLD, &n_Procs);
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        // readArgs(argc, argv);
-        // setParams();
-        // if (rank == 0)
-        //     printTitle();
+        readArgs(argc,argv);
+        setParams();
+        if(rank ==0)
+            printTitle();
 
-        aspect = 1;        // (INPUT) y_len = aspect (x_len always norm to 1)
-        N_int_x = 21;      //
-        N_int_y = 21;      //
-        N_x = N_int_x + 2; //
-        N_y = N_int_y + 2; //
-        N = N_x * N_y;     //
+        /*
+        aspect = 1; // 
+        N_int_x = 21; //
+        N_int_y = 11; //
+        N_x = N_int_x + 2;//
+        N_y = N_int_y + 2;//
+        N = N_x * N_y;//
+        N_total_x = N_int_x*2+1;//
+        N_total_y = N_int_y*2+1;//
 
-        dx = 1; //
-        dy = 1; //
+        dx = .3; //
+        dy = .3; //
+        dt=.1; //
 
-        grid[X_DIR] = 2; //
-        grid[Y_DIR] = 2; //
+        grid[X_DIR] = 2;//
+        grid[Y_DIR] = 2;//
+
+        bc[X_DIR] = CONDUCTIVE; //
+        bc[Y_DIR] = CONDUCTIVE; //
+        wrap_around[X_DIR] = 0; //
+        wrap_around[Y_DIR] = 0; //
+
+        */
 
         Y_guard_data = new double[N_x];
         X_guard_data = new double[N_int_y];
 
-        Y_guard_data1 = new double[N_x]();
-        X_guard_data1 = new double[N_int_y]();
-        Y_guard_data2 = new double[N_x]();
-        X_guard_data2 = new double[N_int_y]();
+        setup_proc_grid();
     }
 
     simulation::~simulation()
@@ -55,43 +63,32 @@ namespace FCPIC
 
         MPI_Finalize();
 
-        delete[] Y_guard_data, X_guard_data,
-            Y_guard_data1, X_guard_data1,
-            Y_guard_data2, X_guard_data2;
+        delete[] Y_guard_data, X_guard_data;
     }
 
-    std::string simulation::print_SI(double x)
-    {
+    std::string simulation::print_SI(double x){
         int exponent = floor(log10(x));
-        exponent -= (exponent % 3 + 3) % 3;
-        double mantissa = x / pow(10., exponent);
+        exponent -= (exponent%3+3)%3;
+        double mantissa = x/pow(10.,exponent);
 
         std::string output = std::to_string(mantissa);
 
-        if (exponent == -12)
-            output.append(" p");
-        if (exponent == -9)
-            output.append(" n");
-        if (exponent == -6)
-            output.append(" μ");
-        if (exponent == -3)
-            output.append(" m");
-        if (exponent == 0)
-            output.append(" ");
-        if (exponent == 3)
-            output.append(" k");
-        if (exponent == 6)
-            output.append(" M");
-        if (exponent == 9)
-            output.append(" G");
-        if (exponent == 12)
-            output.append(" T");
-
+        if(exponent == -15) output.append(" f");
+        if(exponent == -12) output.append(" p");
+        if(exponent == -9) output.append(" n");
+        if(exponent == -6) output.append(" μ");
+        if(exponent == -3) output.append(" m");
+        if(exponent == 0) output.append(" ");
+        if(exponent == 3) output.append(" k");
+        if(exponent == 6) output.append(" M");
+        if(exponent == 9) output.append(" G");
+        if(exponent == 12) output.append(" T");
+        if(exponent == 15) output.append(" P");
+    
         return output;
     }
 
-    void simulation::printTitle()
-    {
+    void simulation::printTitle(){
         std::cout << "\n";
         std::cout << "┌─────────────────────────────────────────────────────────────────────────────┐\n";
         std::cout << "│ ▄▄▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄▄▄▄▄ │\n";
@@ -110,14 +107,38 @@ namespace FCPIC
         std::cout << "│ Guilherme Crispim, João Palma, José Afonso, ATCP 2023                       │\n";
         std::cout << "└─────────────────────────────────────────────────────────────────────────────┘\n";
         std::cout << "\n";
-        std::cout << "Simulation size: " << print_SI(xlen * Lref) << "m x " << print_SI(xlen * aspect * Lref) << "m\n";
-        std::cout << "Spatial discretization: " << print_SI(dx * Lref) << "m x " << print_SI(dy * Lref) << "m"
-                  << " (" << N_total_x << "x" << N_total_y << " cells)\n";
-        std::cout << "MPI process grid: " << n_Procs << " processes ("
-                  << grid[X_DIR] << "x" << grid[Y_DIR] << ")\n";
+        std::cout << "Simulation size: " << print_SI(xlen*Lref) << "m x " << print_SI(xlen*aspect*Lref) << "m\n";
+        std::cout << "Spatial discretization: " << print_SI(dx*Lref) << "m x " << print_SI(dy*Lref) << "m"
+                  << " ("<< N_total_x << "x" << N_total_y << " cells)\n";
+        std::cout << "Simulation time: " << print_SI(simtime*Tref) << "s\n";
+        std::cout << "Time discretization: " << print_SI(dt*Tref) << "s (" << (int) (simtime/dt) << " time steps)\n";
+        std::cout << "MPI process grid: " << n_Procs << " processes (" 
+                  << grid[X_DIR]<< "x" << grid[Y_DIR] <<  ")\n";
         std::cout << "Electron Debye length: " << print_SI(Lref) << "m\n";
-        std::cout << "Plasma frequency: " << print_SI(1 / Tref) << "Hz\n";
+        std::cout << "Plasma frequency: " << print_SI(1/Tref) << "Hz\n";
         std::cout << "\n";
+    }
+
+    void simulation::printProgress(float prog){
+        int perc= round(prog*100);
+        static bool finished = false;
+        if(!finished){
+            std::cout << "\r\033[?25l";
+            std::cout << "RUNNING: │";
+            for(int k = 0; k < 100; k+=4){
+                if(perc-k >=4) std::cout << "█";
+                else if(perc-k == 2 || perc-k == 3) std::cout << "▌";
+                else std::cout << " ";
+            }
+            std::cout << "│ " << perc << "%";
+            if(perc == 100){
+                std::cout << "\n\n";
+                std::cout << "Simulation finished successfully";
+                std::cout << "\n\n";
+                std::cout << "\033[?25h";
+                finished = true;
+            }
+        }
     }
 
     void simulation::printHelp()
@@ -144,14 +165,12 @@ namespace FCPIC
         std::cout << "                            Default: 1\n";
         std::cout << "-nxproc=ppp           Number of MPI processes horizontally in the grid\n";
         std::cout << "                            Default: Number of processes/2\n";
-        std::cout << "-nxsamples=sss        Number of discretization cells horizontally\n";
-        std::cout << "                            Default: 100\n";
         std::cout << "-aspect=aaa           Box aspect ratio (ylen = aspect * xlen)\n";
         std::cout << "                            Default: 1\n";
         std::cout << "-simtime=ttt          Simulation time (in secs)\n";
         std::cout << "                            Default: 1\n";
         std::cout << "-boundcond=bbb        Boundary condition (1->periodic, 2->conductive)\n";
-        std::cout << "                            Default: 0\n";
+        std::cout << "                            Default: 1\n";
         std::cout << "\n";
     }
 
@@ -160,356 +179,305 @@ namespace FCPIC
         std::vector<std::string> allArgs(argv, argv + argc);
         std::vector<std::string> numbers;
         std::string line, header, number;
-        std::vector<bool> def_values(12, true);
+        std::vector<bool> def_values(11, true);
         int k;
 
-        for (auto &arg : allArgs)
-        {
-            k = 0;
-            for (char &c : arg)
-            {
-                if ((c > 47 && c < 58) || c == '.' || (c == '-' && k != 0))
-                    number.push_back(c);
-                if (c == ',')
-                {
-                    numbers.push_back(number);
-                    number.clear();
-                }
-                if ((c > 96 && c < 123) || (c == '-' && k == 0))
-                    header.push_back(c);
-                if (c > 64 && c < 91)
-                    header.push_back(c + 32);
+        for(auto & arg : allArgs){
+            k=0;
+            for(char &c : arg){
+                    if((c > 47 && c<58) || c == '.' || (c == '-' && k != 0))
+                        number.push_back(c);
+                    if(c == ','){
+                        numbers.push_back(number);
+                        number.clear();
+                        }
+                    if((c > 96 && c < 123) || (c == '-' && k == 0))
+                        header.push_back(c);
+                    if(c > 64 && c < 91)
+                        header.push_back(c+32);
 
-                if (header.compare("-infile") == 0)
-                {
-                    arg.erase(0, 8);
-                    break;
+                    if(header.compare("-infile")==0){
+                        arg.erase(0,8);
+                        break;
+                    }
+                    k++;
                 }
-                k++;
 
-                if (header.compare("-help") == 0 && rank == 0)
-                {
+                if(header.compare("-help")==0 && rank == 0){
                     printHelp();
                 }
-                if ((c > 96 && c < 123) || (c == '-' && k == 0))
-                    header.push_back(c);
-                if (c > 64 && c < 91)
-                    header.push_back(c + 32);
 
-                if (header.compare("-infile") == 0)
-                {
-                    arg.erase(0, 8);
+                if(header.compare("-infile")==0){
+                    def_values.assign(11,true);
+                    getParamsfromFile(arg, &def_values);
                     break;
                 }
-                k++;
-            }
 
-            if (header.compare("-help") == 0)
-            {
-                printHelp();
-            }
-
-            if (header.compare("-infile") == 0)
-            {
-                def_values.assign(12, true);
-                getParamsfromFile(arg, &def_values);
-                break;
-            }
-
-            if (header.compare("-npart") == 0)
-            {
-                numbers.push_back(number);
-                for (auto &num : numbers)
-                    Npart.push_back(std::stoi(num));
-                def_values[0] = false;
-            }
-            if (header.compare("-charge") == 0)
-            {
-                numbers.push_back(number);
-                for (auto &num : numbers)
-                    charge.push_back(std::stod(num));
-                def_values[1] = false;
-            }
-            if (header.compare("-mass") == 0)
-            {
-                numbers.push_back(number);
-                for (auto &num : numbers)
-                    mass.push_back(std::stod(num));
-                def_values[2] = false;
-            }
-            if (header.compare("-temp") == 0)
-            {
-                numbers.push_back(number);
-                for (auto &num : numbers)
-                    temp.push_back(std::stod(num));
-                def_values[3] = false;
-            }
-            if (header.compare("-vxfluid") == 0)
-            {
-                numbers.push_back(number);
-                for (auto &num : numbers)
-                    vxfluid.push_back(std::stod(num));
-                def_values[4] = false;
-            }
-            if (header.compare("-vyfluid") == 0)
-            {
-                numbers.push_back(number);
-                for (auto &num : numbers)
-                    vyfluid.push_back(std::stod(num));
-                def_values[5] = false;
-            }
-            if (header.compare("-xlen") == 0)
-            {
-                xlen = stod(number);
-                def_values[6] = false;
-            }
-            if (header.compare("-nxproc") == 0)
-            {
-                nxproc = stoi(number);
-                def_values[7] = false;
-            }
-            if (header.compare("-nxsamples") == 0)
-            {
-                N_total_x = stoi(number);
-                def_values[8] = false;
-            }
-            if (header.compare("-aspect") == 0)
-            {
-                aspect = stod(number);
-                def_values[9] = false;
-            }
-            if (header.compare("-simtime") == 0)
-            {
-                simtime = stoi(number);
-                def_values[10] = false;
-            }
-            if (header.compare("-boundcond") == 0)
-            {
-                bc[X_DIR] = stoi(number);
-                bc[Y_DIR] = stoi(number);
-                def_values[11] = false;
-            }
+                if(header.compare("-npart")==0){
+                    numbers.push_back(number);
+                    for(auto & num : numbers)
+                        Npart.push_back(std::stoi(num));
+                    def_values[0]=false;
+                }
+                if(header.compare("-charge")==0){
+                    numbers.push_back(number);
+                    for(auto & num : numbers)
+                        charge.push_back(std::stod(num));
+                    def_values[1]=false;
+                }
+                if(header.compare("-mass")==0){
+                    numbers.push_back(number);
+                    for(auto & num : numbers)
+                        mass.push_back(std::stod(num));
+                    def_values[2]=false;
+                }
+                if(header.compare("-temp")==0){
+                    numbers.push_back(number);
+                    for(auto & num : numbers)
+                        temp.push_back(std::stod(num));
+                    def_values[3]=false;
+                }
+                if(header.compare("-vxfluid")==0){
+                    numbers.push_back(number);
+                    for(auto & num : numbers)
+                        vxfluid.push_back(std::stod(num));
+                    def_values[4]=false;
+                }
+                if(header.compare("-vyfluid")==0){
+                    numbers.push_back(number);
+                    for(auto & num : numbers)
+                        vyfluid.push_back(std::stod(num));
+                    def_values[5]=false;
+                }
+                if(header.compare("-xlen")==0){
+                    xlen = stod(number);
+                    def_values[6]=false;
+                }
+                if(header.compare("-nxproc")==0){
+                    grid[X_DIR] = stoi(number);
+                    def_values[7]=false;
+                }
+                if(header.compare("-aspect")==0){
+                    aspect = stod(number);
+                    def_values[8]=false;
+                }
+                if(header.compare("-simtime")==0){
+                    simtime = stod(number);
+                    def_values[9]=false;
+                }
+                if(header.compare("-boundcond")==0){
+                    bc[X_DIR] = stoi(number);
+                    bc[Y_DIR] = stoi(number);
+                    def_values[10]=false;
+                }
+                
+                numbers.clear();
+                number.clear();
+                header.clear();
         }
 
-        numbers.clear();
-        number.clear();
-        header.clear();
-
-        if (def_values[0])
-            Npart.push_back(1000);
-        if (def_values[1])
-            charge.push_back(-1.);
-        if (def_values[2])
-            mass.push_back(1.);
-        if (def_values[3])
-            temp.push_back(1.);
-        if (def_values[4])
-            vxfluid.push_back(0.);
-        if (def_values[5])
-            vyfluid.push_back(0.);
-        if (def_values[6])
-            xlen = 1;
-        if (def_values[7])
-            nxproc = n_Procs / 2;
-        if (def_values[8])
-            N_total_x = 100;
-        if (def_values[9])
-            aspect = 1;
-        if (def_values[10])
-            simtime = 1;
-        if (def_values[11])
-        {
+        if(def_values[0]) Npart.push_back(1000);
+        if(def_values[1]) charge.push_back(-1.);
+        if(def_values[2]) mass.push_back(1.);
+        if(def_values[3]) temp.push_back(1.);
+        if(def_values[4]) vxfluid.push_back(0.);
+        if(def_values[5]) vyfluid.push_back(0.);
+        if(def_values[6]) xlen=1;
+        if(def_values[7]) grid[X_DIR] = n_Procs/2;
+        if(def_values[8]) aspect = 1;
+        if(def_values[9]) simtime = 1;
+        if(def_values[10]){
             bc[X_DIR] = PERIODIC;
             bc[Y_DIR] = PERIODIC;
         }
     }
 
-    void simulation::getParamsfromFile(std::string filename, std::vector<bool> *def_values)
-    {
+    void simulation::getParamsfromFile(std::string filename, std::vector<bool> *def_values){
+        
+            std::ifstream infile(filename);
+            std::vector<std::string> filelines, numbers;
+            std::string line, header, number;
 
-        std::ifstream infile(filename);
-        std::vector<std::string> filelines, numbers;
-        std::string line, header, number;
-
-        while (getline(infile, line))
-            filelines.push_back(line);
-
-        infile.close();
-
-        for (auto &fline : filelines)
-        {
-            for (char &c : fline)
-            {
-                if ((c > 47 && c < 58) || c == '.' || c == '-')
-                    number.push_back(c);
-                if (c == ',')
-                {
-                    numbers.push_back(number);
-                    number.clear();
+            while(getline(infile, line))
+                filelines.push_back(line);
+            
+            infile.close();
+            
+            for(auto & fline : filelines){
+                for(char &c : fline){
+                    if((c > 47 && c<58) || c == '.' || c == '-')
+                        number.push_back(c);
+                    if(c == ','){
+                        numbers.push_back(number);
+                        number.clear();
+                        }
+                    if(c > 96 && c < 123)
+                        header.push_back(c);
+                    if(c > 64 && c < 91)
+                        header.push_back(c+32);
+                    if(c == '#')
+                        break;
                 }
-                if (c > 96 && c < 123)
-                    header.push_back(c);
-                if (c > 64 && c < 91)
-                    header.push_back(c + 32);
-                if (c == '#')
-                    break;
+                
+                if(header.compare("npart")==0){
+                    numbers.push_back(number);
+                    for(auto & num : numbers)
+                        Npart.push_back(std::stoi(num));
+                    (*def_values)[0]=false;
+                }
+                if(header.compare("charge")==0){
+                    numbers.push_back(number);
+                    for(auto & num : numbers)
+                        charge.push_back(std::stod(num));
+                    (*def_values)[1]=false;
+                }
+                if(header.compare("mass")==0){
+                    numbers.push_back(number);
+                    for(auto & num : numbers)
+                        mass.push_back(std::stod(num));
+                    (*def_values)[2]=false;
+                }
+                if(header.compare("temp")==0){
+                    numbers.push_back(number);
+                    for(auto & num : numbers)
+                        temp.push_back(std::stod(num));
+                    (*def_values)[3]=false;
+                }
+                if(header.compare("vxfluid")==0){
+                    numbers.push_back(number);
+                    for(auto & num : numbers)
+                        vxfluid.push_back(std::stod(num));
+                    (*def_values)[4]=false;
+                }
+                if(header.compare("vyfluid")==0){
+                    numbers.push_back(number);
+                    for(auto & num : numbers)
+                        vyfluid.push_back(std::stod(num));
+                    (*def_values)[5]=false;
+                }
+                if(header.compare("xlen")==0){
+                    xlen = stod(number);
+                    (*def_values)[6]=false;
+                }
+                if(header.compare("nxproc")==0){
+                    grid[X_DIR] = stoi(number);
+                    (*def_values)[7]=false;
+                }
+                if(header.compare("aspect")==0){
+                    aspect = stod(number);
+                    (*def_values)[8]=false;
+                }
+                if(header.compare("simtime")==0){
+                    simtime = stod(number);
+                    (*def_values)[9]=false;
+                }
+                if(header.compare("boundcond")==0){
+                    bc[X_DIR] = stoi(number);
+                    bc[Y_DIR] = stoi(number);
+                    (*def_values)[10]=false;
+                }
+                
+                numbers.clear();
+                number.clear();
+                header.clear();
             }
         }
 
-        if (header.compare("npart") == 0)
-        {
-            numbers.push_back(number);
-            std::cout << "npart in, getting ";
-            for (auto &num : numbers)
-                std::cout << num << " ";
-            std::cout << "\n";
-        }
-        if (header.compare("qom") == 0)
-        {
-            numbers.push_back(number);
-            std::cout << "qom in, getting ";
-            for (auto &num : numbers)
-                std::cout << num << " ";
-            std::cout << "\n";
-        }
-        if (header.compare("temp") == 0)
-        {
-            numbers.push_back(number);
-            std::cout << "temp in, getting ";
-            for (auto &num : numbers)
-                std::cout << num << " ";
-            std::cout << "\n";
-        }
-        if (header.compare("xlen") == 0)
-            std::cout << "xlen in, getting " << number << "\n";
-        if (header.compare("nxproc") == 0)
-            std::cout << "nxproc in, getting " << number << "\n";
-        if (header.compare("nxsamples") == 0)
-            std::cout << "nxsamples in, getting " << number << "\n";
-        if (header.compare("aspect") == 0)
-            std::cout << "aspect in, getting " << number << "\n";
-        if (header.compare("simtime") == 0)
-            std::cout << "aspect in, getting " << number << "\n";
-        if (header.compare("boundcond") == 0)
-            std::cout << "boundcond in, getting " << number << "\n";
-
-        numbers.clear();
-        number.clear();
-        header.clear();
-    }
-
-    void simulation::setParams()
-    {
-        if (Npart.size() != charge.size() || Npart.size() != mass.size() ||
-            Npart.size() != temp.size() || Npart.size() != vxfluid.size() ||
-            Npart.size() != vyfluid.size())
-        {
+    void simulation::setParams(){
+        if(Npart.size() != charge.size() || Npart.size() != mass.size() || 
+           Npart.size() != temp.size() || Npart.size() != vxfluid.size() || 
+           Npart.size() != vyfluid.size()){
             std::cout << "ERROR: PLEASE PROVIDE ARGS FOR ALL SPECIES\n";
         }
 
         Nspecies = Npart.size();
 
-        for (int k = 0; k < Nspecies; k++)
-        {
-            if (Npart[k] < 1)
-            {
+        for(int k = 0; k < Nspecies; k++){
+            if(Npart[k] < 1){
                 std::cout << "ERROR: NON-PHYSICAL NUMBER OF PARTICLES\n";
             }
-            if (mass[k] <= 0)
-            {
+            if(mass[k] <= 0){
                 std::cout << "ERROR: NON-PHYSICAL TEMPERATURE\n";
             }
-            if (temp[k] < 0)
-            {
+            if(temp[k] < 0){
                 std::cout << "ERROR: NON-PHYSICAL TEMPERATURE\n";
             }
         }
-        if (xlen <= 0)
-        {
+        if(xlen <= 0){
             std::cout << "ERROR: NON-PHYSICAL BOX LENGTH\n";
         }
-        if (n_Procs % nxproc != 0)
-        {
+        if(n_Procs%grid[X_DIR] != 0){
             std::cout << "ERROR: UNABLE TO FORM A PROCESS GRID\n";
         }
-        if (N_total_x < 10)
-        {
-            std::cout << "ERROR: NOT ENOUGH GRID CELLS\n";
-        }
-        if (aspect <= 0)
-        {
+        if(aspect <= 0){
             std::cout << "ERROR: INVALID ASPECT RATIO\n";
         }
-        if (simtime <= 0)
-        {
+        if(simtime <= 0){
             std::cout << "ERROR: INVALID SIMULATION TIME\n";
         }
-        if (bc[X_DIR] != 1 && bc[X_DIR] != 2)
-        {
+        if(bc[X_DIR] != 1 && bc[X_DIR] != 2){
             std::cout << "ERROR: INVALID BOUNDARY CONDITIONS\n";
         }
 
-        // All norms are done in reference to the first species temperature and density
-        Vref = 419382.88 * sqrt(temp[0]);                    // Normalizing speeds to Vthermal of 1st species (m/s)
-        Nref = (double)Npart[0] / (aspect * xlen * xlen);    // 2D Density (m^-2)
-        Lref = sqrt(55263494.06 * temp[0] / pow(Nref, 1.5)); // Normalizing lengths to electron Debye length (m)
-        Tref = Lref / Vref;                                  // Normalizing times to electron inverse plasma frequency (s)
+        //All norms are done in reference to the first species temperature and density
+        Vref = 419382.88*sqrt(temp[0]); //Normalizing speeds to Vthermal of 1st species (m/s)
+        Nref = (double)Npart[0]/(aspect*xlen*xlen); //2D Density (m^-2)
+        Lref = sqrt(55263494.06*temp[0]/pow(Nref,1.5)); //Normalizing lengths to electron Debye length (m)
+        Tref = Lref/Vref; //Normalizing times to electron inverse plasma frequency (s)
 
-        for (int k = 0; k < Nspecies; k++)
-        {
-            temp[k] /= temp[0];
+        for(int k = 0; k < Nspecies; k++){
+                temp[k] /= temp[0];
+                vxfluid[k] *= sqrt(temp[k]/temp[0]);
+                vyfluid[k] *= sqrt(temp[k]/temp[0]);
         }
 
         simtime /= Tref;
         xlen /= Lref;
 
-        dx = 1. / 3.; // spatial discretization must be ~ Debye length/3 for stability
+        dx=1./3.; //spatial discretization must be ~ Debye length/3 for stability
 
-        N_total_x = round((double)xlen / (double)dx);
-        N_total_y = round(aspect * (double)N_total_x);
+        N_total_x = round((double)xlen/ (double)dx);
+        N_total_y = round(aspect*(double)N_total_x);
 
-        grid[X_DIR] = nxproc;
-        grid[Y_DIR] = n_Procs / nxproc;
+        grid[Y_DIR] = n_Procs/grid[X_DIR];
 
-        if (bc[X_DIR] != PERIODIC)
+        if(bc[X_DIR] != PERIODIC)
             N_total_x -= 1;
-        if (bc[X_DIR] != PERIODIC)
+        if(bc[X_DIR] != PERIODIC)
             N_total_y -= 1;
 
         int k = 0;
-        while (N_total_x % grid[X_DIR] != 0)
-        {
-            k = -k - abs(k) / k;
+        while(N_total_x%grid[X_DIR] != 0){
+            k = -k - abs(k)/k;
             N_total_x += k;
         }
 
-        N_int_x = N_total_x / grid[X_DIR];
+        N_int_x = N_total_x/grid[X_DIR];            
         N_x = N_int_x + 2;
 
         k = 0;
-        while (N_total_y % grid[Y_DIR] != 0)
-        {
-            k = -k - abs(k) / k;
+        while(N_total_y%grid[Y_DIR] != 0){
+            k = -k - abs(k)/k;
             N_total_y += k;
         }
 
-        N_int_y = N_total_y / grid[Y_DIR];
+        N_int_y = N_total_y/grid[Y_DIR];            
         N_y = N_int_y + 2;
 
-        if (bc[X_DIR] != PERIODIC)
+        if(bc[X_DIR] != PERIODIC)
             N_total_x += 1;
-        if (bc[X_DIR] != PERIODIC)
+        if(bc[X_DIR] != PERIODIC)
             N_total_y += 1;
-
+        
         N = N_x * N_y;
 
-        dx = xlen / (double)N_total_x;          //
-        dy = aspect * xlen / (double)N_total_y; //
+        dx = xlen / (double)N_total_x;//
+        dy = aspect*xlen / (double)N_total_y;//
 
-        dt = 1 / (std::max(1., sqrt(vxfluid[0] * vxfluid[0] + vyfluid[0] * vyfluid[0])) * (1 / dx + 1 / dy));
+        dt = 1/(std::max(1.,sqrt(vxfluid[0]*vxfluid[0]+vyfluid[0]*vyfluid[0]))*(1/dx + 1/dy));
 
-        wrap_around[X_DIR] = bc[X_DIR] == PERIODIC ? 1 : 0;
-        wrap_around[Y_DIR] = bc[Y_DIR] == PERIODIC ? 1 : 0;
+        wrap_around[X_DIR] = bc[X_DIR]==PERIODIC ? 1 : 0;
+        wrap_around[Y_DIR] = bc[Y_DIR]==PERIODIC ? 1 : 0;
     }
 
     // Creating a virtual cartesian topology
@@ -565,32 +533,6 @@ namespace FCPIC
         get_diagonal_rank(coords_se, grid_se);
         get_diagonal_rank(coords_nw, grid_nw);
         get_diagonal_rank(coords_sw, grid_sw);
-
-        // std::cout << "grid_rank: " << grid_rank << " ne: " << grid_ne << " se: " << grid_se << " sw: " << grid_sw << " nw: " << grid_nw << std::endl;
-
-        /////////////////////777////////////
-
-        //---TESTES---
-        // PARA TESTAR COISAS USAR ESTE SÍTIO
-        /*
-        std::cout << "Grid rank: " << grid_rank << std::endl;
-        std::cout << "N_int_x: " << N_int_x << "   N_int_y: " << N_int_y << std::endl;
-        std::cout << "N_x: " << N_x << "   N_y: " << N_y << std::endl;
-        double array[25] = { 0, 1, 2, 3, 4,
-                             5, 6, 7, 8, 9,
-                            10,11,12,13,14,
-                            15,16,17,18,19,
-                            20,21,22,23,24};
-        for(int k = 0; k<25; k++)
-            array[k] += grid_rank*25;
-        field phi(N_int_x, N_int_y, array);
-        //phi.setValue((double) grid_rank);
-        sleep(grid_rank);
-        phi.print_field(std::cout);
-        exchange_charge_buffers(&phi);
-        sleep(grid_rank);
-        phi.print_field(std::cout);
-        */
     }
 
     void simulation::get_diagonal_rank(int *coords, int &id_proc)
@@ -600,26 +542,6 @@ namespace FCPIC
             id_proc = MPI_PROC_NULL;
         else
             MPI_Cart_rank(grid_comm, coords, &id_proc);
-    }
-
-    void simulation::set_periodic_field_bc()
-    {
-        bc[X_DIR] = PERIODIC;
-        bc[Y_DIR] = PERIODIC;
-        wrap_around[X_DIR] = 0;
-        wrap_around[Y_DIR] = 0;
-
-        setup_proc_grid();
-    }
-
-    void simulation::set_conductive_field_bc()
-    {
-        bc[X_DIR] = CONDUCTIVE;
-        bc[Y_DIR] = CONDUCTIVE;
-        wrap_around[X_DIR] = 0;
-        wrap_around[Y_DIR] = 0;
-
-        setup_proc_grid();
     }
 
     void simulation::exchange_phi_buffers(field *phi)
@@ -741,10 +663,33 @@ namespace FCPIC
         //  MPI_Recv(&(lepton->recv_buffer_east[0]), lepton->size_recv_east, exchange_part_type, grid_right, 0, grid_comm, MPI_STATUS_IGNORE);
     }
 
+    void simulation::get_charge(field *charge, species* part)
+    {
+        int i, j;
+        float wx, wy;
+        float density0 = part->np_sim/(N_total_x*N_total_y);
+        float q = part->q;
+        for (int k = 0; k < part->np; k++)
+        {
+            i = part->vec[k].iy;
+            j = part->vec[k].ix;
+            wx = part->vec[k].x;
+            wy = part->vec[k].y;
+
+            charge->val[POSITION] += (dx - wx) * (dy - wy) * q / (dx * dy * density0);
+            charge->val[EAST] += wx * (dy - wy) * q / (dx * dy * density0);
+            charge->val[NORTH] += (dx - wx) * wy * q / (dx * dy * density0);
+            charge->val[NORTHEAST] += wx * wy * q / (dx * dy * density0);
+        }
+
+        for(int i=1; i<=N_int_y; i++)
+            for(int j=1; j<=N_int_x; j++)
+                charge->val[POSITION]-=q;
+    }
+
     // Jacobi solver
     void simulation::jacobi(field *phi, field *charge)
     {
-        // std::cout << __PRETTY_FUNCTION__ << std::endl;
         double res, e;
         double global_res = 1.0;
         double tol = 1e-7;
@@ -753,17 +698,12 @@ namespace FCPIC
 
         phi->setValue(0.0);
         // Defining a new temporary field (temp is not part of the domain)
-        field temp(N_x, N_y);
-
-        // if (grid_rank == 4)
-        // {
-        //     phi->print_field(std::cout);
-        //     charge->print_field(std::cout);
-        // }
+        field temp(this);
 
         // Starting the iteration loop
         while (global_res > tol)
         {
+            
             // making res 0 so that any error greater than 0 can be equated to this
             res = 0.0;
 
@@ -776,9 +716,12 @@ namespace FCPIC
             for (int i = 1; i <= N_int_y; i++)
                 for (int j = 1; j <= N_int_x; j++)
                 {
-
-                    temp.val[POSITION] = .25 * (phi->val[NORTH] + phi->val[SOUTH] + phi->val[EAST] + phi->val[WEST] -
-                                                charge->val[POSITION] / 100.);
+                    if(i==1&&j==1&&grid_rank==0&&bc[0]==PERIODIC)
+                        temp.val[POSITION] =0;
+                    else
+                    temp.val[POSITION] = .25 * (phi->val[NORTH] + phi->val[SOUTH] 
+                                              + phi->val[EAST] + phi->val[WEST] 
+                                              - dx*dx*charge->val[POSITION]);
 
                     e = fabs(temp.val[POSITION] - phi->val[POSITION]);
                     if (e > res) // norm infty: supremo
@@ -793,12 +736,13 @@ namespace FCPIC
             if (loop % 10 == 0) // balance to be found...
                 MPI_Allreduce(&res, &global_res, 1, MPI_DOUBLE, MPI_MAX, grid_comm);
 
-            loop++;
+            loop++;   
+            
         }
 
         exchange_phi_buffers(phi);
 
-        std::cout << "Maximum residual: " << res << "  | Number of iterations: " << loop << " | rank: " << grid_rank << std::endl;
+        //std::cout << "Maximum residual: " << res << "  | Number of iterations: " << loop << " | rank: " << grid_rank << std::endl;
     }
 
     void simulation::set_E_value(field *phi, field *Ex_field, field *Ey_field)
@@ -861,4 +805,68 @@ namespace FCPIC
         exchange_phi_buffers(Ex_field);
         exchange_phi_buffers(Ey_field);
     }
+
+    void simulation::field_interpolate(field *Ex, field *Ey, float &Ex_i, float &Ey_i, part *prt){
+        int i = prt->iy;
+        int j = prt->ix;
+
+        float wx = prt->x;
+        float wy = prt->y;
+
+        float A_pos = (dx - wx) * (dy - wy);
+        float A_e = wx * (dy - wy);
+        float A_n = (dx - wx) * wy;
+        float A_ne = wx * wy;
+
+        Ex_i = A_pos * Ex->val[POSITION] + 
+               A_e * Ex->val[EAST] + 
+               A_n * Ex->val[NORTH] + 
+               A_ne * Ex->val[NORTHEAST];
+
+        Ey_i = A_pos * Ey->val[POSITION] + 
+               A_e * Ey->val[EAST] + 
+               A_n * Ey->val[NORTH] + 
+               A_ne * Ey->val[NORTHEAST];
+
+        Ex_i /= (dx * dy);
+        Ey_i /= (dx * dy);
+    }
+
+    void simulation::init_pusher(field *Ex, field *Ey, species *spec){
+    
+    int Np = spec->np;
+    float q = spec->q;
+    float m = spec->m;
+    for (int i = 0; i < Np; i++)
+    {
+        float Ex_i = 0.f;
+        float Ey_i = 0.f;
+
+        field_interpolate(Ex, Ey, Ex_i, Ey_i, &spec->vec[i]);
+
+        spec->vec[i].ux += - 0.5 * q / m * Ex_i * dt;
+        spec->vec[i].uy += - 0.5 * q / m * Ey_i * dt;
+    }
+}
+
+    void simulation::particle_pusher(field *Ex, field *Ey, species *spec){
+        
+        int Np = spec->np;
+        float q = spec->q;
+        float m = spec->m;
+        for (int i = 0; i < Np; i++)
+        {
+            float Ex_i = 0.f;
+            float Ey_i = 0.f;
+
+            field_interpolate(Ex, Ey, Ex_i, Ey_i, &spec->vec[i]);
+
+            spec->vec[i].ux += q / m * Ex_i * dt;
+            spec->vec[i].uy += q / m * Ey_i * dt;
+
+            spec->vec[i].x += spec->vec[i].ux * dt;
+            spec->vec[i].y += spec->vec[i].uy * dt;
+        }
+    }
+
 }
