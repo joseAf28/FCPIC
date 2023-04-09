@@ -7,7 +7,7 @@ int main(int argc, char **argv)
 {
     // initializaing simulation fields and MPI
     FCPIC::simulation *sim = new FCPIC::simulation(argc, argv);
-    sim->set_conductive_field_bc();
+    sim->set_periodic_field_bc();
 
     // declaring species object
     std::string name = "electron";

@@ -584,8 +584,8 @@ void species::write_output_vec(const int rank, const int spec, const int counter
     int precision = 4;
     for (int i = 0; i < vec.size(); i++)
     {
-        float posx = vec[i].ix + dx + vec[i].x;
-        float posy = vec[i].iy + dy + vec[i].y;
+        float posx = vec[i].ix * dx + vec[i].x;
+        float posy = vec[i].iy * dy + vec[i].y;
 
         Output_file << posx << space;
         Output_file << posy << space;

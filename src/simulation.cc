@@ -606,8 +606,8 @@ namespace FCPIC
     {
         bc[X_DIR] = PERIODIC;
         bc[Y_DIR] = PERIODIC;
-        wrap_around[X_DIR] = 0;
-        wrap_around[Y_DIR] = 0;
+        wrap_around[X_DIR] = 1;
+        wrap_around[Y_DIR] = 1;
 
         setup_proc_grid();
     }
@@ -793,6 +793,7 @@ namespace FCPIC
             if (loop % 10 == 0) // balance to be found...
                 MPI_Allreduce(&res, &global_res, 1, MPI_DOUBLE, MPI_MAX, grid_comm);
 
+            // std::cout << "loop: " << loop << std::endl;
             loop++;
         }
 
