@@ -61,6 +61,15 @@ namespace FCPIC
         std::vector<int> Npart;
         std::vector<double> charge, mass, temp, vxfluid, vyfluid;
 
+        // HDF5 variables
+        hid_t file_field, dataset_field, dataspace_field;
+        hid_t dataspace_part, dataset_part;
+        hid_t group_charge, group_Ex, group_Ey;
+        hid_t part_id;
+        herr_t status_h5;
+        hid_t group_creation_plist;
+        std::vector<hid_t> h5_vec_group;
+
     private:
         MPI_Datatype exchange_field_type[2]; // MPI_datatype for exchange of buffer cell data
         MPI_Comm grid_comm;                  // grid COMMUNICATOR
@@ -76,15 +85,6 @@ namespace FCPIC
         // Simulation variables
         double aspect, xlen;
         double *X_guard_data, *Y_guard_data;
-
-        //HDF5 variables
-        hid_t file_field, dataset_field, dataspace_field;
-        hid_t dataspace_part, dataset_part;
-        hid_t group_charge, group_Ex, group_Ey;
-        hid_t part_id;
-        herr_t status_h5;
-        hid_t group_creation_plist;
-        std::vector<hid_t> h5_vec_group;
     };
 }
 #endif

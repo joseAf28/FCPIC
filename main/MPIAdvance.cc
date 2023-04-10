@@ -160,27 +160,29 @@ int main(int argc, char **argv)
         sim->jacobi(phi, charge);
         sim->set_E_value(phi, Ex, Ey);
     }
-    /*
-    status = H5Gclose(group_charge);
-    status = H5Gclose(group_Ex);
-    status = H5Gclose(group_Ey);
+
+    hid_t status;
+
+    status = H5Gclose(sim->group_charge);
+    status = H5Gclose(sim->group_Ex);
+    status = H5Gclose(sim->group_Ey);
 
     for (int i = 0; i < nb_spec; i++)
-        status = H5Gclose(h5_vec_group[i]);
+        status = H5Gclose(sim->h5_vec_group[i]);
 
-    status = H5Tclose(part_id);
-    status = H5Sclose(dataspace_field);
-    status = H5Dclose(dataset_field);
-    status = H5Fclose(file_field);
+    status = H5Tclose(sim->part_id);
+    status = H5Sclose(sim->dataspace_field);
+    status = H5Dclose(sim->dataset_field);
+    status = H5Fclose(sim->file_field);
 
-    status = H5Pclose(group_creation_plist);
+    status = H5Pclose(sim->group_creation_plist);
 
-    h5_vec_group.clear();
-    */
+    sim->h5_vec_group.clear();
+
     delete Ex;
     delete Ey;
     delete charge, phi;
-    
+
     delete vfa;
     spec_vec.clear();
     delete sim;

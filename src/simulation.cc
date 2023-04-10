@@ -58,22 +58,21 @@ namespace FCPIC
 
     simulation::~simulation()
     {
-        status_h5 = H5Gclose(group_charge);
-        status_h5 = H5Gclose(group_Ex);
-        status_h5 = H5Gclose(group_Ey);
+        // status_h5 = H5Gclose(group_charge);
+        // status_h5 = H5Gclose(group_Ex);
+        // status_h5 = H5Gclose(group_Ey);
 
-        for (int i = 0; i < Nspecies; i++)
-            status_h5 = H5Gclose(h5_vec_group[i]);
+        // for (int i = 0; i < Nspecies; i++)
+        //     status_h5 = H5Gclose(h5_vec_group[i]);
 
-        status_h5 = H5Tclose(part_id);
-        status_h5 = H5Sclose(dataspace_field);
-        status_h5 = H5Dclose(dataset_field);
-        status_h5 = H5Fclose(file_field);
+        // status_h5 = H5Tclose(part_id);
+        // status_h5 = H5Sclose(dataspace_field);
+        // status_h5 = H5Dclose(dataset_field);
+        // status_h5 = H5Fclose(file_field);
 
-        status_h5 = H5Pclose(group_creation_plist);
+        // status_h5 = H5Pclose(group_creation_plist);
 
-        h5_vec_group.clear();
-
+        // h5_vec_group.clear();
 
         MPI_Type_free(&exchange_field_type[X_DIR]);
         MPI_Type_free(&exchange_field_type[Y_DIR]);
@@ -963,10 +962,10 @@ namespace FCPIC
         }
     }
 
-    void simulation::setupHDF5(std::string filename){
+    void simulation::setupHDF5(std::string filename)
+    {
 
-        std::string h5_name = "../results/" + filename + "_rank_" 
-                              + std::to_string(grid_rank) + ".h5";
+        std::string h5_name = "../results/" + filename + "_rank_" + std::to_string(grid_rank) + ".h5";
         const char *h5_char = h5_name.c_str();
 
         part_id = H5Tcreate(H5T_COMPOUND, sizeof(FCPIC::part));
@@ -993,7 +992,8 @@ namespace FCPIC
         group_Ex = H5Gcreate(file_field, "/Ex", H5P_DEFAULT, group_creation_plist, H5P_DEFAULT);
         group_Ey = H5Gcreate(file_field, "/Ey", H5P_DEFAULT, group_creation_plist, H5P_DEFAULT);
 
-        for (int i = 0; i < Nspecies; i++){
+        for (int i = 0; i < Nspecies; i++)
+        {
             std::string h5_vec_name = "/part_" + std::to_string(i);
             const char *h5_vec_char = h5_vec_name.c_str();
             hid_t group_idaux = H5Gcreate(file_field, h5_vec_char, H5P_DEFAULT, group_creation_plist, H5P_DEFAULT);
@@ -1001,29 +1001,34 @@ namespace FCPIC
         }
     }
 
-    void simulation::writeChargeHDF5(field *charge, int counter){
+    void simulation::writeChargeHDF5(field *charge, int counter)
+    {
         std::string charge_name = "charge_count_" + std::to_string(counter);
         const char *charge_char = charge_name.c_str();
         dataset_field = H5Dcreate2(group_charge, charge_char, H5T_NATIVE_DOUBLE, dataspace_field, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
         status_h5 = H5Dwrite(dataset_field, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(charge->val[0]));
     }
 
-    void simulation::writeExHDF5(field *Ex_field, int counter){
+    void simulation::writeExHDF5(field *Ex_field, int counter)
+    {
         std::string Ex_name = "Ex_count_" + std::to_string(counter);
         const char *Ex_char = Ex_name.c_str();
         dataset_field = H5Dcreate2(group_Ex, Ex_char, H5T_NATIVE_DOUBLE, dataspace_field, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
         status_h5 = H5Dwrite(dataset_field, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(Ex_field->val[0]));
     }
 
-    void simulation::writeEyHDF5(field *Ey_field, int counter){
+    void simulation::writeEyHDF5(field *Ey_field, int counter)
+    {
         std::string Ey_name = "Ey_count_" + std::to_string(counter);
         const char *Ey_char = Ey_name.c_str();
         dataset_field = H5Dcreate2(group_Ey, Ey_char, H5T_NATIVE_DOUBLE, dataspace_field, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
         status_h5 = H5Dwrite(dataset_field, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(Ey_field->val[0]));
     }
 
-    void simulation::writePartHDF5(std::vector<species> spec_vec, int counter){
-        for (int i = 0; i < Nspecies; i++){
+    void simulation::writePartHDF5(std::vector<species> spec_vec, int counter)
+    {
+        for (int i = 0; i < Nspecies; i++)
+        {
             std::string part_name = "part_count_" + std::to_string(counter);
             const char *part_char = part_name.c_str();
             hsize_t vec_size = spec_vec[i].vec.size();
