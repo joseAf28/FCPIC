@@ -8,6 +8,7 @@
 #include "species.hh"
 #include "field.hh"
 #include "FCPIC_base.hh"
+#include "hdf5.h"
 
 namespace FCPIC
 {
@@ -18,7 +19,7 @@ namespace FCPIC
         ~simulation() override;
 
         void readArgs(int, char **);
-        void getParamsfromFile(std::string, std::vector<bool>*);
+        void getParamsfromFile(std::string, std::vector<bool> *);
         void setParams();
         void printHelp();
         std::string print_SI(double);
@@ -44,14 +45,18 @@ namespace FCPIC
         void init_pusher(field *, field *, species *);
         void particle_pusher(field *, field *, species *);
 
+        void hdf5_init();
+
         // MPI variables
-        int grid_rank, rank;                              // rank of the current proces in the virtual grid
+        int grid_rank,
+            rank;                                         // rank of the current proces in the virtual grid
         int grid_top, grid_bottom, grid_left, grid_right; // ranks of the neighbouring processes
         int grid_ne, grid_se, grid_nw, grid_sw;           // ranks of diagonal processes: NE, SE, NW, SW
 
         int Nspecies;
         std::vector<int> Npart;
         std::vector<double> charge, mass, temp, vxfluid, vyfluid;
+
     private:
         MPI_Datatype exchange_field_type[2]; // MPI_datatype for exchange of buffer cell data
         MPI_Comm grid_comm;                  // grid COMMUNICATOR
@@ -60,13 +65,21 @@ namespace FCPIC
         MPI_Status status;
 
         // MPI_Datatype exchange_part_type;
-        MPI_Aint offsets[8]; // it evaluates to the offset (in bytes) of a given member within a struct or union type
-        const int nitems = 8;
+        MPI_Aint offsets[7]; // it evaluates to the offset (in bytes) of a given member within a struct or union type
+        const int nitems = 7;
         MPI_Datatype exchange_part_type;
 
         // Simulation variables
         double aspect, xlen;
         double *X_guard_data, *Y_guard_data;
+
+        std::string h5_name;
+        hid_t file_field, dataset_field, dataspace_field;
+        hid_t dataspace_part, dataset_part;
+        hid_t group_charge, group_Ex, group_Ey, group_particles;
+        hsize_t dims[2];
+        herr_t status_hdf5;
+        hid_t group_creation_plist;
     };
 }
 #endif

@@ -46,13 +46,15 @@ def readH5(filename, Ex_field, Ey_field, charge_field, vec_part1, vec_part2):
 ##########! varibles to change 
 results_path = "/home/jose/Desktop/FCPIC/results/"
 number_ranks = 4
-counter = 40
-counter_space = 400
-lx = 21
-ly = 11
+counter = 100
 
-dx = 1.;
-dy = 1.;
+counter_space = 700
+lx = 16./3.
+ly = 16./3.
+
+dx = 1/3
+dy = 1/3
+
 ##########! 
 
 filename_vec = []
@@ -64,7 +66,7 @@ vec_part1 = []
 vec_part2 = []
 
 for i in range(0, number_ranks):
-    filename = results_path + "data_rank_" + str(i) + ".h5"
+    filename = results_path + "newdata_rank_" + str(i) + ".h5"
     filename_vec.append(filename)
 
 # print(filename_vec)
@@ -72,60 +74,13 @@ for i in range(0, number_ranks):
 for i in range(0, number_ranks):
     readH5(filename_vec[i], Ex_field, Ey_field, charge_field, vec_part1, vec_part2)
 
-# snapshot_x = []
-# snapshot_y = []
-
-# for count_plot in range(0, counter_space):
-#     x_data = []
-#     y_data = []
-
-#     for i in range(0, len(vec_part1[0][count_plot])):
-#         x_data.append(vec_part1[0][count_plot][i][0]*dx + vec_part1[0][count_plot][i][2])
-#         y_data.append(vec_part1[0][count_plot][i][1]*dy + vec_part1[0][count_plot][i][3])
-
-#     for i in range(0, len(vec_part1[1][count_plot])):
-#         x_data.append(lx - 1 + vec_part1[1][count_plot][i][0]*dx + vec_part1[1][count_plot][i][2])
-#         y_data.append(vec_part1[1][count_plot][i][1]*dy + vec_part1[1][count_plot][i][3])
-
-#     for i in range(0, len(vec_part1[2][count_plot])):
-#         x_data.append(vec_part1[2][count_plot][i][0]*dx + vec_part1[2][count_plot][i][2])
-#         y_data.append(ly - 1 + vec_part1[2][count_plot][i][1]*dy + vec_part1[2][count_plot][i][3])
-
-#     for i in range(0, len(vec_part1[3][count_plot])):
-#         x_data.append(lx -1 + vec_part1[3][count_plot][i][0]*dx + vec_part1[3][count_plot][i][2])
-#         y_data.append(ly -1 + vec_part1[3][count_plot][i][1]*dy + vec_part1[3][count_plot][i][3])
-
-
-#     for i in range(0, len(vec_part2[0][count_plot])):
-#         x_data.append(vec_part2[0][count_plot][i][0]*dx + vec_part2[0][count_plot][i][2])
-#         y_data.append(vec_part2[0][count_plot][i][1]*dy + vec_part2[0][count_plot][i][3])
-
-#     for i in range(0, len(vec_part2[1][count_plot])):
-#         x_data.append(lx + vec_part2[1][count_plot][i][0]*dx + vec_part2[1][count_plot][i][2])
-#         y_data.append(vec_part2[1][count_plot][i][1]*dy + vec_part2[1][count_plot][i][3])
-
-#     for i in range(0, len(vec_part2[2][count_plot])):
-#         x_data.append(vec_part2[2][count_plot][i][0]*dx + vec_part2[2][count_plot][i][2])
-#         y_data.append(ly + vec_part2[2][count_plot][i][1]*dy + vec_part2[2][count_plot][i][3])
-
-#     for i in range(0, len(vec_part2[3][count_plot])):
-#         x_data.append(lx + vec_part2[3][count_plot][i][0]*dx + vec_part2[3][count_plot][i][2])
-#         y_data.append(ly + vec_part2[3][count_plot][i][1]*dy + vec_part2[3][count_plot][i][3])
-
-
-#     snapshot_x.append(x_data)
-#     snapshot_y.append(y_data)
-
-
-##!! FIELDS CASE
-# ##animation
 snapshots_charge = []
 snapshots_Ex = []
 snapshots_Ey = []
 
 ### rank - counter - line_field - cells that count
 # image_counter = 0
-for count_plot in range(0, counter):
+for count_plot in range(0, len(Ex_field[0])):
     big_charge_dummy = []
     Ex_dummy = []
     Ey_dummy = []
@@ -159,74 +114,67 @@ for count_plot in range(0, counter):
 
 # [i][j][k] ; i - time, j - y cell, k - x cell
 
-# print(len(snapshots_charge[0]))
-# print("***************************")
-# print(len(snapshots_charge[1]))
-# print("***************************")
-# print(len(snapshots_charge[0][1]))
-# print("***************************")
-# print(len(snapshots_charge[0][10]))
-# print("***************************")
-# print(len(snapshots_charge))
-
-# plt.plot(snapshots_charge[0][1])
-# plt.plot(snapshots_charge[200][1])
-# plt.savefig("test.png")
-
-xfield_charge_wind = []
-
-len_wind = len(snapshots_charge[0][10]) 
-
-for i in range(0, len(snapshots_charge)):
-
-    xfield_charge_wind.append(snapshots_charge[i][10]*np.hanning(len_wind))
+print(len(snapshots_Ex))
+print("***************************")
+print(len(snapshots_Ex[1]))
+print("***************************")
+print(len(snapshots_Ex[0][1]))
+print("***************************")
+print(len(snapshots_Ex[0][10]))
+print("***************************")
+print(len(snapshots_Ex))
 
 
-N = 40
-T = 40
+xfield_Ex_wind = []
 
-fftSol = np.abs(np.fft.fft2(xfield_charge_wind))
-tpCountX = len(xfield_charge_wind[1])
-tpCount = T
-dspatial = len(xfield_charge_wind[1])/N
-dtime = len(xfield_charge_wind[:][1])/T
+for i in range(0, len(snapshots_Ex)):
+    xfield_Ex_wind.append(snapshots_Ex[i][10])
 
-spatialfrequencies = np.fft.fftfreq(tpCountX, d=dspatial)
-timefrequencies = np.fft.fftfreq(tpCount, d=dtime)
+# print(xfield_Ex_wind[0])
+# print(xfield_Ex_wind[10])
+
+plt.plot(xfield_Ex_wind[0])
+plt.plot(xfield_Ex_wind[10])
+plt.plot(xfield_Ex_wind[20])
+plt.plot(xfield_Ex_wind[30])
+plt.savefig("ex_test.png")
+
+fftSol = np.abs(np.fft.fft2(xfield_Ex_wind))
+
+N = 5e-6
+T =.0000000001
+
+dspatial = N/len(snapshots_Ex[10][1])
+dtime =  T/len(snapshots_Ex)
+spatialfrequencies = np.fft.fftfreq(len(snapshots_Ex[10][1]), d=dspatial)
+timefrequencies = np.fft.fftfreq(len(snapshots_Ex), d=dtime)
+
 
 kmax = spatialfrequencies.max()
 wmax = timefrequencies.max()
 
+print("kmax")
+print(kmax)
 
-# print(len(fftSol))
-# print("***********************")
-# print(len(fftSol[0]))
-# print("***********************")
-# print(len(fftSol[0][0]))
-# print("***********************")
-# print(fftSol[0][0][0])
+print("wmax")
+print(wmax*1e-9)
 
 
-size_array = len(fftSol[1, :])
-index_vec = round(size_array/2)
 
-# c = plt.imshow(fftSol, extent =[0, kmax, 0, wmax],origin ='lower', vmin=0, interpolation="spline16")
+# print(dspatial)
+# print(1./dspatial)
 
+# print("************")
 
-c = plt.imshow(fftSol[::-1, :-index_vec], extent =[0, kmax, 0, wmax],origin ='lower', vmin=0, vmax=1000)
+# print(dtime)
+# print(1./dtime)
 
-k_vec = np.linspace(0, wmax, 30)
-w_vec = np.linspace(0, wmax, 30)
+# print("omega")
+# print(timefrequencies)
 
+index_vec = round(len(fftSol[1, :])/2)
+c = plt.imshow(fftSol[::-1, :-index_vec], origin="lower", extent=[0, 10, 0, 10], vmin = 0, vmax = 1000)
 plt.colorbar(c)
 plt.xlabel(r'$k $')
 plt.ylabel(r'$\omega$')
 plt.savefig("structure2_S.png")
-
-print(fftSol[1,:-index_vec])
-print("**********************")
-print(fftSol[1])
-
-print("**********************")
-print(fftSol[:,1])
-

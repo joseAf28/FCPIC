@@ -1,7 +1,7 @@
 #include "simulation.hh"
 #include "species.hh"
 #include <unistd.h>
-#include "hdf5.h"
+// #include "hdf5.h"
 
 int main(int argc, char **argv)
 {
@@ -46,8 +46,10 @@ int main(int argc, char **argv)
 
     sim->set_E_value(phi, Ex, Ey);
 
+    sim->hdf5_init();
+
     //! HDF5 Initialization
-    std::string h5_name = "../results/newdata_rank_" + std::to_string(sim->grid_rank) + ".h5";
+    std::string h5_name = "../results/newdata_0_rank_" + std::to_string(sim->grid_rank) + ".h5";
     const char *h5_char = h5_name.c_str();
 
     hid_t file_field, dataset_field, dataspace_field;
@@ -66,7 +68,6 @@ int main(int argc, char **argv)
     H5Tinsert(part_id, "y", HOFFSET(FCPIC::part, y), H5T_NATIVE_FLOAT);
     H5Tinsert(part_id, "ux", HOFFSET(FCPIC::part, ux), H5T_NATIVE_FLOAT);
     H5Tinsert(part_id, "uy", HOFFSET(FCPIC::part, uy), H5T_NATIVE_FLOAT);
-    H5Tinsert(part_id, "uz", HOFFSET(FCPIC::part, uz), H5T_NATIVE_FLOAT);
     H5Tinsert(part_id, "flag", HOFFSET(FCPIC::part, flag), H5T_NATIVE_INT);
 
     file_field = H5Fcreate(h5_char, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);

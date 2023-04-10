@@ -5,7 +5,7 @@ LIBDIR := lib
 CCFLAGS :=  -Wextra -Wfloat-equal -Wundef -Werror -fverbose-asm  -Wshadow -Wpointer-arith -Wcast-align -Wconversion
 DEBUG := -g -pedantic -Wall
 
-CC :=  mpic++ -std=c++14 -g -pedantic
+CC :=  mpic++ -std=c++14 -o2
 
 VPATH = main:src
 
@@ -17,7 +17,7 @@ LIBH5 := -L/usr/lib/x86_64-linux-gnu/hdf5/serial /usr/lib/x86_64-linux-gnu/hdf5/
 INCH5 := -I/usr/include/hdf5/serial -Wdate-time -D_FORTIFY_SOURCE=2 -fdebug-prefix-map=/build/hdf5-X9JKIg/hdf5-1.10.0-patch1+docs=. -fstack-protector-strong -Wformat -Werror=format-security -Wl,-Bsymbolic-functions -Wl,-z,relro -lpthread -lsz -lz -ldl -lm -Wl,-rpath -Wl,/usr/lib/x86_64-linux-gnu/hdf5/serial -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include -I/usr/lib/x86_64-linux-gnu/openmpi/include -pthread
 
 mpiAd: MPIAdvance.exe
-	@cd bin; echo 'running program...\n \nOutput Results:'; mpirun -np 4 ./MPIAdvance.exe -infile=test.txt
+	@cd bin; mpirun -np 4 ./MPIAdvance.exe -infile=test.txt
 
 Advance: Advancetest.exe
 	@cd bin; echo 'running program...\n \nOutput Results:'; ./Advancetest.exe;
@@ -32,8 +32,8 @@ lib: $(LIBDIR)/libPIC.a
 
 $(LIBDIR)/libPIC.a: $(OBJ) 
 	@echo make lib...
-	ar rv $@ $^
-	ranlib $@
+	@ar rv $@ $^
+	@ranlib $@
 
 %.exe: $(BINDIR)/%.o $(LIBDIR)/libPIC.a 
 	@echo compilink and linking... 

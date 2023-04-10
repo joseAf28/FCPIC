@@ -166,7 +166,7 @@ anim = animation.FuncAnimation(fig, animate_func,
                                interval = 1000 / fps, # in ms
                                )
 
-anim.save(results_path+'videos/newtest_part_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+'videos/newtest2_part_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
 
 print('Particles Anim Done!')
 
@@ -192,7 +192,7 @@ anim = animation.FuncAnimation(fig, animate_func,
                                interval = 1000 / fps, # in ms
                                )
 
-anim.save(results_path+'videos/newtest_xphase_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+'videos/newtest2_xphase_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
 
 print('X Phase Space Anim Done!')
 
@@ -218,7 +218,7 @@ anim = animation.FuncAnimation(fig, animate_func,
                                interval = 1000 / fps, # in ms
                                )
 
-anim.save(results_path+'videos/newtest_yphase_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+'videos/newtest2_yphase_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
 
 print('Y Phase Space Anim Done!')
 
@@ -315,7 +315,7 @@ anim = animation.FuncAnimation(fig, animate_func,
                                frames = nSeconds * fps,
                                interval = 1000 / fps, # in ms
                                )
-anim.save(results_path+'videos/newtest_charge_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+'videos/newtest2_charge_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
 print('Charge Anim Done!')
 
 ##!Ex_field Animation
@@ -338,7 +338,7 @@ anim = animation.FuncAnimation(fig, animate_func,
                                frames = nSeconds * fps,
                                interval = 1000 / fps, # in ms
                                )
-anim.save(results_path+'videos/newtest_Ex_field_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+'videos/newtest2_Ex_field_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
 print('Ex field Anim Done!')
 
 ##!Ey_field Animation
@@ -362,7 +362,7 @@ anim = animation.FuncAnimation(fig, animate_func,
                                frames = nSeconds * fps,
                                interval = 1000 / fps, # in ms
                                )
-anim.save(results_path+'videos/newtest_Ey_field_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+'videos/newtest2_Ey_field_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
 print('Ey field Anim Done!')
 
 

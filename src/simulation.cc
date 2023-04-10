@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iomanip>
 #include <unistd.h>
+// #include "hdf5.h"
 
 namespace FCPIC
 {
@@ -585,8 +586,8 @@ namespace FCPIC
         MPI_Type_commit(&exchange_field_type[Y_DIR]);
 
         // Datatype for Species's communication
-        int blocklengths[8] = {1, 1, 1, 1, 1, 1, 1, 1};
-        MPI_Datatype types[8] = {MPI_INT, MPI_INT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_CXX_BOOL};
+        int blocklengths[7] = {1, 1, 1, 1, 1, 1, 1};
+        MPI_Datatype types[7] = {MPI_INT, MPI_INT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_CXX_BOOL};
 
         offsets[0] = offsetof(part, ix);
         offsets[1] = offsetof(part, iy);
@@ -594,8 +595,7 @@ namespace FCPIC
         offsets[3] = offsetof(part, y);
         offsets[4] = offsetof(part, ux);
         offsets[5] = offsetof(part, uy);
-        offsets[6] = offsetof(part, uz);
-        offsets[7] = offsetof(part, flag);
+        offsets[6] = offsetof(part, flag);
 
         MPI_Type_create_struct(nitems, blocklengths, offsets, types, &exchange_part_type);
         MPI_Type_commit(&exchange_part_type);
@@ -944,6 +944,32 @@ namespace FCPIC
             spec->vec[i].x += spec->vec[i].ux * dt;
             spec->vec[i].y += spec->vec[i].uy * dt;
         }
+    }
+
+    void simulation::hdf5_init()
+    {
+        h5_name = "../results/test_rank_" + std::to_string(grid_rank) + ".h5";
+        const char *h5_char = h5_name.c_str();
+        file_field = H5Fcreate(h5_char, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+        dims[0] = 100;
+        dims[1] = 100;
+        dataspace_field = H5Screate_simple(2, dims, nullptr);
+
+        group_creation_plist = H5Pcreate(H5P_GROUP_CREATE);
+        status_hdf5 = H5Pset_link_creation_order(group_creation_plist, H5P_CRT_ORDER_TRACKED | H5P_CRT_ORDER_INDEXED);
+
+        group_charge = H5Gcreate(file_field, "/charge", H5P_DEFAULT, group_creation_plist, H5P_DEFAULT);
+        group_Ex = H5Gcreate(file_field, "/Ex", H5P_DEFAULT, group_creation_plist, H5P_DEFAULT);
+        group_Ey = H5Gcreate(file_field, "/Ey", H5P_DEFAULT, group_creation_plist, H5P_DEFAULT);
+
+        status_hdf5 = H5Gclose(group_charge);
+        status_hdf5 = H5Gclose(group_Ex);
+        status_hdf5 = H5Gclose(group_Ey);
+
+        status_hdf5 = H5Sclose(dataspace_field);
+        status_hdf5 = H5Fclose(file_field);
+
+        status_hdf5 = H5Pclose(group_creation_plist);
     }
 
 }
