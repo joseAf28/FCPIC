@@ -66,7 +66,7 @@ vec_part1 = []
 vec_part2 = []
 
 for i in range(0, number_ranks):
-    filename = results_path + "newdata_rank_" + str(i) + ".h5"
+    filename = results_path + "newdata_0_rank_" + str(i) + ".h5"
     filename_vec.append(filename)
 
 # print(filename_vec)
@@ -133,11 +133,11 @@ for i in range(0, len(snapshots_Ex)):
 # print(xfield_Ex_wind[0])
 # print(xfield_Ex_wind[10])
 
-plt.plot(xfield_Ex_wind[0])
-plt.plot(xfield_Ex_wind[10])
-plt.plot(xfield_Ex_wind[20])
-plt.plot(xfield_Ex_wind[30])
-plt.savefig("ex_test.png")
+# plt.plot(xfield_Ex_wind[0])
+# plt.plot(xfield_Ex_wind[10])
+# plt.plot(xfield_Ex_wind[20])
+# plt.plot(xfield_Ex_wind[30])
+# plt.savefig("ex_test.png")
 
 fftSol = np.abs(np.fft.fft2(xfield_Ex_wind))
 
@@ -173,7 +173,7 @@ print(wmax*1e-9)
 # print(timefrequencies)
 
 index_vec = round(len(fftSol[1, :])/2)
-c = plt.imshow(fftSol[::-1, :-index_vec], origin="lower", extent=[0, 10, 0, 10], vmin = 0, vmax = 1000)
+c = plt.imshow(fftSol[::-1, :-index_vec], origin="lower", extent=[0, 10, 0, 10], vmin = 0, vmax = 100)
 plt.colorbar(c)
 plt.xlabel(r'$k $')
 plt.ylabel(r'$\omega$')
