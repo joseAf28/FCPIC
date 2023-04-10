@@ -7,7 +7,7 @@ int main(int argc, char **argv)
 {
     // initializaing simulation fields and MPI
     FCPIC::simulation *sim = new FCPIC::simulation(argc, argv);
-    sim->set_periodic_field_bc();
+    sim->set_conductive_field_bc();
 
     // declaring species object
     std::string name = "electron";
@@ -69,7 +69,7 @@ int main(int argc, char **argv)
     FCPIC::field *phi = new FCPIC::field(range[0] + 1, range[1] + 1);
 
     // initializing species
-    int nb_spec = 2;
+    int nb_spec = 1;
     float q[2] = {1, -0.9};
 
     std::vector<species> spec_vec;

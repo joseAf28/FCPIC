@@ -755,12 +755,6 @@ namespace FCPIC
         // Defining a new temporary field (temp is not part of the domain)
         field temp(N_x, N_y);
 
-        // if (grid_rank == 4)
-        // {
-        //     phi->print_field(std::cout);
-        //     charge->print_field(std::cout);
-        // }
-
         // Starting the iteration loop
         while (global_res > tol)
         {
