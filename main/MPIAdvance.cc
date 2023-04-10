@@ -1,7 +1,4 @@
 #include "simulation.hh"
-#include "species.hh"
-#include <unistd.h>
-// #include "hdf5.h"
 
 int main(int argc, char **argv)
 {
@@ -46,8 +43,9 @@ int main(int argc, char **argv)
 
     sim->set_E_value(phi, Ex, Ey);
 
-    sim->hdf5_init();
+    sim->setupHDF5("final_sim");
 
+    /*
     //! HDF5 Initialization
     std::string h5_name = "../results/newdata_0_rank_" + std::to_string(sim->grid_rank) + ".h5";
     const char *h5_char = h5_name.c_str();
@@ -90,6 +88,7 @@ int main(int argc, char **argv)
         hid_t group_idaux = H5Gcreate(file_field, h5_vec_char, H5P_DEFAULT, group_creation_plist, H5P_DEFAULT);
         h5_vec_group.push_back(group_idaux);
     }
+    */
     //!!!
     for (int i = 0; i < nb_spec; i++)
         sim->init_pusher(Ex, Ey, &spec_vec[i]);
@@ -100,6 +99,7 @@ int main(int argc, char **argv)
             sim->printProgress(((float)counter) * sim->dt / sim->simtime);
         if (((float)counter) * sim->dt >= sim->simtime)
             break;
+        /*
         // ! Writting in H5 file;
         std::string Ey_name = "Ey_count_" + std::to_string(counter);
         const char *Ey_char = Ey_name.c_str();
@@ -130,6 +130,11 @@ int main(int argc, char **argv)
             H5Sclose(dataspace_part);
         }
         //!
+        */
+        sim->writeChargeHDF5(charge, counter);
+        sim->writeExHDF5(Ex, counter);
+        sim->writeEyHDF5(Ey, counter);
+        sim->writePartHDF5(spec_vec, counter);
 
         int flags_coords_mpi[5] = {sim->grid_rank, sim->grid_top, sim->grid_bottom, sim->grid_right, sim->grid_left};
 
@@ -155,7 +160,7 @@ int main(int argc, char **argv)
         sim->jacobi(phi, charge);
         sim->set_E_value(phi, Ex, Ey);
     }
-
+    /*
     status = H5Gclose(group_charge);
     status = H5Gclose(group_Ex);
     status = H5Gclose(group_Ey);
@@ -170,11 +175,12 @@ int main(int argc, char **argv)
 
     status = H5Pclose(group_creation_plist);
 
+    h5_vec_group.clear();
+    */
     delete Ex;
     delete Ey;
     delete charge, phi;
-    h5_vec_group.clear();
-
+    
     delete vfa;
     spec_vec.clear();
     delete sim;

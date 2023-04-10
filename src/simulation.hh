@@ -45,7 +45,11 @@ namespace FCPIC
         void init_pusher(field *, field *, species *);
         void particle_pusher(field *, field *, species *);
 
-        void hdf5_init();
+        void setupHDF5(std::string);
+        void writeChargeHDF5(field *, int);
+        void writeExHDF5(field *, int);
+        void writeEyHDF5(field *, int);
+        void writePartHDF5(std::vector<species>, int);
 
         // MPI variables
         int grid_rank,
@@ -62,7 +66,7 @@ namespace FCPIC
         MPI_Comm grid_comm;                  // grid COMMUNICATOR
         int offset[2];                       // offset for cell numbering for subdomains
         int wrap_around[2];
-        MPI_Status status;
+        MPI_Status status_mpi;
 
         // MPI_Datatype exchange_part_type;
         MPI_Aint offsets[7]; // it evaluates to the offset (in bytes) of a given member within a struct or union type
@@ -73,13 +77,14 @@ namespace FCPIC
         double aspect, xlen;
         double *X_guard_data, *Y_guard_data;
 
-        std::string h5_name;
+        //HDF5 variables
         hid_t file_field, dataset_field, dataspace_field;
         hid_t dataspace_part, dataset_part;
-        hid_t group_charge, group_Ex, group_Ey, group_particles;
-        hsize_t dims[2];
-        herr_t status_hdf5;
+        hid_t group_charge, group_Ex, group_Ey;
+        hid_t part_id;
+        herr_t status_h5;
         hid_t group_creation_plist;
+        std::vector<hid_t> h5_vec_group;
     };
 }
 #endif
