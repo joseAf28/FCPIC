@@ -7,92 +7,47 @@ int main(int argc, char **argv)
 {
     // initializaing simulation fields and MPI
     FCPIC::simulation *sim = new FCPIC::simulation(argc, argv);
-    sim->set_conductive_field_bc();
+    // std::cout << sim->vxfluid[0] << "  " << sim->vxfluid[1] << std::endl;
 
     // declaring species object
     std::string name = "electron";
     int ppc[2] = {1, 1};
-    int range[2] = {20, 20}; // number of cells in each direction
 
     float *vfa = new float[3];
-    float *vfb = new float[3];
-    float vth[3] = {0., 0., 0.};
-    vfa[0] = 0.;
-    vfa[1] = 0.3;
-    vfa[2] = 0.;
-    vfb[0] = 0.;
-    vfb[1] = 0.;
-    vfb[2] = 0.;
-
-    // // differentiate vectors
-    // if (sim->grid_rank == 0) // 0
-    // {
-    //     vfa[0] = 0.;
-    //     vfa[1] = 0.5;
-    //     vfa[2] = 0;
-    //     vfb[0] = 0.;
-    //     vfb[1] = 0.;
-    //     vfb[2] = 0;
-    // }
-    // if (sim->grid_rank == 1) // 1
-    // {
-    //     vfa[0] = 0.;
-    //     vfa[1] = 0.5;
-    //     vfa[2] = 0.;
-    //     vfb[0] = 0.;
-    //     vfb[1] = 0.;
-    //     vfb[2] = 0.;
-    // }
-    // if (sim->grid_rank == 2) // 2
-    // {
-    //     vfa[0] = 0.;
-    //     vfa[1] = 0.3;
-    //     vfa[2] = 0.;
-    //     vfb[0] = 0.;
-    //     vfb[1] = 0.;
-    //     vfb[2] = 0.;
-    // }
-    // if (sim->grid_rank == 3) // 3
-    // {
-    //     vfa[0] = 0.;
-    //     vfa[1] = 0.3;
-    //     vfa[2] = 0.;
-    //     vfb[0] = 0.;
-    //     vfb[1] = 0.;
-    //     vfb[2] = 0.;
-    // }
 
     // fields definition
-    FCPIC::field *Ex = new FCPIC::field(range[0] + 1, range[1] + 1);
-    FCPIC::field *Ey = new FCPIC::field(range[0] + 1, range[1] + 1);
-    FCPIC::field *charge = new FCPIC::field(range[0] + 1, range[1] + 1); // intialize to zero in all entries
-    FCPIC::field *phi = new FCPIC::field(range[0] + 1, range[1] + 1);
+    FCPIC::field *Ex = new FCPIC::field(sim);
+    FCPIC::field *Ey = new FCPIC::field(sim);
+    FCPIC::field *charge = new FCPIC::field(sim); // intialize to zero in all entries
+    FCPIC::field *phi = new FCPIC::field(sim);
 
     // initializing species
-    int nb_spec = 1;
-    float q[2] = {1, -0.9};
+    int nb_spec = sim->Nspecies;
 
-    std::vector<species> spec_vec;
+    std::vector<FCPIC::species> spec_vec;
 
     for (int i = 0; i < nb_spec; i++)
     {
-        species test(name, ppc, range, vfa, vth, q[i]);
+        vfa[0] = sim->vxfluid[i];
+        vfa[1] = sim->vyfluid[i];
+        // std::cout << vfa[0] << "  " << vfa[1] << std::endl;
+        FCPIC::species test(name, sim->charge[i], sim->mass[i], sim->temp[i], vfa, ppc, sim);
         spec_vec.push_back(test);
     }
 
     for (int i = 0; i < nb_spec; i++)
     {
-        spec_vec[i].set_x();
-        spec_vec[i].set_u();
-        spec_vec[i].get_charge(charge);
+        sim->get_charge(charge, &spec_vec[i]);
     }
 
+    sim->exchange_charge_buffers(charge);
+
     sim->jacobi(phi, charge);
+
     sim->set_E_value(phi, Ex, Ey);
-    // sim->exchange_charge_buffers(charge);
 
     //! HDF5 Initialization
-    std::string h5_name = "../results/data_rank_" + std::to_string(sim->grid_rank) + ".h5";
+    std::string h5_name = "../results/newdata_rank_" + std::to_string(sim->grid_rank) + ".h5";
     const char *h5_char = h5_name.c_str();
 
     hid_t file_field, dataset_field, dataspace_field;
@@ -104,15 +59,15 @@ int main(int argc, char **argv)
     std::vector<hid_t> h5_vec_group;
 
     hid_t part_id;
-    part_id = H5Tcreate(H5T_COMPOUND, sizeof(part));
-    H5Tinsert(part_id, "ix", HOFFSET(part, ix), H5T_NATIVE_INT);
-    H5Tinsert(part_id, "iy", HOFFSET(part, iy), H5T_NATIVE_INT);
-    H5Tinsert(part_id, "x", HOFFSET(part, x), H5T_NATIVE_FLOAT);
-    H5Tinsert(part_id, "y", HOFFSET(part, y), H5T_NATIVE_FLOAT);
-    H5Tinsert(part_id, "ux", HOFFSET(part, ux), H5T_NATIVE_FLOAT);
-    H5Tinsert(part_id, "uy", HOFFSET(part, uy), H5T_NATIVE_FLOAT);
-    H5Tinsert(part_id, "uz", HOFFSET(part, uz), H5T_NATIVE_FLOAT);
-    H5Tinsert(part_id, "flag", HOFFSET(part, flag), H5T_NATIVE_INT);
+    part_id = H5Tcreate(H5T_COMPOUND, sizeof(FCPIC::part));
+    H5Tinsert(part_id, "ix", HOFFSET(FCPIC::part, ix), H5T_NATIVE_INT);
+    H5Tinsert(part_id, "iy", HOFFSET(FCPIC::part, iy), H5T_NATIVE_INT);
+    H5Tinsert(part_id, "x", HOFFSET(FCPIC::part, x), H5T_NATIVE_FLOAT);
+    H5Tinsert(part_id, "y", HOFFSET(FCPIC::part, y), H5T_NATIVE_FLOAT);
+    H5Tinsert(part_id, "ux", HOFFSET(FCPIC::part, ux), H5T_NATIVE_FLOAT);
+    H5Tinsert(part_id, "uy", HOFFSET(FCPIC::part, uy), H5T_NATIVE_FLOAT);
+    H5Tinsert(part_id, "uz", HOFFSET(FCPIC::part, uz), H5T_NATIVE_FLOAT);
+    H5Tinsert(part_id, "flag", HOFFSET(FCPIC::part, flag), H5T_NATIVE_INT);
 
     file_field = H5Fcreate(h5_char, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
     dims[0] = phi->N_x;
@@ -135,13 +90,15 @@ int main(int argc, char **argv)
         h5_vec_group.push_back(group_idaux);
     }
     //!!!
-
-    // first iteration of the particle pusher
     for (int i = 0; i < nb_spec; i++)
-        spec_vec[i].init_pusher(Ex, Ey);
+        sim->init_pusher(Ex, Ey, &spec_vec[i]);
 
-    for (int counter = 0; counter < 500; counter++)
+    for (int counter = 0; 1; counter++)
     {
+        if (sim->grid_rank == 0)
+            sim->printProgress(((float)counter) * sim->dt / sim->simtime);
+        if (((float)counter) * sim->dt >= sim->simtime)
+            break;
         // ! Writting in H5 file;
         std::string Ey_name = "Ey_count_" + std::to_string(counter);
         const char *Ey_char = Ey_name.c_str();
@@ -179,21 +136,24 @@ int main(int argc, char **argv)
 
         for (int i = 0; i < nb_spec; i++)
         {
-            spec_vec[i].particle_pusher(Ex, Ey);
-            spec_vec[i].advance_cell(flags_coords_mpi);
-            spec_vec[i].prepare_buffer();
+            sim->particle_pusher(Ex, Ey, &spec_vec[i]);
 
-            sim->exchange_particles_buffers(&(spec_vec[i]));
+            while (spec_vec[i].advance_cell(flags_coords_mpi))
+            {
 
-            spec_vec[i].update_part_list();
-            spec_vec[i].get_charge(charge);
+                spec_vec[i].prepare_buffer();
+                sim->exchange_particles_buffers(&(spec_vec[i]));
+                spec_vec[i].update_part_list();
+            }
+
+            sim->get_charge(charge, &spec_vec[i]);
         }
+        sim->exchange_charge_buffers(charge);
 
         // //!jacobi with all the species charge
         sim->jacobi(phi, charge);
         sim->set_E_value(phi, Ex, Ey);
     }
-    // std::cout << "End Loop" << std::endl;
 
     status = H5Gclose(group_charge);
     status = H5Gclose(group_Ex);
@@ -212,11 +172,10 @@ int main(int argc, char **argv)
     delete Ex;
     delete Ey;
     delete charge, phi;
-    delete vfa;
-    delete vfb;
-    spec_vec.clear();
     h5_vec_group.clear();
 
+    delete vfa;
+    spec_vec.clear();
     delete sim;
 
     return 0;

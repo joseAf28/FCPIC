@@ -2,33 +2,13 @@
 #include "math.h"
 #include "mpi.h"
 
-species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, float *vth_a, float charge) : name(name_a), q(charge)
+namespace FCPIC{
+
+species::species(std::string name_a, float charge, float mass, float temp, float *vf, int *ppc, FCPIC_base const *base) : FCPIC_base(*base), name(name_a), q(charge), m(mass)
 {
-    ppc[0] = ppc_a[0];
-    ppc[1] = ppc_a[1];
-
-    range[0] = range_a[0];
-    range[1] = range_a[1];
-
-    vf[0] = vf_a[0];
-    vf[1] = vf_a[1];
-    vf[2] = vf_a[2];
-
-    vth[0] = vth_a[0];
-    vth[1] = vth_a[1];
-    vth[2] = vth_a[2];
-
-    // std::cout << "vth[0]: " << vth[0] << " vth[1]: " << vth[1] << " vth[2]: " << vth[2] << std::endl;
-
-    // number of cells in each direction of the process domain
-    N_int_x = range[0] + 1;
-    N_int_y = range[1] + 1;
-
-    N_x = range[0] + 3;
-    N_y = range[1] + 3;
-
     // initializing vector with set_np_part() number: number of particles
-    np = (N_int_x + 1) * ppc[0] * (N_int_y + 1) * ppc[1];
+    np = (N_int_x) * ppc[0] * (N_int_y) * ppc[1];
+    np_sim = np*n_Procs;
 
     // reserve space for the arrays of particles
     part A;
@@ -57,12 +37,111 @@ species::species(std::string name_a, int *ppc_a, int *range_a, float *vf_a, floa
 
     // random number generator
     std::random_device dev;
-    std::mt19937_64 rng_aux(dev());
-    std::normal_distribution<double> norm_aux(0, 1);
-    rng = rng_aux;
-    rand_gauss = norm_aux;
+    std::mt19937_64 rng(dev());
+    std::normal_distribution<double> rand_gauss(0, 1);
 
-    // std::cout << __PRETTY_FUNCTION__ << std::endl;
+    //SET X
+
+    std::vector<float> loccell;
+
+    const int npcell = ppc[0] * ppc[1];
+    const float dpcellx = dx / ppc[0];
+    const float dpcelly = dy / ppc[1];
+
+    loccell.reserve(np);
+
+    for (int j = 0; j < ppc[1]; j++)
+    {
+        for (int i = 0; i < ppc[0]; i++)
+        {
+            loccell.push_back(dpcellx * ((float)i + 0.5f)); // In the middle of each subdivision
+            loccell.push_back(dpcelly * ((float)j + 0.5f));
+        }
+    }
+
+    int ip = 0;
+    //! Uniform Density of Particles
+    for (int j = 0; j < N_int_x; j++)
+    {
+        for (int i = 0; i < N_int_y; i++)
+        {
+            for (int k = 0; k < npcell; k++)
+            {
+                vec[ip].ix = j;
+                vec[ip].iy = i;
+                vec[ip].x = loccell[2 * k];
+                vec[ip].y = loccell[2 * k + 1];
+                ip = ip + 1;
+            }
+        }
+    }
+    loccell.clear();
+
+    float vth = sqrt(temp);
+    //SET U
+    for (int i = 0; i < np; i++)
+    {
+        vec[i].ux = vf[0] + vth * rand_gauss(rng);
+        vec[i].uy = vf[1] + vth * rand_gauss(rng);
+        vec[i].uz = vf[2] + vth * rand_gauss(rng);
+    }
+}
+
+species::species(std::string name_a, float charge, float mass, float temp, float *vf, int n_part, FCPIC_base const *base) : FCPIC_base(*base), name(name_a), q(charge), m(mass), np_sim(n_part)
+{
+    // N_procs is the total number of processes split into processes along the x and y direction
+    // proc_index is the number of the respective process split into the x and y direction. eg: process 0 = (0,0), process 1 = (0,1)...
+    // Fluid velocity = 0
+
+    np = np_sim/n_Procs;
+
+    // Reserving memory for the storage of the particles
+    // Need to check the memory allocation
+    part A;
+    vec.reserve(np);
+    vec.assign(np, A);
+
+    send_buffer_north.reserve(np);
+    send_buffer_south.reserve(np);
+    send_buffer_east.reserve(np);
+    send_buffer_west.reserve(np);
+
+    recv_buffer_north.reserve(np);
+    recv_buffer_south.reserve(np);
+    recv_buffer_east.reserve(np);
+    recv_buffer_west.reserve(np);
+
+    // For the velocities
+    // rand_gauss = std::normal_distribution<float>(0.0, std::sqrt(k_b * T / m));
+    std::random_device dev;
+    std::mt19937_64 rng(dev());
+    std::normal_distribution<double> rand_gauss(0, 1);
+	std::uniform_real_distribution<float> rand_uniform(0.0, 1.0);
+
+    float vth = sqrt(temp);
+
+    // Generating the positions/velocities for each of the particles in 1 process
+    if(bc[0] == CONDUCTIVE) {
+        for(int i=0; i<np; i++) {
+    	    vec.at(i).x = (N_total_x*rand_uniform(rng) - ((float) grid_coord[0] * (float) N_int_x + 1.))*dx;
+	        vec.at(i).y = (N_total_y*rand_uniform(rng) - ((float) grid_coord[1] * (float) N_int_y + 1.))*dy;
+	        vec.at(i).ix = 1;
+	        vec.at(i).iy = 1;
+	        vec.at(i).ux = vf[0] + vth * rand_gauss(rng);
+            vec.at(i).uy = vf[1] + vth * rand_gauss(rng);
+            vec.at(i).uz = vf[2] + vth * rand_gauss(rng);
+        }
+    } else {
+        for(int i=0; i<np; i++) {
+    	    vec.at(i).x = (N_total_x*rand_uniform(rng) - ((float) grid_coord[0] * (float) N_int_x))*dx;
+	        vec.at(i).y = (N_total_y*rand_uniform(rng) - ((float) grid_coord[1] * (float) N_int_y))*dy;
+	        vec.at(i).ix = 1;
+	        vec.at(i).iy = 1;
+	        vec.at(i).ux = vf[0] + vth * rand_gauss(rng);
+            vec.at(i).uy = vf[1] + vth * rand_gauss(rng);
+            vec.at(i).uz = vf[2] + vth * rand_gauss(rng);
+        }
+    }
 }
 
 species::~species()
@@ -88,117 +167,20 @@ species::~species()
     recv_buffer_se.clear();
     recv_buffer_sw.clear();
     recv_buffer_nw.clear();
-
-    // std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
-
-void species::set_u()
+/*
+void species::field_interpolate(field *Ex, field *Ey, float &Ex_i, float &Ey_i, part *prt)
 {
-    for (int i = 0; i < np; i++)
-    {
-        vec[i].ux = vf[0] + vth[0] * rand_gauss(rng);
-        vec[i].uy = vf[1] + vth[1] * rand_gauss(rng);
-        vec[i].uz = vf[2] + vth[2] * rand_gauss(rng);
-    }
-}
+    int i = prt->iy;
+    int j = prt->ix;
 
-void species::set_x()
-{
-    std::vector<float> loccell;
-
-    const int npcell = ppc[0] * ppc[1];
-    const float dpcellx = dx / ppc[0];
-    const float dpcelly = dy / ppc[1];
-
-    loccell.reserve(np);
-
-    for (int j = 0; j < ppc[1]; j++)
-    {
-        for (int i = 0; i < ppc[0]; i++)
-        {
-            loccell.push_back(dpcellx * ((float)i + 0.5f)); // In the middle of each subdivision
-            loccell.push_back(dpcelly * ((float)j + 0.5f));
-        }
-    }
-
-    int ip = 0;
-    //! Uniform Density of Particles
-    for (int j = 0; j <= N_int_x; j++)
-    {
-        for (int i = 0; i <= N_int_y; i++)
-        {
-            for (int k = 0; k < npcell; k++)
-            {
-                vec[ip].ix = j;
-                vec[ip].iy = i;
-                vec[ip].x = loccell[2 * k];
-                vec[ip].y = loccell[2 * k + 1];
-                ip = ip + 1;
-            }
-        }
-    }
-    loccell.clear();
-}
-
-void species::get_charge(FCPIC::field *charge)
-{
-    //! Done in simulation: avoid creating a new field and doing the sum of all components
-    // charge->setValue(0.f);
-
-    int i, j;
-    float wx, wy;
-    for (int k = 0; k < vec.size(); k++)
-    {
-        i = vec[k].iy;
-        j = vec[k].ix;
-        wx = vec[k].x;
-        wy = vec[k].y;
-
-        // if (i > range[1])
-        //     i = range[1];
-
-        // if (j > range[0])
-        //     j = range[0];
-
-        // if (i < 0)
-        //     i = 0;
-
-        // if (j < 0)
-        //     j = 0;
-
-        charge->val[POSITION] += (dx - wx) * (dy - wy) * q / (dx * dy);
-        charge->val[EAST] += wx * (dy - wy) * q / (dx * dy);
-        charge->val[NORTH] += (dx - wx) * wy * q / (dx * dy);
-        charge->val[NORTHEAST] += wx * wy * q / (dx * dy);
-    }
-
-    // TO BE UPDATED WITH N0
-}
-
-void species::field_inter(FCPIC::field *Ex, FCPIC::field *Ey, float &Ex_i, float &Ey_i, int counter)
-{
-    int i = vec[counter].iy;
-    int j = vec[counter].ix;
-
-    float wx = vec[counter].x;
-    float wy = vec[counter].y;
+    float wx = prt->x;
+    float wy = prt->y;
 
     float A_pos = (dx - wx) * (dy - wy);
     float A_e = wx * (dy - wy);
     float A_n = (dx - wx) * wy;
     float A_ne = wx * wy;
-
-    // if (i > range[1])
-    //     i = range[1];
-
-    // if (j > range[0])
-    //     j = range[0];
-
-    // if (i < 0)
-    //     i = 0;
-
-    // if (j < 0)
-    //     j = 0;
 
     Ex_i = A_pos * Ex->val[POSITION] + A_e * Ex->val[EAST] + A_n * Ex->val[NORTH] + A_ne * Ex->val[NORTHEAST];
 
@@ -208,7 +190,7 @@ void species::field_inter(FCPIC::field *Ex, FCPIC::field *Ey, float &Ex_i, float
     Ey_i /= (dx * dy);
 }
 
-void species::init_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
+void species::init_pusher(field *Ex, field *Ey)
 {
 
     for (int i = 0; i < np; i++)
@@ -216,14 +198,14 @@ void species::init_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
         float Ex_i = 0.f;
         float Ey_i = 0.f;
 
-        field_inter(Ex, Ey, Ex_i, Ey_i, i);
+        field_interpolate(Ex, Ey, Ex_i, Ey_i, &vec[i]);
 
         vec[i].ux = vec[i].ux - 0.5 * q / m * Ex_i * dt;
         vec[i].uy = vec[i].uy - 0.5 * q / m * Ey_i * dt;
     }
 }
 
-void species::particle_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
+void species::particle_pusher(field *Ex, field *Ey)
 {
 
     for (int i = 0; i < np; i++)
@@ -231,7 +213,7 @@ void species::particle_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
         float Ex_i = 0.f;
         float Ey_i = 0.f;
 
-        field_inter(Ex, Ey, Ex_i, Ey_i, i);
+        field_interpolate(Ex, Ey, Ex_i, Ey_i, &vec[i]);
 
         vec[i].ux = vec[i].ux + q / m * Ex_i * dt;
         vec[i].uy = vec[i].uy + q / m * Ey_i * dt;
@@ -240,17 +222,19 @@ void species::particle_pusher(FCPIC::field *Ex, FCPIC::field *Ey)
         vec[i].y = vec[i].y + vec[i].uy * dt;
     }
 }
-
-bool species::advance_cell(int *ranks_mpi)
+*/
+int species::advance_cell(int *ranks_mpi)
 { // ranks_mpi[0] - rank, ranks_mpi[1] - top, ranks_mpi[2] - bottom,
     //  ranks_mpi[3] - right, ranks_mpi[4] - left
-    bool changes_made = false;
+    int changes_made = 0;
+    int global_changes_made = 0;
     for (int counter = 0; counter < np; counter++)
     {
-        if (vec[counter].x >= 0 && vec[counter].x < dx && vec[counter].y >= 0 && vec[counter].y < dx && vec[counter].ix >= 0 && vec[counter].ix < range[0] && vec[counter].iy >= 0 && vec[counter].iy < range[1])
+        if (vec[counter].x >= 0 && vec[counter].x < dx && 
+            vec[counter].y >= 0 && vec[counter].y < dy &&
+            vec[counter].ix >= 0 && vec[counter].ix <= N_int_x &&
+            vec[counter].iy >= 0 && vec[counter].iy <= N_int_y)
             continue;
-
-        changes_made = true;
 
         vec[counter].ix += floor(vec[counter].x / dx);
         vec[counter].x = fmod(vec[counter].x, dx);
@@ -270,9 +254,9 @@ bool species::advance_cell(int *ranks_mpi)
         bool flag_left = ranks_mpi[4] == MPI_PROC_NULL;
 
         bool ixmin_cond = vec[counter].ix <= -1;
-        bool ixmax_cond = vec[counter].ix > range[0];
+        bool ixmax_cond = vec[counter].ix > N_int_x;
         bool iymin_cond = vec[counter].iy <= -1;
-        bool iymax_cond = vec[counter].iy > range[1];
+        bool iymax_cond = vec[counter].iy > N_int_y;
 
         bool send_N_true = false;
         bool send_S_true = false;
@@ -284,30 +268,14 @@ bool species::advance_cell(int *ranks_mpi)
             if (flag_left)
             {
                 vec[counter].x = dx - vec[counter].x;
-                // vec[counter].ix = -vec[counter].ix - 1;
-                while (vec[counter].ix < 0)
-                    vec[counter].ix = vec[counter].ix + range[0];
-
-                vec[counter].ix = range[0] - vec[counter].ix;
-
-                vec[counter].ix = 0;
-                vec[counter].ux = fabs(vec[counter].ux);
-
-                if (vec[counter].ix < 0)
-                {
-                    std::cout << "flag_left ix: " << vec[counter].ix << std::endl;
-                }
+                vec[counter].ix = -vec[counter].ix - 1;
+                vec[counter].ux = -vec[counter].ux;
             }
             else
             {
-                while (vec[counter].ix < 0)
-                    vec[counter].ix = vec[counter].ix + range[0];
-                // vec[counter].ix = fabs(vec[counter].ix + N_int_x) - 1;
+                vec[counter].ix = vec[counter].ix + N_int_x;
                 send_W_true = true;
-                if (vec[counter].ix < 0)
-                {
-                    std::cout << "flag_left guard ix: " << vec[counter].ix << std::endl;
-                }
+                changes_made = true;
             }
         }
 
@@ -316,32 +284,14 @@ bool species::advance_cell(int *ranks_mpi)
             if (flag_bottom)
             {
                 vec[counter].y = dy - vec[counter].y;
-                // vec[counter].iy = -vec[counter].iy - 1;
-
-                while (vec[counter].iy < 0)
-                    vec[counter].iy = vec[counter].iy + range[1];
-
-                vec[counter].iy = range[1] - vec[counter].iy;
-
-                vec[counter].uy = fabs(vec[counter].uy);
-
-                if (vec[counter].iy < 0)
-                {
-                    std::cout << "flag_bottom iy: " << vec[counter].iy << std::endl;
-                }
+                vec[counter].iy = -vec[counter].iy - 1;
+                vec[counter].uy = -vec[counter].uy;
             }
             else
             {
-                while (vec[counter].iy < 0)
-                    vec[counter].iy = vec[counter].iy + range[1];
-
-                // vec[counter].iy = fabs(vec[counter].iy + N_int_y) - 1;
+                vec[counter].iy = vec[counter].iy + N_int_y;
                 send_S_true = true;
-
-                if (vec[counter].iy < 0)
-                {
-                    std::cout << "flag_bottom guard iy: " << vec[counter].iy << std::endl;
-                }
+                changes_made = 1;
             }
         }
 
@@ -350,31 +300,14 @@ bool species::advance_cell(int *ranks_mpi)
             if (flag_right)
             {
                 vec[counter].x = dx - vec[counter].x;
-                // vec[counter].ix = 2 * N_int_x - vec[counter].ix;
-
-                while (vec[counter].ix > range[0])
-                    vec[counter].ix = vec[counter].ix - range[0];
-
-                vec[counter].ix = range[0] - vec[counter].ix;
-
-                vec[counter].ux = -fabs(vec[counter].ux);
-
-                if (vec[counter].ix < 0)
-                {
-                    std::cout << "flag_right ix: " << vec[counter].ix << std::endl;
-                }
+                vec[counter].ix = 2 * N_int_x - vec[counter].ix + 1;
+                vec[counter].ux = -vec[counter].ux;
             }
             else
             {
-                while (vec[counter].ix > range[0])
-                    vec[counter].ix = vec[counter].ix - range[0];
-
-                // vec[counter].ix = fabs(vec[counter].ix - N_int_x) + 1;
+                vec[counter].ix = vec[counter].ix - N_int_x;
                 send_E_true = true;
-                if (vec[counter].ix < 0)
-                {
-                    std::cout << "flag_right guard ix: " << vec[counter].ix << std::endl;
-                }
+                changes_made = 1;
             }
         }
 
@@ -383,32 +316,14 @@ bool species::advance_cell(int *ranks_mpi)
             if (flag_top)
             {
                 vec[counter].y = dy - vec[counter].y;
-                // vec[counter].iy = 2 * N_int_y - vec[counter].iy;
-
-                while (vec[counter].iy > range[1])
-                    vec[counter].iy = vec[counter].iy - range[1];
-
-                vec[counter].iy = range[1] - vec[counter].iy;
-
-                vec[counter].uy = -fabs(vec[counter].uy);
-
-                if (vec[counter].iy < 0)
-                {
-                    std::cout << "flag_top iy: " << vec[counter].iy << std::endl;
-                }
+                vec[counter].iy = 2 * N_int_y - vec[counter].iy + 1;
+                vec[counter].uy = -vec[counter].uy;
             }
             else
             {
-                while (vec[counter].iy > range[1])
-                    vec[counter].iy = vec[counter].iy - range[1];
-
-                // vec[counter].iy = fabs(vec[counter].iy - N_int_y) + 1;
+                vec[counter].iy = vec[counter].iy - N_int_y;
                 send_N_true = true;
-
-                if (vec[counter].iy < 0)
-                {
-                    std::cout << "flag_top guard iy: " << vec[counter].iy << std::endl;
-                }
+                changes_made = 1;
             }
         }
 
@@ -465,7 +380,9 @@ bool species::advance_cell(int *ranks_mpi)
         {
         }
     }
-    return changes_made;
+
+    MPI_Allreduce(&changes_made, &global_changes_made, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    return global_changes_made;
 }
 
 void species::prepare_buffer()
@@ -843,5 +760,6 @@ void species::write_input_buffer(const int rank, const int time)
                 << std::endl;
 
     Output_file.close();
+}
 }
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!111
