@@ -6,7 +6,6 @@
 #include <fstream>
 #include <iomanip>
 #include <unistd.h>
-// #include "hdf5.h"
 
 namespace FCPIC
 {
@@ -15,9 +14,13 @@ namespace FCPIC
     N_int_x and N_int_y are the number of inner grid points in x and y direction respectively
     ***********************************************************/
 
-    simulation::simulation(int argc, char **argv) : FCPIC_base()
+    simulation::simulation(int argc, char **argv) : FCPIC_base(), 
+    total_time(0.), setup_time(0.), hdf5_time(0.), 
+    particle_time(0.), field_time(0.)
     {
         MPI_Init(&argc, &argv);
+        time1 = MPI_Wtime();
+
         // retrieve the number of processes
         MPI_Comm_size(MPI_COMM_WORLD, &n_Procs);
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -58,6 +61,22 @@ namespace FCPIC
 
     simulation::~simulation()
     {
+        // status_h5 = H5Gclose(group_charge);
+        // status_h5 = H5Gclose(group_Ex);
+        // status_h5 = H5Gclose(group_Ey);
+
+        // for (int i = 0; i < Nspecies; i++)
+        //     status_h5 = H5Gclose(h5_vec_group[i]);
+
+        // status_h5 = H5Tclose(part_id);
+        // status_h5 = H5Sclose(dataspace_field);
+        // status_h5 = H5Dclose(dataset_field);
+        // status_h5 = H5Fclose(file_field);
+
+        // status_h5 = H5Pclose(group_creation_plist);
+
+        // h5_vec_group.clear();
+
         MPI_Type_free(&exchange_field_type[X_DIR]);
         MPI_Type_free(&exchange_field_type[Y_DIR]);
         MPI_Type_free(&exchange_part_type);
@@ -67,13 +86,14 @@ namespace FCPIC
         delete[] Y_guard_data, X_guard_data;
     }
 
-    std::string simulation::print_SI(double x)
+    std::string simulation::print_SI(double x, int precision)
     {
         int exponent = floor(log10(x));
         exponent -= (exponent % 3 + 3) % 3;
         double mantissa = x / pow(10., exponent);
 
         std::string output = std::to_string(mantissa);
+        output = output.substr(0, output.find(".")+precision+1);
 
         if (exponent == -15)
             output.append(" f");
@@ -121,16 +141,18 @@ namespace FCPIC
         std::cout << "│ Guilherme Crispim, João Palma, José Afonso, ATCP 2023                       │\n";
         std::cout << "└─────────────────────────────────────────────────────────────────────────────┘\n";
         std::cout << "\n";
-        std::cout << "Simulation size: " << print_SI(xlen * Lref) << "m x " << print_SI(xlen * aspect * Lref) << "m\n";
-        std::cout << "Spatial discretization: " << print_SI(dx * Lref) << "m x " << print_SI(dy * Lref) << "m"
-                  << " (" << N_total_x << "x" << N_total_y << " cells)\n";
-        std::cout << "Simulation time: " << print_SI(simtime * Tref) << "s\n";
-        std::cout << "Time discretization: " << print_SI(dt * Tref) << "s (" << (int)(simtime / dt) << " time steps)\n";
+        std::cout << "Simulation size: " << print_SI(xlen * Lref,3) << "m x " << print_SI(xlen * aspect * Lref,3) << "m\n";
+        std::cout << "Spatial discretization: " << print_SI(dx * Lref, 3) << "m x "
+                  << print_SI(dy * Lref, 3) << "m" << " (" << N_total_x << "x" << N_total_y << " cells)\n";
+        std::cout << "Simulation time: " << print_SI(simtime * Tref, 3) << "s\n";
+        std::cout << "Time discretization: " << print_SI(dt * Tref, 3) << "s (" 
+                  << (int)(simtime / dt) << " time steps)\n";
         std::cout << "MPI process grid: " << n_Procs << " processes ("
                   << grid[X_DIR] << "x" << grid[Y_DIR] << ")\n";
-        std::cout << "Electron Debye length: " << print_SI(Lref) << "m\n";
-        std::cout << "Plasma frequency: " << print_SI(1 / Tref) << "Hz\n";
+        std::cout << "Electron Debye length: " << print_SI(Lref, 3) << "m\n";
+        std::cout << "Plasma frequency: " << print_SI(1 / Tref, 3) << "Hz\n";
         std::cout << "\n";
+        std::cout << "SETTING UP ...\n\n";
     }
 
     void simulation::printProgress(float prog)
@@ -160,6 +182,40 @@ namespace FCPIC
                 finished = true;
             }
         }
+    }
+
+    void simulation::printTime(){
+        if(grid_rank == 0)
+            std::cout << "  Procs  │  Sim. Setup  │ Particle Push │  Field Solve  │  HDF5 Write  ║   TOTAL  \n";
+        for(int i = 0; i < n_Procs; i++){
+            MPI_Barrier(grid_comm);
+            if(grid_rank == i){
+                std::cout << "─────────┼──────────────┼───────────────┼───────────────┼──────────────╫──────────\n";
+                std::cout << "   " << std::right << std::setw(3) << i <<"   │";
+                std::cout << " T:" << std::right << std::setw(8) << setup_time*1000 << "ms │";
+                std::cout << " T:" << std::right << std::setw(10) << particle_time << "s │";
+                std::cout << " T:" << std::right << std::setw(10) << field_time << "s │";
+                std::cout << " T:" << std::right << std::setw(9) << hdf5_time << "s ║";
+                std::cout << " " << std::right << std::setw(9) << total_time << "s\n";
+                std::cout << std::setprecision(3);
+                std::cout << "         │";
+                std::cout <<" %: "<< std::right << std::setw(8) << setup_time*100./total_time << "% │";
+                std::cout <<" %: "<< std::right << std::setw(9) << particle_time*100./total_time << "% │";
+                std::cout <<" %: "<< std::right << std::setw(9) << field_time*100./total_time << "% │";
+                std::cout <<" %: "<< std::right << std::setw(8) << hdf5_time*100./total_time << "% ║\n";
+            }
+        }
+        /*
+        std::cout << "Elapsed time: " << total_time << " s\n";
+        std::cout << "Simulation setup time: " << setup_time << "s (" 
+                  << 100.*setup_time/total_time << "%)\n";
+        std::cout << "Field calculation time: " << field_time << "s (" 
+                  << 100.*field_time/total_time << "%)\n";
+        std::cout << "Particle pushing time: " << particle_time 
+                  << "s (" << 100.*particle_time/total_time << "%)\n";
+        std::cout << "HDF5 writing time: " << hdf5_time << "s (" 
+                  << 100.*hdf5_time/total_time << "%)\n";
+        */
     }
 
     void simulation::printHelp()
@@ -631,22 +687,22 @@ namespace FCPIC
         // Communication stream leftward
         MPI_Sendrecv(&phi->val[WEST_BOUND], 1, exchange_field_type[X_DIR], grid_left, 0,
                      &phi->val[EAST_GUARD], 1, exchange_field_type[X_DIR], grid_right, 0,
-                     grid_comm, &status);
+                     grid_comm, &status_mpi);
 
         // Communication stream rightward
         MPI_Sendrecv(&phi->val[EAST_BOUND], 1, exchange_field_type[X_DIR], grid_right, 0,
                      &phi->val[WEST_GUARD], 1, exchange_field_type[X_DIR], grid_left, 0,
-                     grid_comm, &status);
+                     grid_comm, &status_mpi);
 
         // Communication stream upward
         MPI_Sendrecv(&phi->val[NORTH_BOUND], 1, exchange_field_type[Y_DIR], grid_top, 0,
                      &phi->val[SOUTH_GUARD], 1, exchange_field_type[Y_DIR], grid_bottom, 0,
-                     grid_comm, &status);
+                     grid_comm, &status_mpi);
 
         // Communication stream downward
         MPI_Sendrecv(&phi->val[SOUTH_BOUND], 1, exchange_field_type[Y_DIR], grid_bottom, 0,
                      &phi->val[NORTH_GUARD], 1, exchange_field_type[Y_DIR], grid_top, 0,
-                     grid_comm, &status);
+                     grid_comm, &status_mpi);
     }
 
     void simulation::exchange_charge_buffers(field *charge)
@@ -655,22 +711,22 @@ namespace FCPIC
         int j = 0;
 
         MPI_Sendrecv(&charge->val[NORTH_GUARD], 1, exchange_field_type[Y_DIR], grid_top, 0,
-                     &Y_guard_data[0], N_x, MPI_DOUBLE, grid_bottom, 0, grid_comm, &status);
+                     &Y_guard_data[0], N_x, MPI_DOUBLE, grid_bottom, 0, grid_comm, &status_mpi);
         if (grid_bottom != MPI_PROC_NULL)
             charge->reduceSouthBound(Y_guard_data);
 
         MPI_Sendrecv(&charge->val[SOUTH_GUARD], 1, exchange_field_type[Y_DIR], grid_bottom, 0,
-                     &Y_guard_data[0], N_x, MPI_DOUBLE, grid_top, 0, grid_comm, &status);
+                     &Y_guard_data[0], N_x, MPI_DOUBLE, grid_top, 0, grid_comm, &status_mpi);
         if (grid_top != MPI_PROC_NULL)
             charge->reduceNorthBound(Y_guard_data);
 
         MPI_Sendrecv(&charge->val[WEST_GUARD], 1, exchange_field_type[X_DIR], grid_left, 0,
-                     &X_guard_data[0], N_int_y, MPI_DOUBLE, grid_right, 0, grid_comm, &status);
+                     &X_guard_data[0], N_int_y, MPI_DOUBLE, grid_right, 0, grid_comm, &status_mpi);
         if (grid_right != MPI_PROC_NULL)
             charge->reduceEastBound(X_guard_data);
 
         MPI_Sendrecv(&charge->val[EAST_GUARD], 1, exchange_field_type[X_DIR], grid_right, 0,
-                     &X_guard_data[0], N_int_y, MPI_DOUBLE, grid_left, 0, grid_comm, &status);
+                     &X_guard_data[0], N_int_y, MPI_DOUBLE, grid_left, 0, grid_comm, &status_mpi);
         if (grid_left != MPI_PROC_NULL)
             charge->reduceWestBound(X_guard_data);
     }
@@ -688,15 +744,15 @@ namespace FCPIC
         lepton->size_recv_sw = 0;
 
         // Communication to determine the size of the arrays of each buffe
-        MPI_Sendrecv(&(lepton->size_send_north), 1, MPI_INT, grid_top, 0, &(lepton->size_recv_south), 1, MPI_INT, grid_bottom, 0, grid_comm, &status);
-        MPI_Sendrecv(&(lepton->size_send_south), 1, MPI_INT, grid_bottom, 0, &(lepton->size_recv_north), 1, MPI_INT, grid_top, 0, grid_comm, &status);
-        MPI_Sendrecv(&(lepton->size_send_west), 1, MPI_INT, grid_left, 0, &(lepton->size_recv_east), 1, MPI_INT, grid_right, 0, grid_comm, &status);
-        MPI_Sendrecv(&(lepton->size_send_east), 1, MPI_INT, grid_right, 0, &(lepton->size_recv_west), 1, MPI_INT, grid_left, 0, grid_comm, &status);
+        MPI_Sendrecv(&(lepton->size_send_north), 1, MPI_INT, grid_top, 0, &(lepton->size_recv_south), 1, MPI_INT, grid_bottom, 0, grid_comm, &status_mpi);
+        MPI_Sendrecv(&(lepton->size_send_south), 1, MPI_INT, grid_bottom, 0, &(lepton->size_recv_north), 1, MPI_INT, grid_top, 0, grid_comm, &status_mpi);
+        MPI_Sendrecv(&(lepton->size_send_west), 1, MPI_INT, grid_left, 0, &(lepton->size_recv_east), 1, MPI_INT, grid_right, 0, grid_comm, &status_mpi);
+        MPI_Sendrecv(&(lepton->size_send_east), 1, MPI_INT, grid_right, 0, &(lepton->size_recv_west), 1, MPI_INT, grid_left, 0, grid_comm, &status_mpi);
 
-        MPI_Sendrecv(&(lepton->size_send_ne), 1, MPI_INT, grid_ne, 0, &(lepton->size_recv_sw), 1, MPI_INT, grid_sw, 0, grid_comm, &status);
-        MPI_Sendrecv(&(lepton->size_send_sw), 1, MPI_INT, grid_sw, 0, &(lepton->size_recv_ne), 1, MPI_INT, grid_ne, 0, grid_comm, &status);
-        MPI_Sendrecv(&(lepton->size_send_nw), 1, MPI_INT, grid_nw, 0, &(lepton->size_recv_se), 1, MPI_INT, grid_se, 0, grid_comm, &status);
-        MPI_Sendrecv(&(lepton->size_send_se), 1, MPI_INT, grid_se, 0, &(lepton->size_recv_nw), 1, MPI_INT, grid_nw, 0, grid_comm, &status);
+        MPI_Sendrecv(&(lepton->size_send_ne), 1, MPI_INT, grid_ne, 0, &(lepton->size_recv_sw), 1, MPI_INT, grid_sw, 0, grid_comm, &status_mpi);
+        MPI_Sendrecv(&(lepton->size_send_sw), 1, MPI_INT, grid_sw, 0, &(lepton->size_recv_ne), 1, MPI_INT, grid_ne, 0, grid_comm, &status_mpi);
+        MPI_Sendrecv(&(lepton->size_send_nw), 1, MPI_INT, grid_nw, 0, &(lepton->size_recv_se), 1, MPI_INT, grid_se, 0, grid_comm, &status_mpi);
+        MPI_Sendrecv(&(lepton->size_send_se), 1, MPI_INT, grid_se, 0, &(lepton->size_recv_nw), 1, MPI_INT, grid_nw, 0, grid_comm, &status_mpi);
 
         // allocate memory for the vectors that are going to receive the MPI particles
         part recv_dummy;
@@ -724,13 +780,13 @@ namespace FCPIC
         MPI_Sendrecv(&(lepton->send_buffer_east[0]), lepton->send_buffer_east.size(), exchange_part_type, grid_right, 0, &(lepton->recv_buffer_west[0]), lepton->size_recv_west, exchange_part_type, grid_left, 0, grid_comm, MPI_STATUS_IGNORE);
 
         // All traffic in direction "ne-sw"
-        MPI_Sendrecv(&(lepton->send_buffer_ne[0]), lepton->send_buffer_ne.size(), exchange_part_type, grid_ne, 0, &(lepton->recv_buffer_sw[0]), lepton->size_recv_sw, exchange_part_type, grid_sw, 0, grid_comm, &status);
+        MPI_Sendrecv(&(lepton->send_buffer_ne[0]), lepton->send_buffer_ne.size(), exchange_part_type, grid_ne, 0, &(lepton->recv_buffer_sw[0]), lepton->size_recv_sw, exchange_part_type, grid_sw, 0, grid_comm, &status_mpi);
         // All traf\fic in direction "sw-ne"
-        MPI_Sendrecv(&(lepton->send_buffer_sw[0]), lepton->send_buffer_sw.size(), exchange_part_type, grid_sw, 0, &(lepton->recv_buffer_ne[0]), lepton->size_recv_ne, exchange_part_type, grid_ne, 0, grid_comm, &status);
+        MPI_Sendrecv(&(lepton->send_buffer_sw[0]), lepton->send_buffer_sw.size(), exchange_part_type, grid_sw, 0, &(lepton->recv_buffer_ne[0]), lepton->size_recv_ne, exchange_part_type, grid_ne, 0, grid_comm, &status_mpi);
         // All traf\fic in direction "se-nw"
-        MPI_Sendrecv(&(lepton->send_buffer_se[0]), lepton->send_buffer_se.size(), exchange_part_type, grid_se, 0, &(lepton->recv_buffer_nw[0]), lepton->size_recv_nw, exchange_part_type, grid_nw, 0, grid_comm, &status);
+        MPI_Sendrecv(&(lepton->send_buffer_se[0]), lepton->send_buffer_se.size(), exchange_part_type, grid_se, 0, &(lepton->recv_buffer_nw[0]), lepton->size_recv_nw, exchange_part_type, grid_nw, 0, grid_comm, &status_mpi);
         // All traffic in direction "nw-se"
-        MPI_Sendrecv(&(lepton->send_buffer_nw[0]), lepton->send_buffer_nw.size(), exchange_part_type, grid_nw, 0, &(lepton->recv_buffer_se[0]), lepton->size_recv_se, exchange_part_type, grid_se, 0, grid_comm, &status);
+        MPI_Sendrecv(&(lepton->send_buffer_nw[0]), lepton->send_buffer_nw.size(), exchange_part_type, grid_nw, 0, &(lepton->recv_buffer_se[0]), lepton->size_recv_se, exchange_part_type, grid_se, 0, grid_comm, &status_mpi);
 
         // // Another approach to handle MPI with a dynamic message
         //  MPI_Send(&(lepton->send_buffer_west[0]), lepton->send_buffer_west.size(), exchange_part_type, grid_left, 0, grid_comm);
@@ -946,30 +1002,159 @@ namespace FCPIC
         }
     }
 
-    void simulation::hdf5_init()
+    void simulation::setTime(float &task_time){
+        time2 = MPI_Wtime();
+        task_time += time2-time1;
+        total_time += time2-time1;
+        time1=time2;
+    }
+
+    void simulation::run_simulation(field * Ex, field * Ey, 
+                                    field * phi, field * charge,
+                                    std::vector<species> spec_vec){
+        setupHDF5("final_sim");
+        
+        setTime(setup_time);
+        
+        for (int i = 0; i < Nspecies; i++)
+            get_charge(charge, &spec_vec[i]);
+
+        exchange_charge_buffers(charge);
+        jacobi(phi, charge);
+        set_E_value(phi, Ex, Ey);
+
+        setTime(field_time);
+
+        for (int i = 0; i < Nspecies; i++)
+            init_pusher(Ex, Ey, &spec_vec[i]);
+
+        setTime(particle_time);
+
+        for (int counter = 0; 1; counter++)
+        {
+            if (grid_rank == 0)
+                printProgress(((float)counter) * dt / simtime);
+            if (((float)counter) * dt >= simtime)
+                break;
+            
+            writeChargeHDF5(charge, counter);
+            writeExHDF5(Ex, counter);
+            writeEyHDF5(Ey, counter);
+            writePartHDF5(spec_vec, counter);
+
+            setTime(hdf5_time);
+
+            int flags_coords_mpi[5] = {grid_rank, grid_top, 
+                                       grid_bottom, grid_right, 
+                                       grid_left};
+
+            charge->setValue(0.f);
+
+            for (int i = 0; i < Nspecies; i++)
+            {
+                particle_pusher(Ex, Ey, &spec_vec[i]);
+
+                while (spec_vec[i].advance_cell(flags_coords_mpi))
+                {
+
+                    spec_vec[i].prepare_buffer();
+                    exchange_particles_buffers(&(spec_vec[i]));
+                    spec_vec[i].update_part_list();
+                }
+
+                setTime(particle_time);
+
+                get_charge(charge, &spec_vec[i]);
+
+                setTime(field_time);
+            }
+            
+            exchange_charge_buffers(charge);
+            jacobi(phi, charge);
+            set_E_value(phi, Ex, Ey);
+
+            setTime(field_time);
+        }
+
+        printTime();
+    }
+
+    void simulation::setupHDF5(std::string filename)
     {
-        h5_name = "../results/test_rank_" + std::to_string(grid_rank) + ".h5";
+
+        std::string h5_name = "../results/" + filename + "_rank_" + std::to_string(grid_rank) + ".h5";
         const char *h5_char = h5_name.c_str();
+
+        part_id = H5Tcreate(H5T_COMPOUND, sizeof(FCPIC::part));
+        H5Tinsert(part_id, "ix", HOFFSET(FCPIC::part, ix), H5T_NATIVE_INT);
+        H5Tinsert(part_id, "iy", HOFFSET(FCPIC::part, iy), H5T_NATIVE_INT);
+        H5Tinsert(part_id, "x", HOFFSET(FCPIC::part, x), H5T_NATIVE_FLOAT);
+        H5Tinsert(part_id, "y", HOFFSET(FCPIC::part, y), H5T_NATIVE_FLOAT);
+        H5Tinsert(part_id, "ux", HOFFSET(FCPIC::part, ux), H5T_NATIVE_FLOAT);
+        H5Tinsert(part_id, "uy", HOFFSET(FCPIC::part, uy), H5T_NATIVE_FLOAT);
+        H5Tinsert(part_id, "flag", HOFFSET(FCPIC::part, flag), H5T_NATIVE_INT);
+
         file_field = H5Fcreate(h5_char, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-        dims[0] = 100;
-        dims[1] = 100;
+
+        hsize_t dims[2];
+        dims[0] = N_x;
+        dims[1] = N_y;
+
         dataspace_field = H5Screate_simple(2, dims, nullptr);
 
         group_creation_plist = H5Pcreate(H5P_GROUP_CREATE);
-        status_hdf5 = H5Pset_link_creation_order(group_creation_plist, H5P_CRT_ORDER_TRACKED | H5P_CRT_ORDER_INDEXED);
+        status_h5 = H5Pset_link_creation_order(group_creation_plist, H5P_CRT_ORDER_TRACKED | H5P_CRT_ORDER_INDEXED);
 
         group_charge = H5Gcreate(file_field, "/charge", H5P_DEFAULT, group_creation_plist, H5P_DEFAULT);
         group_Ex = H5Gcreate(file_field, "/Ex", H5P_DEFAULT, group_creation_plist, H5P_DEFAULT);
         group_Ey = H5Gcreate(file_field, "/Ey", H5P_DEFAULT, group_creation_plist, H5P_DEFAULT);
 
-        status_hdf5 = H5Gclose(group_charge);
-        status_hdf5 = H5Gclose(group_Ex);
-        status_hdf5 = H5Gclose(group_Ey);
-
-        status_hdf5 = H5Sclose(dataspace_field);
-        status_hdf5 = H5Fclose(file_field);
-
-        status_hdf5 = H5Pclose(group_creation_plist);
+        for (int i = 0; i < Nspecies; i++)
+        {
+            std::string h5_vec_name = "/part_" + std::to_string(i);
+            const char *h5_vec_char = h5_vec_name.c_str();
+            hid_t group_idaux = H5Gcreate(file_field, h5_vec_char, H5P_DEFAULT, group_creation_plist, H5P_DEFAULT);
+            h5_vec_group.push_back(group_idaux);
+        }
     }
 
+    void simulation::writeChargeHDF5(field *charge, int counter)
+    {
+        std::string charge_name = "charge_count_" + std::to_string(counter);
+        const char *charge_char = charge_name.c_str();
+        dataset_field = H5Dcreate2(group_charge, charge_char, H5T_NATIVE_DOUBLE, dataspace_field, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        status_h5 = H5Dwrite(dataset_field, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(charge->val[0]));
+    }
+
+    void simulation::writeExHDF5(field *Ex_field, int counter)
+    {
+        std::string Ex_name = "Ex_count_" + std::to_string(counter);
+        const char *Ex_char = Ex_name.c_str();
+        dataset_field = H5Dcreate2(group_Ex, Ex_char, H5T_NATIVE_DOUBLE, dataspace_field, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        status_h5 = H5Dwrite(dataset_field, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(Ex_field->val[0]));
+    }
+
+    void simulation::writeEyHDF5(field *Ey_field, int counter)
+    {
+        std::string Ey_name = "Ey_count_" + std::to_string(counter);
+        const char *Ey_char = Ey_name.c_str();
+        dataset_field = H5Dcreate2(group_Ey, Ey_char, H5T_NATIVE_DOUBLE, dataspace_field, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        status_h5 = H5Dwrite(dataset_field, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(Ey_field->val[0]));
+    }
+
+    void simulation::writePartHDF5(std::vector<species> spec_vec, int counter)
+    {
+        for (int i = 0; i < Nspecies; i++)
+        {
+            std::string part_name = "part_count_" + std::to_string(counter);
+            const char *part_char = part_name.c_str();
+            hsize_t vec_size = spec_vec[i].vec.size();
+            dataspace_part = H5Screate_simple(1, &vec_size, nullptr);
+            dataset_part = H5Dcreate2(h5_vec_group[i], part_char, part_id, dataspace_part, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+            status_h5 = H5Dwrite(dataset_part, part_id, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(spec_vec[i].vec[0]));
+
+            H5Dclose(dataset_part);
+            H5Sclose(dataspace_part);
+        }
+    }
 }

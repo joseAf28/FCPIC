@@ -22,9 +22,12 @@ namespace FCPIC
         void getParamsfromFile(std::string, std::vector<bool> *);
         void setParams();
         void printHelp();
-        std::string print_SI(double);
+        std::string print_SI(double, int);
         void printTitle();
         void printProgress(float);
+        void printTime();
+
+        void setTime(float &);
 
         // Creates a virtual cartesian topology and creates MPI Datatypes
         void setup_proc_grid();
@@ -45,11 +48,16 @@ namespace FCPIC
         void init_pusher(field *, field *, species *);
         void particle_pusher(field *, field *, species *);
 
-        void hdf5_init();
+        void setupHDF5(std::string);
+        void writeChargeHDF5(field *, int);
+        void writeExHDF5(field *, int);
+        void writeEyHDF5(field *, int);
+        void writePartHDF5(std::vector<species>, int);
+
+        void run_simulation(field *, field *, field *, field *, std::vector<species>);
 
         // MPI variables
-        int grid_rank,
-            rank;                                         // rank of the current proces in the virtual grid
+        int grid_rank, rank;                              // rank of the current proces in the virtual grid
         int grid_top, grid_bottom, grid_left, grid_right; // ranks of the neighbouring processes
         int grid_ne, grid_se, grid_nw, grid_sw;           // ranks of diagonal processes: NE, SE, NW, SW
 
@@ -57,12 +65,21 @@ namespace FCPIC
         std::vector<int> Npart;
         std::vector<double> charge, mass, temp, vxfluid, vyfluid;
 
+        // HDF5 variables
+        hid_t file_field, dataset_field, dataspace_field;
+        hid_t dataspace_part, dataset_part;
+        hid_t group_charge, group_Ex, group_Ey;
+        hid_t part_id;
+        herr_t status_h5;
+        hid_t group_creation_plist;
+        std::vector<hid_t> h5_vec_group;
+
     private:
         MPI_Datatype exchange_field_type[2]; // MPI_datatype for exchange of buffer cell data
         MPI_Comm grid_comm;                  // grid COMMUNICATOR
         int offset[2];                       // offset for cell numbering for subdomains
         int wrap_around[2];
-        MPI_Status status;
+        MPI_Status status_mpi;
 
         // MPI_Datatype exchange_part_type;
         MPI_Aint offsets[7]; // it evaluates to the offset (in bytes) of a given member within a struct or union type
@@ -73,13 +90,10 @@ namespace FCPIC
         double aspect, xlen;
         double *X_guard_data, *Y_guard_data;
 
-        std::string h5_name;
-        hid_t file_field, dataset_field, dataspace_field;
-        hid_t dataspace_part, dataset_part;
-        hid_t group_charge, group_Ex, group_Ey, group_particles;
-        hsize_t dims[2];
-        herr_t status_hdf5;
-        hid_t group_creation_plist;
+        // Simulation time variables
+        float time1, time2, total_time;
+        float setup_time, hdf5_time;
+        float particle_time, field_time;
     };
 }
 #endif
