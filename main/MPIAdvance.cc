@@ -28,10 +28,9 @@ int main(int argc, char **argv)
         FCPIC::species test(name, sim->charge[i], sim->mass[i], sim->temp[i], vfa, ppc, sim);
         spec_vec.push_back(test);
     }
-    
+
     sim->run_simulation(Ex, Ey, phi, charge, spec_vec);
-    
-    
+
     hid_t status;
 
     status = H5Gclose(sim->group_charge);
@@ -49,7 +48,6 @@ int main(int argc, char **argv)
     status = H5Pclose(sim->group_creation_plist);
 
     sim->h5_vec_group.clear();
-    
 
     delete Ex;
     delete Ey;

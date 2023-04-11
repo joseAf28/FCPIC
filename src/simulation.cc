@@ -14,9 +14,9 @@ namespace FCPIC
     N_int_x and N_int_y are the number of inner grid points in x and y direction respectively
     ***********************************************************/
 
-    simulation::simulation(int argc, char **argv) : FCPIC_base(), 
-    total_time(0.), setup_time(0.), hdf5_time(0.), 
-    particle_time(0.), field_time(0.)
+    simulation::simulation(int argc, char **argv) : FCPIC_base(),
+                                                    total_time(0.), setup_time(0.), hdf5_time(0.),
+                                                    particle_time(0.), field_time(0.)
     {
         MPI_Init(&argc, &argv);
         time1 = MPI_Wtime();
@@ -93,7 +93,7 @@ namespace FCPIC
         double mantissa = x / pow(10., exponent);
 
         std::string output = std::to_string(mantissa);
-        output = output.substr(0, output.find(".")+precision+1);
+        output = output.substr(0, output.find(".") + precision + 1);
 
         if (exponent == -15)
             output.append(" f");
@@ -141,11 +141,12 @@ namespace FCPIC
         std::cout << "│ Guilherme Crispim, João Palma, José Afonso, ATCP 2023                       │\n";
         std::cout << "└─────────────────────────────────────────────────────────────────────────────┘\n";
         std::cout << "\n";
-        std::cout << "Simulation size: " << print_SI(xlen * Lref,3) << "m x " << print_SI(xlen * aspect * Lref,3) << "m\n";
+        std::cout << "Simulation size: " << print_SI(xlen * Lref, 3) << "m x " << print_SI(xlen * aspect * Lref, 3) << "m\n";
         std::cout << "Spatial discretization: " << print_SI(dx * Lref, 3) << "m x "
-                  << print_SI(dy * Lref, 3) << "m" << " (" << N_total_x << "x" << N_total_y << " cells)\n";
+                  << print_SI(dy * Lref, 3) << "m"
+                  << " (" << N_total_x << "x" << N_total_y << " cells)\n";
         std::cout << "Simulation time: " << print_SI(simtime * Tref, 3) << "s\n";
-        std::cout << "Time discretization: " << print_SI(dt * Tref, 3) << "s (" 
+        std::cout << "Time discretization: " << print_SI(dt * Tref, 3) << "s ("
                   << (int)(simtime / dt) << " time steps)\n";
         std::cout << "MPI process grid: " << n_Procs << " processes ("
                   << grid[X_DIR] << "x" << grid[Y_DIR] << ")\n";
@@ -184,36 +185,39 @@ namespace FCPIC
         }
     }
 
-    void simulation::printTime(){
-        if(grid_rank == 0)
+    void simulation::printTime()
+    {
+        if (grid_rank == 0)
             std::cout << "  Procs  │  Sim. Setup  │ Particle Push │  Field Solve  │  HDF5 Write  ║   TOTAL  \n";
-        for(int i = 0; i < n_Procs; i++){
+        for (int i = 0; i < n_Procs; i++)
+        {
             MPI_Barrier(grid_comm);
-            if(grid_rank == i){
+            if (grid_rank == i)
+            {
                 std::cout << "─────────┼──────────────┼───────────────┼───────────────┼──────────────╫──────────\n";
-                std::cout << "   " << std::right << std::setw(3) << i <<"   │";
-                std::cout << " T:" << std::right << std::setw(8) << setup_time*1000 << "ms │";
+                std::cout << "   " << std::right << std::setw(3) << i << "   │";
+                std::cout << " T:" << std::right << std::setw(8) << setup_time * 1000 << "ms │";
                 std::cout << " T:" << std::right << std::setw(10) << particle_time << "s │";
                 std::cout << " T:" << std::right << std::setw(10) << field_time << "s │";
                 std::cout << " T:" << std::right << std::setw(9) << hdf5_time << "s ║";
                 std::cout << " " << std::right << std::setw(9) << total_time << "s\n";
                 std::cout << std::setprecision(3);
                 std::cout << "         │";
-                std::cout <<" %: "<< std::right << std::setw(8) << setup_time*100./total_time << "% │";
-                std::cout <<" %: "<< std::right << std::setw(9) << particle_time*100./total_time << "% │";
-                std::cout <<" %: "<< std::right << std::setw(9) << field_time*100./total_time << "% │";
-                std::cout <<" %: "<< std::right << std::setw(8) << hdf5_time*100./total_time << "% ║\n";
+                std::cout << " %: " << std::right << std::setw(8) << setup_time * 100. / total_time << "% │";
+                std::cout << " %: " << std::right << std::setw(9) << particle_time * 100. / total_time << "% │";
+                std::cout << " %: " << std::right << std::setw(9) << field_time * 100. / total_time << "% │";
+                std::cout << " %: " << std::right << std::setw(8) << hdf5_time * 100. / total_time << "% ║\n";
             }
         }
         /*
         std::cout << "Elapsed time: " << total_time << " s\n";
-        std::cout << "Simulation setup time: " << setup_time << "s (" 
+        std::cout << "Simulation setup time: " << setup_time << "s ("
                   << 100.*setup_time/total_time << "%)\n";
-        std::cout << "Field calculation time: " << field_time << "s (" 
+        std::cout << "Field calculation time: " << field_time << "s ("
                   << 100.*field_time/total_time << "%)\n";
-        std::cout << "Particle pushing time: " << particle_time 
+        std::cout << "Particle pushing time: " << particle_time
                   << "s (" << 100.*particle_time/total_time << "%)\n";
-        std::cout << "HDF5 writing time: " << hdf5_time << "s (" 
+        std::cout << "HDF5 writing time: " << hdf5_time << "s ("
                   << 100.*hdf5_time/total_time << "%)\n";
         */
     }
@@ -1002,20 +1006,22 @@ namespace FCPIC
         }
     }
 
-    void simulation::setTime(float &task_time){
+    void simulation::setTime(float &task_time)
+    {
         time2 = MPI_Wtime();
-        task_time += time2-time1;
-        total_time += time2-time1;
-        time1=time2;
+        task_time += time2 - time1;
+        total_time += time2 - time1;
+        time1 = time2;
     }
 
-    void simulation::run_simulation(field * Ex, field * Ey, 
-                                    field * phi, field * charge,
-                                    std::vector<species> spec_vec){
+    void simulation::run_simulation(field *Ex, field *Ey,
+                                    field *phi, field *charge,
+                                    std::vector<species> spec_vec)
+    {
         setupHDF5("final_sim");
-        
+
         setTime(setup_time);
-        
+
         for (int i = 0; i < Nspecies; i++)
             get_charge(charge, &spec_vec[i]);
 
@@ -1036,7 +1042,7 @@ namespace FCPIC
                 printProgress(((float)counter) * dt / simtime);
             if (((float)counter) * dt >= simtime)
                 break;
-            
+
             writeChargeHDF5(charge, counter);
             writeExHDF5(Ex, counter);
             writeEyHDF5(Ey, counter);
@@ -1044,8 +1050,8 @@ namespace FCPIC
 
             setTime(hdf5_time);
 
-            int flags_coords_mpi[5] = {grid_rank, grid_top, 
-                                       grid_bottom, grid_right, 
+            int flags_coords_mpi[5] = {grid_rank, grid_top,
+                                       grid_bottom, grid_right,
                                        grid_left};
 
             charge->setValue(0.f);
@@ -1068,7 +1074,7 @@ namespace FCPIC
 
                 setTime(field_time);
             }
-            
+
             exchange_charge_buffers(charge);
             jacobi(phi, charge);
             set_E_value(phi, Ex, Ey);
@@ -1116,6 +1122,19 @@ namespace FCPIC
             hid_t group_idaux = H5Gcreate(file_field, h5_vec_char, H5P_DEFAULT, group_creation_plist, H5P_DEFAULT);
             h5_vec_group.push_back(group_idaux);
         }
+
+        // write the cartesian rank id in the hdf5 file
+        hsize_t size_id_rank = 2;
+        dataspace_rank = H5Screate_simple(1, &size_id_rank, nullptr);
+        group_rank = H5Gcreate(file_field, "/rank", H5P_DEFAULT, group_creation_plist, H5P_DEFAULT);
+        std::string rank_id_name = "rank_id";
+        const char *rank_id_char = rank_id_name.c_str();
+        dataset_rank = H5Dcreate2(group_rank, rank_id_char, H5T_NATIVE_INT, dataspace_rank, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        status_h5 = H5Dwrite(dataset_rank, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(grid_coord[0]));
+
+        status_h5 = H5Sclose(dataspace_rank);
+        status_h5 = H5Gclose(group_rank);
+        status_h5 = H5Dclose(dataset_rank);
     }
 
     void simulation::writeChargeHDF5(field *charge, int counter)

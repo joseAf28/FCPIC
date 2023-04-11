@@ -4,22 +4,32 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation 
 
-def readH5(filename, Ex_field, Ey_field, charge_field, vec_part1, vec_part2):
+def readH5(filename, Ex_field, Ey_field, charge_field, rank_id, vec_part):
     f = h5py.File(filename, "r")
 
     first_key = list(f.keys())
+    print(first_key)
+
     Ex_key = list(f[first_key[0]].keys())
     Ey_key = list(f[first_key[1]].keys())
     charge_key = list(f[first_key[2]].keys())
 
-    particles_1_key = list(f[first_key[3]].keys())
-    # particles_2_key = list(f[first_key[4]].keys())
+    particles_key = []
+
+    for i in range(3, len(first_key)-1):
+        particles_key_aux = list(f[first_key[i]].keys())
+        particles_key.append(particles_key_aux)
+
+
+    # print(particles_key[0])
+    # print(len(particles_key))
+
+    rank_id_key = list(f[first_key[-1]].keys())
 
     Ex_field_aux = []
     Ey_field_aux = []
     charge_field_aux = []
-    vec_particles_1_aux = []
-    vec_particles_2_aux = []
+    vec_part_aux = []
 
     for i in range(0, len(Ex_key)):
         Ex_field_aux.append(f[first_key[0]][Ex_key[i]][()])
@@ -27,11 +37,17 @@ def readH5(filename, Ex_field, Ey_field, charge_field, vec_part1, vec_part2):
     for i in range(0, len(Ey_key)):
         Ey_field_aux.append(f[first_key[1]][Ey_key[i]][()])
 
-    for i in range(0, len(Ex_key)):
+    for i in range(0, len(charge_key)):
         charge_field_aux.append(f[first_key[2]][charge_key[i]][()])
 
-    for i in range(0, len(Ex_key)):
-        vec_particles_1_aux.append(f[first_key[3]][particles_1_key[i]][()])
+    for i in range(0, len(particles_key)):
+        veci_particles_aux = []
+        # print(f[first_key[3]][particles_key[0][0]])
+        for j in range(0, len(particles_key[i])):
+                veci_particles_aux.append(f[first_key[i+3]][particles_key[i][j]][()])
+        vec_part_aux.append(veci_particles_aux)
+
+        # vec_particles_1_aux.append(f[first_key[3]][particles_1_key[i]][()])
     
     # for i in range(0, len(Ex_key)):
     #     vec_particles_2_aux.append(f[first_key[4]][particles_2_key[i]][()])
@@ -39,7 +55,10 @@ def readH5(filename, Ex_field, Ey_field, charge_field, vec_part1, vec_part2):
     Ex_field.append(Ex_field_aux)
     Ey_field.append(Ey_field_aux)
     charge_field.append(charge_field_aux)
-    vec_part1.append(vec_particles_1_aux)
+
+    rank_id.append(f[first_key[4]][rank_id_key[0]][()])
+
+    vec_part.append(vec_part_aux)
     # vec_part2.append(vec_particles_2_aux)
 
 
@@ -47,7 +66,7 @@ def readH5(filename, Ex_field, Ey_field, charge_field, vec_part1, vec_part2):
 results_path = "../results/"
 number_ranks = 4
 counter = 500
-counter_space = 500
+counter_space = 100
 lx = 16./3.
 ly = 16./3.
 
@@ -55,84 +74,57 @@ dx = 1/3
 dy = 1/3
 
 bc = 1
+name_output = "electron_anim_"
+
+grid_x_max = 2
+grid_y_max = 2
 ##########! 
 
 filename_vec = []
-
 Ex_field = []
 Ey_field = []
 charge_field = []
-vec_part1 = []
-vec_part2 = []
+
+rank_id = []
+vec_part = []
 
 for i in range(0, number_ranks):
-    filename = results_path + "newdata_0_rank_" + str(i) + ".h5"
+    filename = results_path + "final_sim_rank_" + str(i) + ".h5"
     filename_vec.append(filename)
 
 # print(filename_vec)
 
 for i in range(0, number_ranks):
-    readH5(filename_vec[i], Ex_field, Ey_field, charge_field, vec_part1, vec_part2)
+    readH5(filename_vec[i], Ex_field, Ey_field, charge_field, rank_id, vec_part)
 
+
+print(rank_id)
 snapshot_x = []
 snapshot_y = []
 snapshot_vx = []
 snapshot_vy = []
 
-for count_plot in range(0, counter_space):
+
+## vec_part index
+### [i][j][k][l]] --  i: process; j: species; k: time step; l: index_part; m: particles' feature 
+
+## rank_id index
+### [i][j] -- i : process; j ::  0 - y direction;  1 - x direction 
+
+
+for count_plot in range(0, len(vec_part[0][0])):
     x_data = []
     y_data = []
     vx_data = []
     vy_data = []
     
-    for i in range(0, len(vec_part1[0][count_plot])):
-        x_data.append(vec_part1[0][count_plot][i][0]*dx + vec_part1[0][count_plot][i][2])
-        y_data.append(vec_part1[0][count_plot][i][1]*dy + vec_part1[0][count_plot][i][3])
-        vx_data.append(vec_part1[0][count_plot][i][4])
-        vy_data.append(vec_part1[0][count_plot][i][5])
-
-    for i in range(0, len(vec_part1[1][count_plot])):
-        x_data.append(np.fmod(lx + vec_part1[1][count_plot][i][0]*dx + vec_part1[1][count_plot][i][2],2*lx))
-        y_data.append(vec_part1[1][count_plot][i][1]*dy + vec_part1[1][count_plot][i][3])
-        vx_data.append(vec_part1[1][count_plot][i][4])
-        vy_data.append(vec_part1[1][count_plot][i][5])
-
-    for i in range(0, len(vec_part1[2][count_plot])):
-        x_data.append(vec_part1[2][count_plot][i][0]*dx + vec_part1[2][count_plot][i][2])
-        y_data.append(np.fmod(ly + vec_part1[2][count_plot][i][1]*dy + vec_part1[2][count_plot][i][3],2*ly))
-        vx_data.append(vec_part1[2][count_plot][i][4])
-        vy_data.append(vec_part1[2][count_plot][i][5])
-
-    for i in range(0, len(vec_part1[3][count_plot])):
-        x_data.append(np.fmod(lx + vec_part1[3][count_plot][i][0]*dx + vec_part1[3][count_plot][i][2],2*lx))
-        y_data.append(np.fmod(ly + vec_part1[3][count_plot][i][1]*dy + vec_part1[3][count_plot][i][3],2*ly))
-        vx_data.append(vec_part1[3][count_plot][i][4])
-        vy_data.append(vec_part1[3][count_plot][i][5])
-    
-
-    # for i in range(0, len(vec_part2[0][count_plot])):
-    #     x_data.append(vec_part2[0][count_plot][i][0]*dx + vec_part2[0][count_plot][i][2])
-    #     y_data.append(vec_part2[0][count_plot][i][1]*dy + vec_part2[0][count_plot][i][3])
-    #     vx_data.append(vec_part2[0][count_plot][i][4])
-    #     vy_data.append(vec_part2[0][count_plot][i][5])
-
-    # for i in range(0, len(vec_part2[1][count_plot])):
-    #     x_data.append(lx + vec_part2[1][count_plot][i][0]*dx + vec_part2[1][count_plot][i][2])
-    #     y_data.append(vec_part2[1][count_plot][i][1]*dy + vec_part2[1][count_plot][i][3])
-    #     vx_data.append(vec_part2[1][count_plot][i][4])
-    #     vy_data.append(vec_part2[1][count_plot][i][5])
-
-    # for i in range(0, len(vec_part2[2][count_plot])):
-    #     x_data.append(vec_part2[2][count_plot][i][0]*dx + vec_part2[2][count_plot][i][2])
-    #     y_data.append(ly + vec_part2[2][count_plot][i][1]*dy + vec_part2[2][count_plot][i][3])
-    #     vx_data.append(vec_part2[2][count_plot][i][4])
-    #     vy_data.append(vec_part2[2][count_plot][i][5])
-
-    # for i in range(0, len(vec_part2[3][count_plot])):
-    #     x_data.append(lx + vec_part2[3][count_plot][i][0]*dx + vec_part2[3][count_plot][i][2])
-    #     y_data.append(ly + vec_part2[3][count_plot][i][1]*dy + vec_part2[3][count_plot][i][3])
-    #     vx_data.append(vec_part2[3][count_plot][i][4])
-    #     vy_data.append(vec_part2[3][count_plot][i][5])
+    for n_proc in range(0, len(vec_part)):
+        for n_spec in range(0, len(vec_part[n_proc])):
+            for i in range(0, len(vec_part[n_proc][n_spec][count_plot])):
+                x_data.append(lx*(rank_id[n_proc][1]) + vec_part[n_proc][n_spec][count_plot][i][0]*dx + vec_part[n_proc][n_spec][count_plot][i][2])
+                y_data.append(ly*(rank_id[n_proc][0]) + vec_part[n_proc][n_spec][count_plot][i][1]*dy + vec_part[n_proc][n_spec][count_plot][i][3])
+                vx_data.append(vec_part[n_proc][n_spec][count_plot][i][4])
+                vy_data.append(vec_part[n_proc][n_spec][count_plot][i][5])
 
 
     snapshot_x.append(x_data)
@@ -140,9 +132,9 @@ for count_plot in range(0, counter_space):
     snapshot_vx.append(vx_data)
     snapshot_vy.append(vy_data)
 
-##! Particle animation
+# # ##! Particle animation
 fps = 20
-nSeconds = math.floor(counter_space/fps)
+nSeconds = math.floor(len(vec_part[0][0])/fps)
 print(nSeconds)
 # First set up the figure, the axis, and the plot element we want to animate
 fig = plt.figure( figsize=(8,8) )
@@ -166,7 +158,7 @@ anim = animation.FuncAnimation(fig, animate_func,
                                interval = 1000 / fps, # in ms
                                )
 
-anim.save(results_path+'videos/electron_part_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+ "videos/" + name_output + "part.mp4", fps=fps, extra_args=['-vcodec', 'libx264'])
 
 print('Particles Anim Done!')
 
@@ -192,7 +184,7 @@ anim = animation.FuncAnimation(fig, animate_func,
                                interval = 1000 / fps, # in ms
                                )
 
-anim.save(results_path+'videos/electron_xphase_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+ "videos/" + name_output + "xphase.mp4", fps=fps, extra_args=['-vcodec', 'libx264'])
 
 print('X Phase Space Anim Done!')
 
@@ -218,84 +210,91 @@ anim = animation.FuncAnimation(fig, animate_func,
                                interval = 1000 / fps, # in ms
                                )
 
-anim.save(results_path+'videos/electron_yphase_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+ "videos/" + name_output + "yphase.mp4", fps=fps, extra_args=['-vcodec', 'libx264'])
 
 print('Y Phase Space Anim Done!')
 
-##!! FIELDS CASE
-# ##animation
+
+
+# ##!! FIELDS CASE
 snapshots_charge = []
 snapshots_Ex = []
 snapshots_Ey = []
 
+
+##order index
+
+list_indx = []
+for indy in range(grid_y_max-1, -1, -1):
+    list_indx_x = []
+    for indx in range(0, grid_x_max):
+        for n_proc in range(0, 4):
+            if (rank_id[n_proc][0] == indy and rank_id[n_proc][1] == indx):
+                list_indx_x.append(n_proc)
+    
+    list_indx.append(list_indx_x)
+
+print(list_indx)
+
+
 ### rank - counter - line_field - cells that count
 # image_counter = 0
-for count_plot in range(0, counter):
+for count_plot in range(0, len(charge_field[2])):
     big_charge_dummy = []
     Ex_dummy = []
     Ey_dummy = []
     phase_dummy = []
 
-    for i in range(len(charge_field[2][count_plot])-1, 0, -1):
-    # for i in range(0, len(charge_field[2][count_plot])):
-        charge_aux = np.concatenate((charge_field[2][count_plot][i][0:-2], charge_field[3][count_plot][i][0:-2]))
-        big_charge_dummy.append(charge_aux)
+    ##!!!!manual concatenatenation in the right grid structure in x direction
+    for indy in range(0, grid_y_max):
+        for i in range(len(charge_field[2][count_plot])-2, 0, -1):
+            charge_aux = np.concatenate((charge_field[list_indx[indy][0]][count_plot][i][1:-2], charge_field[list_indx[indy][1]][count_plot][i][1:-2]))
+            big_charge_dummy.append(charge_aux)
 
-        Ex_aux = np.concatenate((Ex_field[2][count_plot][i][0:-2], Ex_field[3][count_plot][i][0:-2]))
-        Ex_dummy.append(Ex_aux)
+            Ex_aux = np.concatenate((Ex_field[list_indx[indy][0]][count_plot][i][1:-2], Ex_field[list_indx[indy][1]][count_plot][i][1:-2]))
+            Ex_dummy.append(Ex_aux)
 
-        Ey_aux = np.concatenate((Ey_field[2][count_plot][i][0:-2], Ey_field[3][count_plot][i][0:-2]))
-        Ey_dummy.append(Ey_aux)
+            Ey_aux = np.concatenate((Ey_field[list_indx[indy][0]][count_plot][i][1:-2], Ey_field[list_indx[indy][1]][count_plot][i][1:-2]))
+            Ey_dummy.append(Ey_aux)
 
-    for i in range(len(charge_field[0][count_plot])-1, 0, -1):
-    # for i in range(0, len(charge_field[0][count_plot])):
-        charge_aux = np.concatenate((charge_field[0][count_plot][i][0:-2], charge_field[1][count_plot][i][0:-2]))
-        big_charge_dummy.append(charge_aux)
-
-        Ex_aux = np.concatenate((Ex_field[0][count_plot][i][0:-2], Ex_field[1][count_plot][i][0:-2]))
-        Ex_dummy.append(Ex_aux)
-
-        Ey_aux = np.concatenate((Ey_field[0][count_plot][i][0:-2], Ey_field[1][count_plot][i][0:-2]))
-        Ey_dummy.append(Ey_aux)
 
     snapshots_charge.append(big_charge_dummy)
     snapshots_Ex.append(Ex_dummy)
     snapshots_Ey.append(Ey_dummy)
+# # ##! Plots 
+    # plt.figure(count_plot)
+    # plt.imshow(big_charge_dummy, interpolation ='nearest')
+    # plt.xlabel(r"$x$")
+    # plt.ylabel(r"$y$")
+    # plt.title(r"$\rho$")
+    # plt.colorbar()
+    # plt.savefig(results_path + "plots/charge_field_2species_"+ str(count_plot) +"_2.png")
 
-# ##! Plots 
-#     plt.figure(image_counter)
-#     plt.imshow(big_charge_dummy, interpolation ='nearest')
-#     plt.xlabel(r"$x$")
-#     plt.ylabel(r"$y$")
-#     plt.title(r"$\rho$")
-#     plt.colorbar()
-#     plt.savefig(results_path + "plots/charge_field_2species_"+ str(count_plot) +"_2.png")
+# #     image_counter = image_counter + 1
 
-#     image_counter = image_counter + 1
+# #     plt.figure(image_counter)
+# #     plt.imshow(Ex_dummy, interpolation ='nearest')
+# #     plt.xlabel(r"$x$")
+# #     plt.ylabel(r"$y$")
+# #     plt.title(r"$E_x$")
+# #     plt.colorbar()
+# #     plt.savefig(results_path + "plots/Ex_field_2species_"+ str(count_plot) +"_2.png")
 
-#     plt.figure(image_counter)
-#     plt.imshow(Ex_dummy, interpolation ='nearest')
-#     plt.xlabel(r"$x$")
-#     plt.ylabel(r"$y$")
-#     plt.title(r"$E_x$")
-#     plt.colorbar()
-#     plt.savefig(results_path + "plots/Ex_field_2species_"+ str(count_plot) +"_2.png")
+# #     image_counter = image_counter + 1
 
-#     image_counter = image_counter + 1
+# #     plt.figure(image_counter)
+# #     plt.imshow(Ey_dummy, interpolation ='nearest')
+# #     plt.xlabel(r"$x$")
+# #     plt.ylabel(r"$y$")
+# #     plt.title(r"$E_y$")
+# #     plt.colorbar()
+# #     plt.savefig(results_path + "plots/Ey_field_2species_"+ str(count_plot) +"_2.png")
 
-#     plt.figure(image_counter)
-#     plt.imshow(Ey_dummy, interpolation ='nearest')
-#     plt.xlabel(r"$x$")
-#     plt.ylabel(r"$y$")
-#     plt.title(r"$E_y$")
-#     plt.colorbar()
-#     plt.savefig(results_path + "plots/Ey_field_2species_"+ str(count_plot) +"_2.png")
+# #     image_counter = image_counter + 1
 
-#     image_counter = image_counter + 1
-
-# ##!Charge Animation
+# # ##!Charge Animation
 fps = 10
-nSeconds = math.floor(counter/fps)
+nSeconds = math.floor(len(charge_field[2])/fps)
 print(nSeconds)
 # First set up the figure, the axis, and the plot element we want to animate
 fig = plt.figure( figsize=(6,8) )
@@ -315,12 +314,12 @@ anim = animation.FuncAnimation(fig, animate_func,
                                frames = nSeconds * fps,
                                interval = 1000 / fps, # in ms
                                )
-anim.save(results_path+'videos/electron_charge_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+"videos/" + name_output + "charge.mp4", fps=fps, extra_args=['-vcodec', 'libx264'])
 print('Charge Anim Done!')
 
 ##!Ex_field Animation
 fps = 10
-nSeconds = math.floor(counter/fps)
+nSeconds = math.floor(len(charge_field[2])/fps)
 print(nSeconds)
 # First set up the figure, the axis, and the plot element we want to animate
 fig = plt.figure( figsize=(8,8) )
@@ -338,12 +337,12 @@ anim = animation.FuncAnimation(fig, animate_func,
                                frames = nSeconds * fps,
                                interval = 1000 / fps, # in ms
                                )
-anim.save(results_path+'videos/electron_Ex_field_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+"videos/" + name_output + "Ex_field.mp4", fps=fps, extra_args=['-vcodec', 'libx264'])
 print('Ex field Anim Done!')
 
 ##!Ey_field Animation
 fps = 10
-nSeconds = math.floor(counter/fps)
+nSeconds = math.floor(len(charge_field[2])/fps)
 print(nSeconds)
 # First set up the figure, the axis, and the plot element we want to animate
 fig = plt.figure( figsize=(8,8) )
@@ -362,7 +361,7 @@ anim = animation.FuncAnimation(fig, animate_func,
                                frames = nSeconds * fps,
                                interval = 1000 / fps, # in ms
                                )
-anim.save(results_path+'videos/electron_Ey_field_hdf5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+"videos/" + name_output + "Ey_field.mp4", fps=fps, extra_args=['-vcodec', 'libx264'])
 print('Ey field Anim Done!')
 
 

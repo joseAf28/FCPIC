@@ -67,6 +67,7 @@ namespace FCPIC
 
         // HDF5 variables
         hid_t file_field, dataset_field, dataspace_field;
+        hid_t group_rank, dataset_rank, dataspace_rank;
         hid_t dataspace_part, dataset_part;
         hid_t group_charge, group_Ex, group_Ey;
         hid_t part_id;
