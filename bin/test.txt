@@ -3,7 +3,7 @@
 # INPUTS
 npart = 1000,1000
 mass = 1.,1.
-charge = -1.0,-1.0
+charge = -1.,-1.
 temp = 1.0,1.0
 vxfluid= 5.,-5.
 vyfluid= 0.,0.

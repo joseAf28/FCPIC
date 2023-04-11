@@ -21,6 +21,7 @@ namespace FCPIC
         void readArgs(int, char **);
         void getParamsfromFile(std::string, std::vector<bool> *);
         void setParams();
+        void confirmParams();
         void printHelp();
         std::string print_SI(double, int);
         void printTitle();
@@ -49,6 +50,7 @@ namespace FCPIC
         void particle_pusher(field *, field *, species *);
 
         void setupHDF5(std::string);
+        void closeHDF5();
         void writeChargeHDF5(field *, int);
         void writeExHDF5(field *, int);
         void writeEyHDF5(field *, int);
@@ -73,6 +75,8 @@ namespace FCPIC
         herr_t status_h5;
         hid_t group_creation_plist;
         std::vector<hid_t> h5_vec_group;
+
+        int sim_true;
 
     private:
         MPI_Datatype exchange_field_type[2]; // MPI_datatype for exchange of buffer cell data

@@ -66,7 +66,7 @@ vec_part1 = []
 vec_part2 = []
 
 for i in range(0, number_ranks):
-    filename = results_path + "newdata_rank_" + str(i) + ".h5"
+    filename = results_path + "final_sim_rank_" + str(i) + ".h5"
     filename_vec.append(filename)
 
 # print(filename_vec)
