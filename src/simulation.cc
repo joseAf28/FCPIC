@@ -59,7 +59,11 @@ namespace FCPIC
 
         setup_proc_grid();
 
+        setTime(setup_time);
+
         confirmParams();
+
+        setTime();
     }
 
     simulation::~simulation()
@@ -190,6 +194,7 @@ namespace FCPIC
                 std::cout <<" %: "<< std::right << std::setw(9) << field_time*100./total_time << "% │";
                 std::cout <<" %: "<< std::right << std::setw(8) << hdf5_time*100./total_time << "% ║\n";
             }
+            MPI_Barrier(grid_comm);
         }
     }
 
@@ -845,7 +850,7 @@ namespace FCPIC
     {
         double res, e;
         double global_res = 1.0;
-        double tol = 1e-5;
+        double tol = 1e-4;
 
         long int loop = 0;
 
@@ -1027,6 +1032,9 @@ namespace FCPIC
         task_time += time2-time1;
         total_time += time2-time1;
         time1=time2;
+    }
+    void simulation::setTime(){
+        time1 = MPI_Wtime();
     }
 
     void simulation::run_simulation(field * Ex, field * Ey, 

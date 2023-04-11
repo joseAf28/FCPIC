@@ -29,6 +29,7 @@ namespace FCPIC
         void printTime();
 
         void setTime(float &);
+        void setTime();
 
         // Creates a virtual cartesian topology and creates MPI Datatypes
         void setup_proc_grid();
