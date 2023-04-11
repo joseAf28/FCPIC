@@ -6,26 +6,16 @@ import matplotlib.animation as animation
 
 def readH5(filename, Ex_field, Ey_field, charge_field, rank_id, vec_part):
     f = h5py.File(filename, "r")
-
     first_key = list(f.keys())
-    print(first_key)
-
     Ex_key = list(f[first_key[0]].keys())
     Ey_key = list(f[first_key[1]].keys())
     charge_key = list(f[first_key[2]].keys())
-
     particles_key = []
-
     for i in range(3, len(first_key)-1):
         particles_key_aux = list(f[first_key[i]].keys())
         particles_key.append(particles_key_aux)
 
-
-    # print(particles_key[0])
-    # print(len(particles_key))
-
     rank_id_key = list(f[first_key[-1]].keys())
-
     Ex_field_aux = []
     Ey_field_aux = []
     charge_field_aux = []
@@ -42,31 +32,65 @@ def readH5(filename, Ex_field, Ey_field, charge_field, rank_id, vec_part):
 
     for i in range(0, len(particles_key)):
         veci_particles_aux = []
-        # print(f[first_key[3]][particles_key[0][0]])
         for j in range(0, len(particles_key[i])):
                 veci_particles_aux.append(f[first_key[i+3]][particles_key[i][j]][()])
         vec_part_aux.append(veci_particles_aux)
 
-        # vec_particles_1_aux.append(f[first_key[3]][particles_1_key[i]][()])
-    
-    # for i in range(0, len(Ex_key)):
-    #     vec_particles_2_aux.append(f[first_key[4]][particles_2_key[i]][()])
 
     Ex_field.append(Ex_field_aux)
     Ey_field.append(Ey_field_aux)
     charge_field.append(charge_field_aux)
-
     rank_id.append(f[first_key[4]][rank_id_key[0]][()])
+    vec_part.append(vec_part_aux)
+
+
+def H5readEx(filename, Ex_field, counter):
+    f = h5py.File(filename, "r")
+    first_key = list(f.keys())
+    Ex_key = list(f[first_key[0]].keys())
+    Ex_field.append(f[first_key[0]][Ex_key[counter]][()])
+
+def H5readEy(filename, Ey_field, counter):
+    f = h5py.File(filename, "r")
+    first_key = list(f.keys())
+    Ey_key = list(f[first_key[1]].keys())
+    Ey_field.append(f[first_key[1]][Ey_key[counter]][()])
+
+def H5readCharge(filename, Ey_field, counter):
+    f = h5py.File(filename, "r")
+    first_key = list(f.keys())
+    Ey_key = list(f[first_key[2]].keys())
+    Ey_field.append(f[first_key[2]][Ey_key[counter]][()])
+
+def H5readParticles(filename, vec_part, counter):
+    f = h5py.File(filename, "r")
+    first_key = list(f.keys())
+    particles_key = []
+
+    for i in range(3, len(first_key)-1):
+        particles_key_aux = list(f[first_key[i]].keys())
+        particles_key.append(particles_key_aux)
+
+    vec_part_aux = []
+    for i in range(0, len(particles_key)):
+        veci_particles_aux = (f[first_key[i+3]][particles_key[i][counter]][()])
+        vec_part_aux.append(veci_particles_aux)
 
     vec_part.append(vec_part_aux)
-    # vec_part2.append(vec_particles_2_aux)
+
+def H5readRank(filename, rank_id):
+    f = h5py.File(filename, "r")
+    first_key = list(f.keys())
+    rank_id_key = list(f[first_key[-1]].keys())
+    rank_id.append(f[first_key[4]][rank_id_key[0]][()])
 
 
 ##########! varibles to change 
 results_path = "../results/"
 number_ranks = 4
-counter = 500
-counter_space = 100
+
+counter = 100
+
 lx = 16./3.
 ly = 16./3.
 
@@ -94,141 +118,29 @@ for i in range(0, number_ranks):
 
 # print(filename_vec)
 
-for i in range(0, number_ranks):
-    readH5(filename_vec[i], Ex_field, Ey_field, charge_field, rank_id, vec_part)
+for i in range(0, len(filename_vec)):
+    H5readRank(filename_vec[i], rank_id)
+    
 
-
-print(rank_id)
-snapshot_x = []
-snapshot_y = []
-snapshot_vx = []
-snapshot_vy = []
-
-
-## vec_part index
-### [i][j][k][l]] --  i: process; j: species; k: time step; l: index_part; m: particles' feature 
-
-## rank_id index
-### [i][j] -- i : process; j ::  0 - y direction;  1 - x direction 
-
-
-for count_plot in range(0, len(vec_part[0][0])):
-    x_data = []
-    y_data = []
-    vx_data = []
-    vy_data = []
+def Particle2Anim(file_vec, counter, x_data, y_data, vx_data, vy_data):
+    vec_part = []
+    for i in range(0, len(file_vec)):
+        H5readParticles(file_vec[i], vec_part, counter)
     
     for n_proc in range(0, len(vec_part)):
         for n_spec in range(0, len(vec_part[n_proc])):
-            for i in range(0, len(vec_part[n_proc][n_spec][count_plot])):
-                x_data.append(lx*(rank_id[n_proc][1]) + vec_part[n_proc][n_spec][count_plot][i][0]*dx + vec_part[n_proc][n_spec][count_plot][i][2])
-                y_data.append(ly*(rank_id[n_proc][0]) + vec_part[n_proc][n_spec][count_plot][i][1]*dy + vec_part[n_proc][n_spec][count_plot][i][3])
-                vx_data.append(vec_part[n_proc][n_spec][count_plot][i][4])
-                vy_data.append(vec_part[n_proc][n_spec][count_plot][i][5])
+            for i in range(0, len(vec_part[n_proc][n_spec])):
+                x_data.append(lx*(rank_id[n_proc][1]) + vec_part[n_proc][n_spec][i][0]*dx + vec_part[n_proc][n_spec][i][2])
+                y_data.append(ly*(rank_id[n_proc][0]) + vec_part[n_proc][n_spec][i][1]*dy + vec_part[n_proc][n_spec][i][3])
+                vx_data.append(vec_part[n_proc][n_spec][i][4])
+                vy_data.append(vec_part[n_proc][n_spec][i][5])
 
-
-    snapshot_x.append(x_data)
-    snapshot_y.append(y_data)
-    snapshot_vx.append(vx_data)
-    snapshot_vy.append(vy_data)
-
-# # ##! Particle animation
-fps = 20
-nSeconds = math.floor(len(vec_part[0][0])/fps)
-print(nSeconds)
-# First set up the figure, the axis, and the plot element we want to animate
-fig = plt.figure( figsize=(8,8) )
-
-im = plt.scatter(snapshot_x[0], snapshot_y[0], marker=".")
-
-
-plt.xlabel(r"$x$")
-plt.ylabel(r"$y$")
-plt.title(r"$Particles$")
-
-def animate_func(i):
-    if i % fps == 0:
-        print( '.', end ='' )
-
-    im.set_offsets(np.transpose([snapshot_x[i], snapshot_y[i]]))
-    return [im]
-
-anim = animation.FuncAnimation(fig, animate_func, 
-                               frames = nSeconds * fps,
-                               interval = 1000 / fps, # in ms
-                               )
-
-anim.save(results_path+ "videos/" + name_output + "part.mp4", fps=fps, extra_args=['-vcodec', 'libx264'])
-
-print('Particles Anim Done!')
-
-#X PHASE SPACE
-
-fig = plt.figure( figsize=(8,8) )
-
-im = plt.scatter(snapshot_x[0], snapshot_vx[0], marker=".")
-
-plt.xlabel(r"$x$")
-plt.ylabel(r"$vx$")
-plt.title(r"$X Phase Space$")
-
-def animate_func(i):
-    if i % fps == 0:
-        print( '.', end ='' )
-
-    im.set_offsets(np.transpose([snapshot_x[i], snapshot_vx[i]]))
-    return [im]
-
-anim = animation.FuncAnimation(fig, animate_func, 
-                               frames = nSeconds * fps,
-                               interval = 1000 / fps, # in ms
-                               )
-
-anim.save(results_path+ "videos/" + name_output + "xphase.mp4", fps=fps, extra_args=['-vcodec', 'libx264'])
-
-print('X Phase Space Anim Done!')
-
-#Y PHASE SPACE
-
-fig = plt.figure( figsize=(8,8) )
-
-im = plt.scatter(snapshot_y[0], snapshot_vy[0], marker=".")
-
-plt.xlabel(r"$y$")
-plt.ylabel(r"$vy$")
-plt.title(r"$Y Phase Space$")
-
-def animate_func(i):
-    if i % fps == 0:
-        print( '.', end ='' )
-
-    im.set_offsets(np.transpose([snapshot_y[i], snapshot_vy[i]]))
-    return [im]
-
-anim = animation.FuncAnimation(fig, animate_func, 
-                               frames = nSeconds * fps,
-                               interval = 1000 / fps, # in ms
-                               )
-
-anim.save(results_path+ "videos/" + name_output + "yphase.mp4", fps=fps, extra_args=['-vcodec', 'libx264'])
-
-print('Y Phase Space Anim Done!')
-
-
-
-# ##!! FIELDS CASE
-snapshots_charge = []
-snapshots_Ex = []
-snapshots_Ey = []
-
-
-##order index
 
 list_indx = []
 for indy in range(grid_y_max-1, -1, -1):
     list_indx_x = []
     for indx in range(0, grid_x_max):
-        for n_proc in range(0, 4):
+        for n_proc in range(0, grid_x_max*grid_y_max):
             if (rank_id[n_proc][0] == indy and rank_id[n_proc][1] == indx):
                 list_indx_x.append(n_proc)
     
@@ -237,131 +149,242 @@ for indy in range(grid_y_max-1, -1, -1):
 print(list_indx)
 
 
-### rank - counter - line_field - cells that count
-# image_counter = 0
-for count_plot in range(0, len(charge_field[2])):
-    big_charge_dummy = []
-    Ex_dummy = []
-    Ey_dummy = []
-    phase_dummy = []
+def Ex2Anim(file_vec, counter, Ex_data):
+    Ex_field = []
+    for i in range(0, len(file_vec)):
+        H5readEx(file_vec[i], Ex_field, counter)
 
-    ##!!!!manual concatenatenation in the right grid structure in x direction
     for indy in range(0, grid_y_max):
-        for i in range(len(charge_field[2][count_plot])-2, 0, -1):
-            charge_aux = np.concatenate((charge_field[list_indx[indy][0]][count_plot][i][1:-2], charge_field[list_indx[indy][1]][count_plot][i][1:-2]))
-            big_charge_dummy.append(charge_aux)
-
-            Ex_aux = np.concatenate((Ex_field[list_indx[indy][0]][count_plot][i][1:-2], Ex_field[list_indx[indy][1]][count_plot][i][1:-2]))
-            Ex_dummy.append(Ex_aux)
-
-            Ey_aux = np.concatenate((Ey_field[list_indx[indy][0]][count_plot][i][1:-2], Ey_field[list_indx[indy][1]][count_plot][i][1:-2]))
-            Ey_dummy.append(Ey_aux)
+        for i in range(len(Ex_field[2])-2, 0, -1):
+            Ex_aux = np.concatenate((Ex_field[list_indx[indy][0]][i][1:-2], Ex_field[list_indx[indy][1]][i][1:-2]))
+            Ex_data.append(Ex_aux)
 
 
-    snapshots_charge.append(big_charge_dummy)
-    snapshots_Ex.append(Ex_dummy)
-    snapshots_Ey.append(Ey_dummy)
-# # ##! Plots 
-    # plt.figure(count_plot)
-    # plt.imshow(big_charge_dummy, interpolation ='nearest')
-    # plt.xlabel(r"$x$")
-    # plt.ylabel(r"$y$")
-    # plt.title(r"$\rho$")
-    # plt.colorbar()
-    # plt.savefig(results_path + "plots/charge_field_2species_"+ str(count_plot) +"_2.png")
+def Ey2Anim(file_vec, counter, Ey_data):
+    Ey_field = []
+    for i in range(0, len(file_vec)):
+        H5readEy(file_vec[i], Ey_field, counter)
 
-# #     image_counter = image_counter + 1
+    for indy in range(0, grid_y_max):
+        for i in range(len(Ey_field[2])-2, 0, -1):
+            Ey_aux = np.concatenate((Ey_field[list_indx[indy][0]][i][1:-2], Ey_field[list_indx[indy][1]][i][1:-2]))
+            Ey_data.append(Ey_aux)
 
-# #     plt.figure(image_counter)
-# #     plt.imshow(Ex_dummy, interpolation ='nearest')
-# #     plt.xlabel(r"$x$")
-# #     plt.ylabel(r"$y$")
-# #     plt.title(r"$E_x$")
-# #     plt.colorbar()
-# #     plt.savefig(results_path + "plots/Ex_field_2species_"+ str(count_plot) +"_2.png")
 
-# #     image_counter = image_counter + 1
+def Charge2Anim(file_vec, counter, charge_data):
+    charge_field = []
+    for i in range(0, len(file_vec)):
+        H5readCharge(file_vec[i], charge_field, counter)
 
-# #     plt.figure(image_counter)
-# #     plt.imshow(Ey_dummy, interpolation ='nearest')
-# #     plt.xlabel(r"$x$")
-# #     plt.ylabel(r"$y$")
-# #     plt.title(r"$E_y$")
-# #     plt.colorbar()
-# #     plt.savefig(results_path + "plots/Ey_field_2species_"+ str(count_plot) +"_2.png")
+    for indy in range(0, grid_y_max):
+        for i in range(len(charge_field[2])-2, 0, -1):
+            charge_aux = np.concatenate((charge_field[list_indx[indy][0]][i][1:-2], charge_field[list_indx[indy][1]][i][1:-2]))
+            charge_data.append(charge_aux)
 
-# #     image_counter = image_counter + 1
 
-# # ##!Charge Animation
-fps = 10
-nSeconds = math.floor(len(charge_field[2])/fps)
+def animate_particles(counter):
+    x_data = []
+    y_data = []
+    vx_data = []
+    vy_data = []
+    Particle2Anim(filename_vec, counter, x_data, y_data, vx_data, vy_data)
+    im.set_offsets(np.transpose([x_data, y_data]))
+    return [im]
+
+
+def animate_xphase(counter):
+    x_data = []
+    y_data = []
+    vx_data = []
+    vy_data = []
+    Particle2Anim(filename_vec, counter, x_data, y_data, vx_data, vy_data)
+    im.set_offsets(np.transpose([x_data, vx_data]))
+    return [im]
+
+
+def animate_yphase(counter):
+    x_data = []
+    y_data = []
+    vx_data = []
+    vy_data = []
+    Particle2Anim(filename_vec, counter, x_data, y_data, vx_data, vy_data)
+    im.set_offsets(np.transpose([y_data, vy_data]))
+    return [im]
+
+
+def animate_Exfield(counter):
+    Ex_data = []
+    Ex2Anim(filename_vec, counter, Ex_data)
+    im.set_array(Ex_data)
+    return [im]
+
+
+def animate_Eyfield(counter):
+    Ey_data = []
+    Ey2Anim(filename_vec, counter, Ey_data)
+    im.set_array(Ey_data)
+    return [im]
+
+
+def animate_charge(counter):
+    charge_data = []
+    Charge2Anim(filename_vec, counter, charge_data)
+    im.set_array(charge_data)
+    return [im]
+
+snapshot_x = []
+snapshot_y = []
+snapshot_vx = []
+snapshot_vy = []
+Particle2Anim(filename_vec, 0, snapshot_x, snapshot_y, snapshot_vx, snapshot_vy)
+
+charge_data = []
+Charge2Anim(filename_vec, 1, charge_data)
+
+
+
+# # ##! Particle animation
+fps = 20
+nSeconds = math.floor(counter/fps)
 print(nSeconds)
-# First set up the figure, the axis, and the plot element we want to animate
+
+fig = plt.figure( figsize=(8,8) )
+im = plt.scatter(snapshot_x, snapshot_y, marker=".")
+plt.xlabel(r"$x$")
+plt.ylabel(r"$y$")
+plt.title(r"$Particles$")
+anim = animation.FuncAnimation(fig, animate_particles, 
+                               frames = nSeconds * fps,
+                               interval = 1000 / fps, # in ms
+                               )
+
+anim.save(results_path+ "videos/" + name_output + "part_clean.mp4", fps=fps, extra_args=['-vcodec', 'libx264'])
+
+print('Particles Anim Done!')
+
+#X PHASE SPACE
+
+fig = plt.figure( figsize=(8,8) )
+snapshot_x = []
+snapshot_y = []
+snapshot_vx = []
+snapshot_vy = []
+Particle2Anim(filename_vec, 0, snapshot_x, snapshot_y, snapshot_vx, snapshot_vy)
+im = plt.scatter(snapshot_x, snapshot_vx, marker=".")
+plt.xlabel(r"$x$")
+plt.ylabel(r"$vx$")
+plt.title(r"$X Phase Space$")
+anim = animation.FuncAnimation(fig, animate_xphase, 
+                               frames = nSeconds * fps,
+                               interval = 1000 / fps, # in ms
+                               )
+anim.save(results_path+ "videos/" + name_output + "xphase_clean.mp4", fps=fps, extra_args=['-vcodec', 'libx264'])
+
+print('X Phase Space Anim Done!')
+
+#Y PHASE SPACE
+fig = plt.figure( figsize=(8,8) )
+im = plt.scatter(snapshot_y, snapshot_vy, marker=".")
+plt.xlabel(r"$y$")
+plt.ylabel(r"$vy$")
+plt.title(r"$Y Phase Space$")
+anim = animation.FuncAnimation(fig, animate_yphase, 
+                               frames = nSeconds * fps,
+                               interval = 1000 / fps, # in ms
+                               )
+anim.save(results_path+ "videos/" + name_output + "yphase_clean.mp4", fps=fps, extra_args=['-vcodec', 'libx264'])
+
+print('Y Phase Space Anim Done!')
+
+
+# # # ##! Plots 
+#     # plt.figure(count_plot)
+#     # plt.imshow(big_charge_dummy, interpolation ='nearest')
+#     # plt.xlabel(r"$x$")
+#     # plt.ylabel(r"$y$")
+#     # plt.title(r"$\rho$")
+#     # plt.colorbar()
+#     # plt.savefig(results_path + "plots/charge_field_2species_"+ str(count_plot) +"_2.png")
+
+# # #     image_counter = image_counter + 1
+
+# # #     plt.figure(image_counter)
+# # #     plt.imshow(Ex_dummy, interpolation ='nearest')
+# # #     plt.xlabel(r"$x$")
+# # #     plt.ylabel(r"$y$")
+# # #     plt.title(r"$E_x$")
+# # #     plt.colorbar()
+# # #     plt.savefig(results_path + "plots/Ex_field_2species_"+ str(count_plot) +"_2.png")
+
+# # #     image_counter = image_counter + 1
+
+# # #     plt.figure(image_counter)
+# # #     plt.imshow(Ey_dummy, interpolation ='nearest')
+# # #     plt.xlabel(r"$x$")
+# # #     plt.ylabel(r"$y$")
+# # #     plt.title(r"$E_y$")
+# # #     plt.colorbar()
+# # #     plt.savefig(results_path + "plots/Ey_field_2species_"+ str(count_plot) +"_2.png")
+
+# # # ##!Charge Animation
+fps = 10
+nSeconds = math.floor(counter/fps)
+print(nSeconds)
+
 fig = plt.figure( figsize=(6,8) )
 
-a = snapshots_charge[0]
+charge_data = []
+Charge2Anim(filename_vec, 0, charge_data)
+a = charge_data
 im = plt.imshow(a, interpolation='spline16')
 plt.xlabel(r"$x$")
 plt.ylabel(r"$y$")
 plt.title(r"$\rho$")
 plt.colorbar()
-def animate_func(i):
-    if i % fps == 0:
-        print( '.', end ='' )
-    im.set_array(snapshots_charge[i])
-    return [im]
-anim = animation.FuncAnimation(fig, animate_func, 
+anim = animation.FuncAnimation(fig, animate_charge, 
                                frames = nSeconds * fps,
                                interval = 1000 / fps, # in ms
                                )
-anim.save(results_path+"videos/" + name_output + "charge.mp4", fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+"videos/" + name_output + "charge_clean.mp4", fps=fps, extra_args=['-vcodec', 'libx264'])
 print('Charge Anim Done!')
 
 ##!Ex_field Animation
 fps = 10
-nSeconds = math.floor(len(charge_field[2])/fps)
+nSeconds = math.floor(counter/fps)
 print(nSeconds)
-# First set up the figure, the axis, and the plot element we want to animate
+
 fig = plt.figure( figsize=(8,8) )
-a = snapshots_Ex[0]
+a = []
+Ex2Anim(filename_vec, 0, a)
 im = plt.imshow(a, interpolation='spline16')
 plt.xlabel(r"$x$")
 plt.ylabel(r"$y$")
 plt.title(r"$E_x$")
-def animate_func(i):
-    if i % fps == 0:
-        print( '.', end ='' )
-    im.set_array(snapshots_Ex[i])
-    return [im]
-anim = animation.FuncAnimation(fig, animate_func, 
+
+anim = animation.FuncAnimation(fig, animate_Exfield, 
                                frames = nSeconds * fps,
                                interval = 1000 / fps, # in ms
                                )
-anim.save(results_path+"videos/" + name_output + "Ex_field.mp4", fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+"videos/" + name_output + "Ex_field_clean.mp4", fps=fps, extra_args=['-vcodec', 'libx264'])
 print('Ex field Anim Done!')
 
-##!Ey_field Animation
+# ##!Ey_field Animation
 fps = 10
-nSeconds = math.floor(len(charge_field[2])/fps)
+nSeconds = math.floor(counter/fps)
 print(nSeconds)
-# First set up the figure, the axis, and the plot element we want to animate
-fig = plt.figure( figsize=(8,8) )
-a = snapshots_Ey[0]
+
+a = []
+Ey2Anim(filename_vec, 0, a)
 im = plt.imshow(a, interpolation='spline16')
 plt.xlabel(r"$x$")
 plt.ylabel(r"$y$")
 plt.title(r"$E_y$")
 plt.colorbar()
-def animate_func(i):
-    if i % fps == 0:
-        print( '.', end ='' )
-    im.set_array(snapshots_Ey[i])
-    return [im]
-anim = animation.FuncAnimation(fig, animate_func, 
+anim = animation.FuncAnimation(fig, animate_Eyfield, 
                                frames = nSeconds * fps,
                                interval = 1000 / fps, # in ms
                                )
-anim.save(results_path+"videos/" + name_output + "Ey_field.mp4", fps=fps, extra_args=['-vcodec', 'libx264'])
+anim.save(results_path+"videos/" + name_output + "Ey_field_clean.mp4", fps=fps, extra_args=['-vcodec', 'libx264'])
 print('Ey field Anim Done!')
 
 
