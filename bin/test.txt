@@ -24,4 +24,4 @@ xlen=0.00005
 boundcond= 1
 nxproc=2
 aspect=1
-simtime=.000000002
+simtime=.0000000002

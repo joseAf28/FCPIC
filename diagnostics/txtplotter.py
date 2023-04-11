@@ -329,3 +329,34 @@ anim = animation.FuncAnimation(fig, animate_func,
                                )
 anim.save(results_path+'videos/Ey_field_5_anim.mp4', fps=fps, extra_args=['-vcodec', 'libx264'])
 print('Ey field Anim Done!')
+
+    # for indy in range(0, max_y):
+    #     charge_aux_y = []
+    #     for n_proc2 in range(0, len(vec_part)):
+            
+    #         if(rank_id[n_proc2][0] == indy):
+    #             print(n_proc2)
+    #             charge_aux_line = []
+
+    #             for indx in range(0, max_x):
+    #                 charge_aux_x = []
+    #                 for n_proc in range(0, len(vec_part)):
+
+    #                     charge_aux_x_2 = []
+    #                     if(rank_id[n_proc][1] == indx):
+
+    #                          for i in range(len(charge_field[n_proc][count_plot])-1, 0, -1):
+    #                             charge_aux_x_aux = []
+    #                             charge_aux_x_aux = np.concatenate((charge_field[n_proc][count_plot][i][0:-2], charge_aux_x_aux))
+    #                             charge_aux_x_2.append(charge_aux_x_aux)
+                            
+    #                     charge_aux_x.append(charge_aux_x_2)
+    #                     # if(rank_id[n_proc][1] == indx):
+    #                     #     charge_aux = np.concatenate((charge_field[n_proc][count_plot][0:-2], charge_aux))
+
+    #             charge_aux_line.append(charge_aux_x)
+
+    #         charge_aux_y.append(charge_aux_line)
+
+    #     big_charge_dummy.append(charge_aux_line)
+           
