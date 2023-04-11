@@ -22,9 +22,12 @@ namespace FCPIC
         void getParamsfromFile(std::string, std::vector<bool> *);
         void setParams();
         void printHelp();
-        std::string print_SI(double);
+        std::string print_SI(double, int);
         void printTitle();
         void printProgress(float);
+        void printTime();
+
+        void setTime(float &);
 
         // Creates a virtual cartesian topology and creates MPI Datatypes
         void setup_proc_grid();
@@ -51,9 +54,10 @@ namespace FCPIC
         void writeEyHDF5(field *, int);
         void writePartHDF5(std::vector<species>, int);
 
+        void run_simulation(field *, field *, field *, field *, std::vector<species>);
+
         // MPI variables
-        int grid_rank,
-            rank;                                         // rank of the current proces in the virtual grid
+        int grid_rank, rank;                              // rank of the current proces in the virtual grid
         int grid_top, grid_bottom, grid_left, grid_right; // ranks of the neighbouring processes
         int grid_ne, grid_se, grid_nw, grid_sw;           // ranks of diagonal processes: NE, SE, NW, SW
 
@@ -85,6 +89,11 @@ namespace FCPIC
         // Simulation variables
         double aspect, xlen;
         double *X_guard_data, *Y_guard_data;
+
+        // Simulation time variables
+        float time1, time2, total_time;
+        float setup_time, hdf5_time;
+        float particle_time, field_time;
     };
 }
 #endif
