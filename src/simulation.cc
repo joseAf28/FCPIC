@@ -175,10 +175,14 @@ namespace FCPIC
         }
     }
 
-    void simulation::printTime()
+    void simulation::printTime(std::string filename)
     {
-        if (grid_rank == 0)
+        if (grid_rank == 0){
             std::cout << "  Procs  │  Sim. Setup  │ Particle Push │  Field Solve  │  HDF5 Write  ║   TOTAL  \n";
+            std::ofstream outfile(filename + ".txt");
+            outfile << "# Procs: Sim. Setup (s), Particle Push (s), Field Solve (s), HDF5 Write (s), TOTAL (s)\n\n";
+            outfile.close();
+        }
         for (int i = 0; i < n_Procs; i++)
         {
             MPI_Barrier(grid_comm);
@@ -197,6 +201,15 @@ namespace FCPIC
                 std::cout << " %: " << std::right << std::setw(9) << particle_time * 100. / total_time << "% │";
                 std::cout << " %: " << std::right << std::setw(9) << field_time * 100. / total_time << "% │";
                 std::cout << " %: " << std::right << std::setw(8) << hdf5_time * 100. / total_time << "% ║\n";
+
+                std::ofstream outfile(filename + ".txt", std::ios_base::app);
+                outfile << i << ": ";
+                outfile << setup_time << " , ";
+                outfile << particle_time << " , ";
+                outfile << field_time << " , ";
+                outfile << hdf5_time << " , ";
+                outfile << total_time << "\n";
+                outfile.close();
             }
             MPI_Barrier(grid_comm);
         }
@@ -1047,9 +1060,9 @@ namespace FCPIC
 
     void simulation::run_simulation(field *Ex, field *Ey,
                                     field *phi, field *charge,
-                                    std::vector<species> spec_vec)
+                                    std::vector<species> spec_vec, std::string filename)
     {
-        setupHDF5("final_sim");
+        setupHDF5(filename);
 
         setTime(setup_time);
 
@@ -1116,7 +1129,7 @@ namespace FCPIC
             setTime(field_time);
         }
 
-        printTime();
+        printTime(filename);
 
         closeHDF5();
     }

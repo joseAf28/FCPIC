@@ -43,7 +43,7 @@ int main(int argc, char **argv)
                 spec_vec[i].update_part_list();
             }}
         
-        sim->run_simulation(Ex, Ey, phi, charge, spec_vec);
+        sim->run_simulation(Ex, Ey, phi, charge, spec_vec, "final_sim_np4");
         
 
         delete Ex;

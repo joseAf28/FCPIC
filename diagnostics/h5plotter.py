@@ -90,19 +90,19 @@ def H5readRank(filename, rank_id):
 results_path = "../results/"
 number_ranks = 4
 
-counter = 939
+counter = 578
 
-lx = 28./3.
-ly = 28./3.
+lx = 34./3.
+ly = 14./3.
 
-dx = 1/3
-dy = 1/3
+dx = 1/3.
+dy = 1/3.
 
 bc = 1
 name_output = "electron_anim_"
 
-grid_x_max = 2
-grid_y_max = 2
+grid_x_max = 4
+grid_y_max = 1
 ##########! 
 
 filename_vec = []
@@ -114,7 +114,7 @@ rank_id = []
 vec_part = []
 
 for i in range(0, number_ranks):
-    filename = results_path + "final_sim_rank_" + str(i) + ".h5"
+    filename = results_path + "final_sim_np4_rank_" + str(i) + ".h5"
     filename_vec.append(filename)
 
 # print(filename_vec)
@@ -147,7 +147,7 @@ for indy in range(grid_y_max-1, -1, -1):
     
     list_indx.append(list_indx_x)
 
-print(list_indx)
+print(rank_id)
 
 
 def Ex2Anim(file_vec, counter, Ex_data):

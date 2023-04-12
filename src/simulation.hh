@@ -26,7 +26,7 @@ namespace FCPIC
         std::string print_SI(double, int);
         void printTitle();
         void printProgress(float);
-        void printTime();
+        void printTime(std::string);
 
         void setTime(float &);
         void setTime();
@@ -57,7 +57,7 @@ namespace FCPIC
         void writeEyHDF5(field *, int);
         void writePartHDF5(std::vector<species>, int);
 
-        void run_simulation(field *, field *, field *, field *, std::vector<species>);
+        void run_simulation(field *, field *, field *, field *, std::vector<species>, std::string);
 
         // MPI variables
         int grid_rank, rank;                              // rank of the current proces in the virtual grid
