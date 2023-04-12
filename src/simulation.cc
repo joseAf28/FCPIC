@@ -61,6 +61,8 @@ namespace FCPIC
 
         setTime(setup_time);
 
+        //std::cout << "Proc: " << grid_rank << " Top: " << grid_top << "\n\n";
+
         confirmParams();
 
         setTime();
@@ -674,8 +676,8 @@ namespace FCPIC
         MPI_Cart_coords(grid_comm, grid_rank, 2, grid_coord);
 
         // calculate ranks of neighboring processes in the grid
-        MPI_Cart_shift(grid_comm, 1, 1, &grid_left, &grid_right);
-        MPI_Cart_shift(grid_comm, 0, 1, &grid_bottom, &grid_top);
+        MPI_Cart_shift(grid_comm, 0, 1, &grid_left, &grid_right);
+        MPI_Cart_shift(grid_comm, 1, 1, &grid_bottom, &grid_top);
 
         // Datatype for Field's Communication
         // Datatype for horizontal data exchange

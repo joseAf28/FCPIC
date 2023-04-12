@@ -2,17 +2,17 @@
 # Note: scientific notation not supported
 # INPUTS
 
-#npart = 1000,1000
-#mass = 1.,1.
-#charge = -1.,-1.
-#temp = 1.0,1.0
-#vxfluid= 5.,-5.
-#vyfluid= 0.,0.
-#xlen=0.000005
-#boundcond= 1
-#nxproc=2
-#aspect=1
-#simtime=.00000000002
+npart = 1000,1000
+mass = 1.,1.
+charge = -1.,-1.
+temp = 1.0,1.0
+vxfluid= 5.,-5.
+vyfluid= 0.,0.
+xlen=0.000005
+boundcond= 2
+nxproc=2
+aspect=1
+simtime=.00000000002
 
 #npart = 10000,10000
 #mass = 1.,1.
@@ -26,14 +26,14 @@
 #aspect=1
 #simtime=.00000000002
 
-npart = 5000,5000
-mass = 1.,1.
-charge = -1.,-1.
-temp = 1.0,1.0
-vxfluid= 5.,-5.
-vyfluid= 0.,0.
-xlen=0.0001
-boundcond= 1
-nxproc=4
-aspect=.1
-simtime=.0000000001
+#npart = 5000,5000
+#mass = 1.,1.
+#charge = -1.,-1.
+#temp = 1.0,1.0
+#vxfluid= 5.,-5.
+#vyfluid= 0.,0.
+#xlen=0.0001
+#boundcond= 1
+#nxproc=4
+#aspect=.1
+#simtime=.0000000001

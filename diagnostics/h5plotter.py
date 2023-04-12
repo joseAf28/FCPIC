@@ -90,19 +90,24 @@ def H5readRank(filename, rank_id):
 results_path = "../results/"
 number_ranks = 4
 
+grid_x_max = 2
+grid_y_max = 2
+
 counter = 300
 
-lx = 34./3.
-ly = 14./3.
+#lx = 34./3.
+#ly = 14./3.
+
+lx = 15./3.
+ly = 15./3.
 
 dx = 1/3.
 dy = 1/3.
 
 bc = 1
-name_output = "electron_anim_"
+#name_output = "electron_anim_"
+name_output = "electron_anim_small_"
 
-grid_x_max = 4
-grid_y_max = 1
 ##########! 
 
 filename_vec = []
@@ -114,7 +119,7 @@ rank_id = []
 vec_part = []
 
 for i in range(0, number_ranks):
-    filename = results_path + "final_sim_np4_rank_" + str(i) + ".h5"
+    filename = results_path + "final_sim_small_rank_" + str(i) + ".h5"
     filename_vec.append(filename)
 
 # print(filename_vec)
@@ -128,13 +133,24 @@ def Particle2Anim(file_vec, counter, x_data, y_data, vx_data, vy_data):
     for i in range(0, len(file_vec)):
         H5readParticles(file_vec[i], vec_part, counter)
     
-    for n_proc in range(0, len(vec_part)):
-        for n_spec in range(0, len(vec_part[n_proc])):
-            for i in range(0, len(vec_part[n_proc][n_spec])):
-                x_data.append(lx*(rank_id[n_proc][1]) + vec_part[n_proc][n_spec][i][0]*dx + vec_part[n_proc][n_spec][i][2])
-                y_data.append(ly*(rank_id[n_proc][0]) + vec_part[n_proc][n_spec][i][1]*dy + vec_part[n_proc][n_spec][i][3])
-                vx_data.append(vec_part[n_proc][n_spec][i][4])
-                vy_data.append(vec_part[n_proc][n_spec][i][5])
+    if bc == 1:
+        for n_proc in range(0, len(vec_part)):
+            for n_spec in range(0, len(vec_part[n_proc])):
+                for i in range(0, len(vec_part[n_proc][n_spec])):
+                    x_data.append(np.fmod(lx*(rank_id[n_proc][0]) + vec_part[n_proc][n_spec][i][0]*dx + vec_part[n_proc][n_spec][i][2],lx*grid_x_max))
+                    y_data.append(np.fmod(ly*(rank_id[n_proc][1]) + vec_part[n_proc][n_spec][i][1]*dy + vec_part[n_proc][n_spec][i][3],ly*grid_y_max))
+                    vx_data.append(vec_part[n_proc][n_spec][i][4])
+                    vy_data.append(vec_part[n_proc][n_spec][i][5])
+    if bc == 2:
+        for n_proc in range(0, len(vec_part)):
+            for n_spec in range(0, len(vec_part[n_proc])):
+                for i in range(0, len(vec_part[n_proc][n_spec])):
+                    x_data.append(lx*(rank_id[n_proc][0]) + vec_part[n_proc][n_spec][i][0]*dx + vec_part[n_proc][n_spec][i][2],lx*grid_x_max)
+                    y_data.append(ly*(rank_id[n_proc][1]) + vec_part[n_proc][n_spec][i][1]*dy + vec_part[n_proc][n_spec][i][3])
+                    vx_data.append(vec_part[n_proc][n_spec][i][4])
+                    vy_data.append(vec_part[n_proc][n_spec][i][5])
+
+                # print(vec_part[n_proc][n_spec][i][0])
 
                 # print(vec_part[n_proc][n_spec][i][0])
 
@@ -144,7 +160,7 @@ for indy in range(grid_y_max-1, -1, -1):
     list_indx_x = []
     for indx in range(0, grid_x_max):
         for n_proc in range(0, grid_x_max*grid_y_max):
-            if (rank_id[n_proc][0] == indy and rank_id[n_proc][1] == indx):
+            if (rank_id[n_proc][1] == indy and rank_id[n_proc][0] == indx):
                 list_indx_x.append(n_proc)
     
     list_indx.append(list_indx_x)

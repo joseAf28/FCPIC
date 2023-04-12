@@ -51,7 +51,7 @@ namespace FCPIC
     typedef enum
     {
         X_DIR,
-        Y_DIR,
+        Y_DIR
     } Direction;
 
     // Field class
