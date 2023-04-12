@@ -99,7 +99,7 @@ namespace FCPIC
         // Simulation time variables
         float time1, time2, total_time;
         float setup_time, hdf5_time;
-        float particle_time, field_time;
+        float particle_time, field_time; 
     };
 }
 #endif

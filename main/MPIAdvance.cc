@@ -44,22 +44,6 @@ int main(int argc, char **argv)
             }}
         
         sim->run_simulation(Ex, Ey, phi, charge, spec_vec);
-
-        //sim->status_h5 = H5Gclose(sim->group_charge);
-        //sim->status_h5 = H5Gclose(sim->group_Ex);
-        //sim->status_h5 = H5Gclose(sim->group_Ey);
-
-        //for (int i = 0; i < nb_spec; i++)
-        //    sim->status_h5 = H5Gclose(sim->h5_vec_group[i]);
-
-        sim->status_h5 = H5Tclose(sim->part_id);
-        sim->status_h5 = H5Sclose(sim->dataspace_field);
-        sim->status_h5 = H5Dclose(sim->dataset_field);
-        sim->status_h5 = H5Fclose(sim->file_field);
-        
-        sim->status_h5 = H5Pclose(sim->group_creation_plist);
-
-        sim->h5_vec_group.clear();
         
 
         delete Ex;

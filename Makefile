@@ -37,7 +37,8 @@ $(LIBDIR)/libPIC.a: $(OBJ)
 
 %.exe: $(BINDIR)/%.o $(LIBDIR)/libPIC.a 
 	@echo compilink and linking... 
-	@$(CC) -I src $< -o $(BINDIR)/$@ $(LIBH5) -L lib -l PIC 
+	@$(CC) -I src $< -o $(BINDIR)/$@ -L lib -l PIC $(LIBH5)
+
 
 $(BINDIR)/%.o: %.cc | $(INC)
 	@echo compiling... $<

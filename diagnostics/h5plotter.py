@@ -82,14 +82,15 @@ def H5readRank(filename, rank_id):
     f = h5py.File(filename, "r")
     first_key = list(f.keys())
     rank_id_key = list(f[first_key[-1]].keys())
-    rank_id.append(f[first_key[4]][rank_id_key[0]][()])
+    #rank_id.append(f[first_key[4]][rank_id_key[0]][()])
+    rank_id.append(f[first_key[-1]][rank_id_key[0]][()])
 
 
 ##########! varibles to change 
 results_path = "../results/"
 number_ranks = 4
 
-counter = 500
+counter = 939
 
 lx = 28./3.
 ly = 28./3.

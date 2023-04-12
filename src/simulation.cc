@@ -1170,7 +1170,7 @@ namespace FCPIC
 
         status_h5 = H5Sclose(dataspace_rank);
         status_h5 = H5Gclose(group_rank);
-        status_h5 = H5Dclose(dataset_rank);
+        status_h5 = H5Dclose(dataset_rank); 
     }
 
     void simulation::closeHDF5()
@@ -1184,14 +1184,14 @@ namespace FCPIC
         for (int i = 0; i < Nspecies; i++)
             status = H5Gclose(h5_vec_group[i]);
 
-        // status = H5Tclose(part_id);
-        // status = H5Sclose(dataspace_field);
-        // status = H5Dclose(dataset_field);
-        // status = H5Fclose(file_field);
+         status = H5Tclose(part_id);
+         status = H5Sclose(dataspace_field);
+         status = H5Dclose(dataset_field);
+         status = H5Fclose(file_field);
 
-        // status = H5Pclose(group_creation_plist);
+         status = H5Pclose(group_creation_plist);
 
-        // h5_vec_group.clear();
+         h5_vec_group.clear();
     }
 
     void simulation::writeChargeHDF5(field *charge, int counter)
