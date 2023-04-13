@@ -1,14 +1,7 @@
 #ifndef __species__
 #define __species__
 
-#include <vector>
 #include <string>
-#include <memory>
-#include <random>
-#include <algorithm>
-#include <iostream>
-#include <iomanip>
-#include <fstream>
 #include "field.hh"
 #include "FCPIC_base.hh"
 
@@ -51,19 +44,14 @@ namespace FCPIC
     class species : public FCPIC_base
     {
     public:
-        species(std::string, float, float, float, float *, int *, FCPIC_base const *);
-        species(std::string, float, float, float, float *, int, FCPIC_base const *);
+        species(float, float, float, float *, int *, FCPIC_base const *);
+        species(float, float, float, float *, int, FCPIC_base const *);
         ~species() override;
 
         // methods used for MPI communication
         void prepare_buffer();
         void update_part_list();
         int advance_cell(int *);
-
-        // particle pusher - leap frog method
-        // void field_interpolate(field *, field *, float &, float &, part *);
-        // void init_pusher(field *, field *);
-        // void particle_pusher(field *, field *);
 
         // array of particles
         std::vector<part> vec;
@@ -114,10 +102,6 @@ namespace FCPIC
         int np, np_sim; // total number of particles in the process and in the simulation
 
         const float q, m;
-
-    private:
-        // species name
-        std::string name;
     };
 }
 #endif

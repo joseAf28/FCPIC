@@ -1,12 +1,9 @@
 #include "simulation.hh"
 #include <fstream>
-#include <iostream>
 #include <cmath>
-#include <string>
 #include <fstream>
 #include <iomanip>
 #include <unistd.h>
-#include <stdexcept>
 
 namespace FCPIC
 {
@@ -30,38 +27,12 @@ namespace FCPIC
         if (rank == 0)
             printTitle();
 
-        /*
-        aspect = 1; //
-        N_int_x = 21; //
-        N_int_y = 11; //
-        N_x = N_int_x + 2;//
-        N_y = N_int_y + 2;//
-        N = N_x * N_y;//
-        N_total_x = N_int_x*2+1;//
-        N_total_y = N_int_y*2+1;//
-
-        dx = .3; //
-        dy = .3; //
-        dt=.1; //
-
-        grid[X_DIR] = 2;//
-        grid[Y_DIR] = 2;//
-
-        bc[X_DIR] = CONDUCTIVE; //
-        bc[Y_DIR] = CONDUCTIVE; //
-        wrap_around[X_DIR] = 0; //
-        wrap_around[Y_DIR] = 0; //
-
-        */
-
         Y_guard_data = new double[N_x];
         X_guard_data = new double[N_int_y];
 
         setup_proc_grid();
 
         setTime(setup_time);
-
-        // std::cout << "Proc: " << grid_rank << " Top: " << grid_top << "\n\n";
 
         confirmParams();
 
@@ -625,8 +596,8 @@ namespace FCPIC
 
         N = N_x * N_y;
 
-        dx = xlen / (double)N_total_x;          //
-        dy = aspect * xlen / (double)N_total_y; //
+        dx = xlen / (double)N_total_x;
+        dy = aspect * xlen / (double)N_total_y;
 
         dt = 1 / (std::max(1., sqrt(vxfluid[0] * vxfluid[0] + vyfluid[0] * vyfluid[0])) * (1 / dx + 1 / dy));
 
@@ -708,8 +679,8 @@ namespace FCPIC
 
         // obtaing the coordinates of the diagonal processes
         int coords_ne[2] = {grid_coord[X_DIR] + 1, grid_coord[Y_DIR] + 1};
-        int coords_se[2] = {grid_coord[X_DIR] - 1, grid_coord[Y_DIR] + 1};
-        int coords_nw[2] = {grid_coord[X_DIR] + 1, grid_coord[Y_DIR] - 1};
+        int coords_se[2] = {grid_coord[X_DIR] + 1, grid_coord[Y_DIR] - 1};
+        int coords_nw[2] = {grid_coord[X_DIR] - 1, grid_coord[Y_DIR] + 1};
         int coords_sw[2] = {grid_coord[X_DIR] - 1, grid_coord[Y_DIR] - 1};
 
         get_diagonal_rank(coords_ne, grid_ne);

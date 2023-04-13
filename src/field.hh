@@ -78,13 +78,7 @@ namespace FCPIC
         void reduceWestBound(double *);
         void reduceEastBound(double *);
 
-        void add_field(field *);
-
         void print_field(std::ostream &);
-
-        // Member functions
-        // void field_grad();                         // Uses central differences to calculate E field from Potential
-        // void get_Efield(part &, float &, float &); // Interpolates the field inside the cell at particles' position
 
         std::vector<double> val;
     };

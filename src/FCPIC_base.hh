@@ -29,8 +29,10 @@ namespace FCPIC{
 
         double Lref, Vref, Tref, Nref;
         double dx, dy;
+        double dt, simtime;
         int N_total_x, N_total_y;
         int N_int_x, N_int_y;
+        int N_x, N_y, N;
         
         int bc[2];
 
@@ -38,10 +40,6 @@ namespace FCPIC{
         int n_Procs;
         int grid_coord[2];
         int grid[2];
-
-        public:
-        int N_x, N_y, N;
-        double dt, simtime;
     };
 }
 

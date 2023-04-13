@@ -24,19 +24,6 @@ namespace FCPIC
         val = arr;
     }
 
-    void field::add_field(field *chargeA)
-    {
-        if ((N_x == chargeA->N_x) && (N_y == chargeA->N_y))
-        {
-            for (int i = 0; i < N; i++)
-                val[i] = val[i] + chargeA->val[i];
-        }
-        else
-        {
-            throw std::invalid_argument("field - out of bound - check dimensions");
-        }
-    }
-
     field::~field()
     {
         val.clear();
