@@ -11,14 +11,14 @@ namespace FCPIC
         val.assign(N, 0.);
     }
 
-    field::field(double *arr, FCPIC_base const *base) : FCPIC_base(*base)
+    field::field(float *arr, FCPIC_base const *base) : FCPIC_base(*base)
     {
         val.assign(N, 0.);
         for (int i = 0; i < N; i++)
             val[i] = arr[i];
     }
 
-    field::field(std::vector<double> &arr, FCPIC_base const *base) : FCPIC_base(*base)
+    field::field(std::vector<float> &arr, FCPIC_base const *base) : FCPIC_base(*base)
     {
         val.reserve(N);
         val = arr;
@@ -29,55 +29,55 @@ namespace FCPIC
         val.clear();
     }
 
-    void field::setValue(double value)
+    void field::setValue(float value)
     {
         for (int i = 0; i < N; i++)
             val[i] = value;
     }
 
-    void field::setNorthGuard(double *arr)
+    void field::setNorthGuard(float *arr)
     {
         for (int j = 0; j < N_x; j++)
             val[NORTH_GUARD] = arr[j];
     }
 
-    void field::setSouthGuard(double *arr)
+    void field::setSouthGuard(float *arr)
     {
         for (int j = 0; j < N_x; j++)
             val[SOUTH_GUARD] = arr[j];
     }
 
-    void field::setWestGuard(double *arr)
+    void field::setWestGuard(float *arr)
     {
         for (int i = 1; i <= N_int_y; i++)
             val[WEST_GUARD] = arr[i - 1];
     }
 
-    void field::setEastGuard(double *arr)
+    void field::setEastGuard(float *arr)
     {
         for (int i = 1; i <= N_int_y; i++)
             val[EAST_GUARD] = arr[i - 1];
     }
 
-    void field::reduceNorthBound(double *arr)
+    void field::reduceNorthBound(float *arr)
     {
         for (int j = 0; j < N_x; j++)
             val[NORTH_BOUND] += arr[j];
     }
 
-    void field::reduceSouthBound(double *arr)
+    void field::reduceSouthBound(float *arr)
     {
         for (int j = 0; j < N_x; j++)
             val[SOUTH_BOUND] += arr[j];
     }
 
-    void field::reduceWestBound(double *arr)
+    void field::reduceWestBound(float *arr)
     {
         for (int i = 1; i <= N_int_y; i++)
             val[WEST_BOUND] += arr[i - 1];
     }
 
-    void field::reduceEastBound(double *arr)
+    void field::reduceEastBound(float *arr)
     {
         for (int i = 1; i <= N_int_y; i++)
             val[EAST_BOUND] += arr[i - 1];

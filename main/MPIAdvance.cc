@@ -6,7 +6,7 @@ int main(int argc, char **argv)
     FCPIC::simulation *sim = new FCPIC::simulation(argc, argv);
 
     if(sim->sim_true){
-        int ppc[2] = {1, 1};
+        int ppd[2] = {0, 0};
         float vfa[2] = {0.,0.};
 
         // fields definition
@@ -27,9 +27,16 @@ int main(int argc, char **argv)
         {
             vfa[0] = sim->vxfluid[i];
             vfa[1] = sim->vyfluid[i];
-            //FCPIC::species test(name, sim->charge[i], sim->mass[i], sim->temp[i], vfa, ppc, sim);
-            FCPIC::species test(sim->charge[i], sim->mass[i], sim->temp[i], vfa, sim->Npart[i], sim);
-            spec_vec.push_back(test);
+            if(sim->rand_true[i]){
+                FCPIC::species test(sim->charge[i], sim->mass[i], sim->temp[i], vfa, sim->Npart[i], sim);
+                spec_vec.push_back(test);
+            }
+            else{
+                ppd[0] = sim->Nxpart[i];
+                ppd[1] = sim->Nypart[i];
+                FCPIC::species test(sim->charge[i], sim->mass[i], sim->temp[i], vfa, ppd, sim);
+                spec_vec.push_back(test);
+            }
         }
         
         for (int i = 0; i < nb_spec; i++){

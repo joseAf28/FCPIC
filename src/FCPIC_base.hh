@@ -8,15 +8,12 @@ namespace FCPIC{
         FCPIC_base(){};
 
         FCPIC_base(FCPIC_base const & obj) : Lref(obj.Lref),
-        Vref(obj.Vref), Tref(obj.Tref), Nref(obj.Nref),
+        Vref(obj.Vref), Tref(obj.Tref), Nref(obj.Nref), Tempref(obj.Tempref),
         N_total_x(obj.N_total_x), N_total_y(obj.N_total_y),
         N_int_x(obj.N_int_x), N_int_y(obj.N_int_y),
         N_x(obj.N_x), N_y(obj.N_y), N(obj.N),
         dx(obj.dx), dy(obj.dy), dt(obj.dt), 
-        n_Procs(obj.n_Procs), simtime(obj.simtime){
-
-            bc[0] = obj.bc[0];
-            bc[1] = obj.bc[1];
+        n_Procs(obj.n_Procs), simtime(obj.simtime), bc(obj.bc){
 
             grid_coord[0] = obj.grid_coord[0];
             grid_coord[1] = obj.grid_coord[1];
@@ -27,14 +24,14 @@ namespace FCPIC{
 
         virtual ~FCPIC_base(){};
 
-        double Lref, Vref, Tref, Nref;
-        double dx, dy;
-        double dt, simtime;
+        float Lref, Vref, Tref, Nref, Tempref;
+        float dx, dy;
+        float dt, simtime;
         int N_total_x, N_total_y;
         int N_int_x, N_int_y;
         int N_x, N_y, N;
         
-        int bc[2];
+        int bc;
 
         //MPI
         int n_Procs;

@@ -8,11 +8,59 @@
 namespace FCPIC
 {
 
-    species::species(float charge, float mass, float temp, float *vf, int *ppc, FCPIC_base const *base) : FCPIC_base(*base), q(charge), m(mass) 
+    species::species(float charge, float mass, float temp, float *vf, int *ppd, FCPIC_base const *base) : FCPIC_base(*base), q(charge), m(mass) 
     {
         // initializing vector with set_np_part() number: number of particles
-        np = (N_int_x)*ppc[0] * (N_int_y)*ppc[1];
-        np_sim = np * n_Procs;
+        np_sim = ppd[0] *ppd[1];
+
+        float d_part_x = (dx*((float) N_total_x))/((float) ppd[0]);
+        float d_part_y = (dy*((float) N_total_y))/((float) ppd[1]);
+
+        std::vector<float> x_aux, y_aux;
+        x_aux.clear();
+        y_aux.clear();
+
+        if(bc==PERIODIC){
+            float local_val;
+            float L_int_x = ((float)N_int_x) * dx;
+            float L_int_y = ((float)N_int_y) * dy;
+
+            for(int i = 0; i < ppd[0]; i++){
+                local_val = (((float) i) + .5) * d_part_x - ((float)grid_coord[0]) * L_int_x;
+                if(local_val >= 0. && local_val < L_int_x)
+                    x_aux.push_back(local_val);
+            }
+
+            for(int i = 0; i < ppd[1]; i++){
+                local_val = (((float) i) + .5) * d_part_y - ((float)grid_coord[1]) * L_int_y;
+                if(local_val >= 0. && local_val < L_int_y)
+                    y_aux.push_back(local_val);
+            }
+        }
+
+        else{
+            float local_val;
+            float L_int_x = ((float)N_int_x) * dx;
+            float L_int_y = ((float)N_int_y) * dy;
+
+            for(int i = 0; i < ppd[0]; i++){
+                local_val = (((float) i) + .5) * d_part_x - ((float)grid_coord[0]) * L_int_x - dx;
+                if(local_val >= 0. && local_val < L_int_x)
+                    x_aux.push_back(local_val);
+                else if(grid_coord[0]==0 && local_val<0.)
+                    x_aux.push_back(local_val);
+            }
+
+            for(int i = 0; i < ppd[1]; i++){
+                local_val = (((float) i) + .5) * d_part_y - ((float)grid_coord[1]) * L_int_y - dy;
+                if(local_val >= 0. && local_val < L_int_y)
+                    y_aux.push_back(local_val);
+                else if(grid_coord[1]==0 && local_val<0.)
+                    y_aux.push_back(local_val);
+            }
+        }
+
+        np = x_aux.size()*y_aux.size();
 
         // reserve space for the arrays of particles
         part A;
@@ -42,52 +90,26 @@ namespace FCPIC
         // random number generator
         std::random_device dev;
         std::mt19937_64 rng(dev());
-        std::normal_distribution<double> rand_gauss(0, 1);
-
-        // SET X
-
-        std::vector<float> loccell;
-
-        const int npcell = ppc[0] * ppc[1];
-        const float dpcellx = dx / ppc[0];
-        const float dpcelly = dy / ppc[1];
-
-        loccell.reserve(np);
-
-        for (int j = 0; j < ppc[1]; j++)
-        {
-            for (int i = 0; i < ppc[0]; i++)
-            {
-                loccell.push_back(dpcellx * ((float)i + 0.5f)); // In the middle of each subdivision
-                loccell.push_back(dpcelly * ((float)j + 0.5f));
-            }
-        }
-
-        int ip = 0;
-        //! Uniform Density of Particles
-        for (int j = 0; j < N_int_x; j++)
-        {
-            for (int i = 0; i < N_int_y; i++)
-            {
-                for (int k = 0; k < npcell; k++)
-                {
-                    vec[ip].ix = j;
-                    vec[ip].iy = i;
-                    vec[ip].x = loccell[2 * k];
-                    vec[ip].y = loccell[2 * k + 1];
-                    ip = ip + 1;
-                }
-            }
-        }
-        loccell.clear();
+        std::normal_distribution<float> rand_gauss(0, 1);
 
         float vth = sqrt(temp);
-        // SET U
-        for (int i = 0; i < np; i++)
-        {
-            vec[i].ux = vf[0] + vth * rand_gauss(rng);
-            vec[i].uy = vf[1] + vth * rand_gauss(rng);
+
+        int n_a = 0;
+
+        for (int i = 0; i < y_aux.size(); i++)
+            for(int j = 0; j < x_aux.size(); j++)
+            {
+                vec.at(n_a).x = x_aux[j];
+                vec.at(n_a).y = y_aux[i];
+                vec.at(n_a).ix = 1;
+                vec.at(n_a).iy = 1;
+                vec.at(n_a).ux = vf[0] + vth * rand_gauss(rng);
+                vec.at(n_a).uy = vf[1] + vth * rand_gauss(rng);
+                n_a+=1;
         }
+
+        x_aux.clear();
+        y_aux.clear();
     }
 
     species::species(float charge, float mass, float temp, float *vf, int n_part, FCPIC_base const *base) : FCPIC_base(*base), q(charge), m(mass), np_sim(n_part)
@@ -118,13 +140,13 @@ namespace FCPIC
         // rand_gauss = std::normal_distribution<float>(0.0, std::sqrt(k_b * T / m));
         std::random_device dev;
         std::mt19937_64 rng(dev());
-        std::normal_distribution<double> rand_gauss(0, 1);
+        std::normal_distribution<float> rand_gauss(0, 1);
         std::uniform_real_distribution<float> rand_uniform(0.0, 1.0);
 
         float vth = sqrt(temp);
 
         // Generating the positions/velocities for each of the particles in 1 process
-        if (bc[0] == CONDUCTIVE)
+        if (bc == CONDUCTIVE)
         {
             for (int i = 0; i < np; i++)
             {
