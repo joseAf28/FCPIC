@@ -398,6 +398,9 @@ namespace FCPIC
         if (def_values[11])
             for (auto &v : Npart)
                 rand_true.push_back(1);
+
+        def_values.clear();
+        allArgs.clear();
     }
 
     void simulation::getParamsfromFile(std::string filename, std::vector<bool> *def_values)
@@ -512,6 +515,8 @@ namespace FCPIC
             number.clear();
             header.clear();
         }
+
+        filelines.clear();
     }
 
     void simulation::setParams()
