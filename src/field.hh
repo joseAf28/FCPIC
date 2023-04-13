@@ -61,26 +61,26 @@ namespace FCPIC
         // Constructors
         // allocates memory to the field variables equal to the number of cells in the domain
         field(FCPIC_base const *);
-        field(double *, FCPIC_base const *);
-        field(std::vector<double> &, FCPIC_base const *);
+        field(float *, FCPIC_base const *);
+        field(std::vector<float> &, FCPIC_base const *);
 
         ~field() override; // Destructor
 
-        void setValue(double);
+        void setValue(float);
 
-        void setNorthGuard(double *);
-        void setSouthGuard(double *);
-        void setEastGuard(double *);
-        void setWestGuard(double *);
+        void setNorthGuard(float *);
+        void setSouthGuard(float *);
+        void setEastGuard(float *);
+        void setWestGuard(float *);
 
-        void reduceNorthBound(double *);
-        void reduceSouthBound(double *);
-        void reduceWestBound(double *);
-        void reduceEastBound(double *);
+        void reduceNorthBound(float *);
+        void reduceSouthBound(float *);
+        void reduceWestBound(float *);
+        void reduceEastBound(float *);
 
         void print_field(std::ostream &);
 
-        std::vector<double> val;
+        std::vector<float> val;
     };
 }
 

@@ -20,7 +20,7 @@ namespace FCPIC
         void setParams();
         void confirmParams();
         void printHelp();
-        std::string print_SI(double, int);
+        std::string print_SI(float, int);
         void printTitle();
         void printProgress(float);
         void printTime(std::string);
@@ -62,8 +62,8 @@ namespace FCPIC
         int grid_ne, grid_se, grid_nw, grid_sw;           // ranks of diagonal processes: NE, SE, NW, SW
 
         int Nspecies;
-        std::vector<int> Npart;
-        std::vector<double> charge, mass, temp, vxfluid, vyfluid;
+        std::vector<int> Npart, Nypart, Nxpart, rand_true;
+        std::vector<float> charge, mass, temp, vxfluid, vyfluid;
 
         // HDF5 variables
         hid_t file_field, dataset_field, dataspace_field;
@@ -90,8 +90,8 @@ namespace FCPIC
         MPI_Datatype exchange_part_type;
 
         // Simulation variables
-        double aspect, xlen;
-        double *X_guard_data, *Y_guard_data;
+        float aspect, xlen;
+        float *X_guard_data, *Y_guard_data;
 
         // Simulation time variables
         float time1, time2, total_time;

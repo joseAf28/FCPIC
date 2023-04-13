@@ -90,16 +90,16 @@ def H5readRank(filename, rank_id):
 results_path = "../results/"
 number_ranks = 4
 
-grid_x_max = 2
-grid_y_max = 2
+grid_x_max = 4
+grid_y_max = 1
 
-counter = 104
+counter = 60
 
 #lx = 34./3.
 #ly = 14./3.
 
-lx = 15./3.
-ly = 15./3.
+lx = 45./3.
+ly = 18./3.
 
 dx = 1/3.
 dy = 1/3.
@@ -145,7 +145,7 @@ def Particle2Anim(file_vec, counter, x_data, y_data, vx_data, vy_data):
         for n_proc in range(0, len(vec_part)):
             for n_spec in range(0, len(vec_part[n_proc])):
                 for i in range(0, len(vec_part[n_proc][n_spec])):
-                    x_data.append(lx*(rank_id[n_proc][0]) + vec_part[n_proc][n_spec][i][0]*dx + vec_part[n_proc][n_spec][i][2],lx*grid_x_max)
+                    x_data.append(lx*(rank_id[n_proc][0]) + vec_part[n_proc][n_spec][i][0]*dx + vec_part[n_proc][n_spec][i][2])
                     y_data.append(ly*(rank_id[n_proc][1]) + vec_part[n_proc][n_spec][i][1]*dy + vec_part[n_proc][n_spec][i][3])
                     vx_data.append(vec_part[n_proc][n_spec][i][4])
                     vy_data.append(vec_part[n_proc][n_spec][i][5])

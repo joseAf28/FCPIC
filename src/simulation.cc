@@ -27,8 +27,8 @@ namespace FCPIC
         if (rank == 0)
             printTitle();
 
-        Y_guard_data = new double[N_x];
-        X_guard_data = new double[N_int_y];
+        Y_guard_data = new float[N_x];
+        X_guard_data = new float[N_int_y];
 
         setup_proc_grid();
 
@@ -50,11 +50,19 @@ namespace FCPIC
         delete[] Y_guard_data, X_guard_data;
     }
 
-    std::string simulation::print_SI(double x, int precision)
+    std::string simulation::print_SI(float x, int precision)
     {
-        int exponent = floor(log10(x));
+        int sign = 0;
+        if(x < 0){
+            sign = 1;
+            x = -x;
+        }
+
+        int exponent = x==0? 0 : floor(log10(x));
         exponent -= (exponent % 3 + 3) % 3;
-        double mantissa = x / pow(10., exponent);
+        float mantissa = x / pow(10., exponent);
+
+        if(sign == 1) mantissa = -mantissa;
 
         std::string output = std::to_string(mantissa);
         output = output.substr(0, output.find(".") + precision + 1);
@@ -114,8 +122,16 @@ namespace FCPIC
                   << (int)(simtime / dt) << " time steps)\n";
         std::cout << "MPI process grid: " << n_Procs << " processes ("
                   << grid[X_DIR] << "x" << grid[Y_DIR] << ")\n";
+        std::cout << "Boundary condition: " << ((bc == 1)? "periodic\n": "conductive\n");
         std::cout << "Electron Debye length: " << print_SI(Lref, 3) << "m\n";
         std::cout << "Plasma frequency: " << print_SI(1 / Tref, 3) << "Hz\n";
+        std::cout << "\n";
+        for(int i=0; i<Nspecies; i++){
+            std::cout << "Species " << i << ": " << Npart[i] << " particles, ";
+            std::cout << ((rand_true[i] == 1)? "random uniform dist.\n  ": "evenly distributed\n  ");
+            std::cout << "q = " << charge[i] << " e, m = " << mass[i] << " me, T = " << print_SI(temp[i]*Tempref,3) << "eV";
+            std::cout << " , fluid velocity = (" << print_SI(vxfluid[i]*Vref,3) << "m/s, " << print_SI(vyfluid[i]*Vref,3) << "m/s)\n";
+        }
         std::cout << "\n";
     }
 
@@ -199,6 +215,8 @@ namespace FCPIC
         std::cout << "\n";
         std::cout << "-npart=nn1,nn2,...    Particle number for all species\n";
         std::cout << "                            Default: 1000\n";
+        std::cout << "-rand=rr1,rr2,...     Type of distribution (0->uniform grid, 1->uniform random)\n";
+        std::cout << "                            Default: 1\n";
         std::cout << "-charge=qq1,qq2,...   Charge of all species (in q_proton/m_electron)\n";
         std::cout << "                            Default: -1\n";
         std::cout << "-mass=mm1,mm2,...     Mass of all species (in m_electron)\n";
@@ -227,7 +245,7 @@ namespace FCPIC
         std::vector<std::string> allArgs(argv, argv + argc);
         std::vector<std::string> numbers;
         std::string line, header, number;
-        std::vector<bool> def_values(11, true);
+        std::vector<bool> def_values(12, true);
         int k;
 
         for (auto &arg : allArgs)
@@ -262,7 +280,7 @@ namespace FCPIC
 
             if (header.compare("-infile") == 0)
             {
-                def_values.assign(11, true);
+                def_values.assign(12, true);
                 getParamsfromFile(arg, &def_values);
                 break;
             }
@@ -331,9 +349,15 @@ namespace FCPIC
             }
             if (header.compare("-boundcond") == 0)
             {
-                bc[X_DIR] = stoi(number);
-                bc[Y_DIR] = stoi(number);
+                bc = stoi(number);
                 def_values[10] = false;
+            }
+            if (header.compare("-rand") == 0)
+            {
+                numbers.push_back(number);
+                for (auto &num : numbers)
+                    rand_true.push_back(std::stod(num));
+                def_values[11] = false;
             }
 
             numbers.clear();
@@ -344,15 +368,15 @@ namespace FCPIC
         if (def_values[0])
             Npart.push_back(1000);
         if (def_values[1])
-            charge.push_back(-1.);
+            for(auto &v : Npart) charge.push_back(-1.);
         if (def_values[2])
-            mass.push_back(1.);
+            for(auto &v : Npart) mass.push_back(1.);
         if (def_values[3])
-            temp.push_back(1.);
+            for(auto &v : Npart) temp.push_back(1.);
         if (def_values[4])
-            vxfluid.push_back(0.);
+            for(auto &v : Npart) vxfluid.push_back(0.);
         if (def_values[5])
-            vyfluid.push_back(0.);
+            for(auto &v : Npart) vyfluid.push_back(0.);
         if (def_values[6])
             xlen = 1;
         if (def_values[7])
@@ -362,10 +386,9 @@ namespace FCPIC
         if (def_values[9])
             simtime = 1;
         if (def_values[10])
-        {
-            bc[X_DIR] = PERIODIC;
-            bc[Y_DIR] = PERIODIC;
-        }
+            bc = PERIODIC;
+        if (def_values[11])
+            for(auto &v : Npart) rand_true.push_back(1);
     }
 
     void simulation::getParamsfromFile(std::string filename, std::vector<bool> *def_values)
@@ -465,9 +488,15 @@ namespace FCPIC
             }
             if (header.compare("boundcond") == 0)
             {
-                bc[X_DIR] = stoi(number);
-                bc[Y_DIR] = stoi(number);
+                bc = stoi(number);
                 (*def_values)[10] = false;
+            }
+            if (header.compare("rand") == 0)
+            {
+                numbers.push_back(number);
+                for (auto &num : numbers)
+                    rand_true.push_back(std::stod(num));
+                (*def_values)[11] = false;
             }
 
             numbers.clear();
@@ -480,7 +509,7 @@ namespace FCPIC
     {
         if (Npart.size() != charge.size() || Npart.size() != mass.size() ||
             Npart.size() != temp.size() || Npart.size() != vxfluid.size() ||
-            Npart.size() != vyfluid.size())
+            Npart.size() != vyfluid.size() || Npart.size() != rand_true.size())
         {
             if (rank == 0)
                 std::cout << "ERROR: PLEASE PROVIDE ARGS FOR ALL SPECIES\n";
@@ -494,19 +523,25 @@ namespace FCPIC
             if (Npart[k] < 1)
             {
                 if (rank == 0)
-                    std::cout << "ERROR: NON-PHYSICAL NUMBER OF PARTICLES\n";
+                    std::cout << "ERROR: NON-PHYSICAL NUMBER OF PARTICLES (SPECIES NO " << k << ")\n";
                 MPI_Abort(MPI_COMM_WORLD, 1);
             }
             if (mass[k] <= 0)
             {
                 if (rank == 0)
-                    std::cout << "ERROR: NON-PHYSICAL TEMPERATURE\n";
+                    std::cout << "ERROR: NON-PHYSICAL MASS (SPECIES NO " << k << ")\n";
                 MPI_Abort(MPI_COMM_WORLD, 1);
             }
             if (temp[k] < 0)
             {
                 if (rank == 0)
-                    std::cout << "ERROR: NON-PHYSICAL TEMPERATURE\n";
+                    std::cout << "ERROR: NON-PHYSICAL TEMPERATURE (SPECIES NO " << k << ")\n";
+                MPI_Abort(MPI_COMM_WORLD, 1);
+            }
+            if (rand_true[k] != 0 && rand_true[k] != 1)
+            {
+                if (rank == 0)
+                    std::cout << "ERROR: INVALID PARTICLE DISTRIBUTION TYPE (SPECIES NO " << k << ")\n";
                 MPI_Abort(MPI_COMM_WORLD, 1);
             }
         }
@@ -534,24 +569,33 @@ namespace FCPIC
                 std::cout << "ERROR: INVALID SIMULATION TIME\n";
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
-        if (bc[X_DIR] != 1 && bc[X_DIR] != 2)
+        if (bc != 1 && bc != 2)
         {
             if (rank == 0)
                 std::cout << "ERROR: INVALID BOUNDARY CONDITIONS\n";
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
 
+        for(int i = 0; i<Nspecies; i++){
+            if(rand_true[i]==0){
+                Nxpart.push_back(round(sqrt(((float)Npart[i])/aspect)));
+                Nypart.push_back(round(sqrt(((float)Npart[i])*aspect)));
+                Npart[i] = Nxpart[i]*Nypart[i];
+            }
+        }
+
         // All norms are done in reference to the first species temperature and density
         Vref = 419382.88 * sqrt(temp[0]);                    // Normalizing speeds to Vthermal of 1st species (m/s)
-        Nref = (double)Npart[0] / (aspect * xlen * xlen);    // 2D Density (m^-2)
+        Nref = (float)Npart[0] / (aspect * xlen * xlen);    // 2D Density (m^-2)
         Lref = sqrt(55263494.06 * temp[0] / pow(Nref, 1.5)); // Normalizing lengths to electron Debye length (m)
         Tref = Lref / Vref;                                  // Normalizing times to electron inverse plasma frequency (s)
+        Tempref = temp[0];
 
         for (int k = 0; k < Nspecies; k++)
         {
-            temp[k] /= temp[0];
-            vxfluid[k] *= sqrt(temp[k] / temp[0]);
-            vyfluid[k] *= sqrt(temp[k] / temp[0]);
+            temp[k] /= Tempref;
+            vxfluid[k] *= sqrt(temp[k]);
+            vyfluid[k] *= sqrt(temp[k]);
         }
 
         simtime /= Tref;
@@ -559,15 +603,15 @@ namespace FCPIC
 
         dx = 1. / 3.; // spatial discretization must be ~ Debye length/3 for stability
 
-        N_total_x = round((double)xlen / (double)dx);
-        N_total_y = round(aspect * (double)N_total_x);
+        N_total_x = round((float)xlen / (float)dx);
+        N_total_y = round(aspect * (float)N_total_x);
 
         grid[Y_DIR] = n_Procs / grid[X_DIR];
 
-        if (bc[X_DIR] != PERIODIC)
+        if (bc != PERIODIC){
             N_total_x -= 1;
-        if (bc[X_DIR] != PERIODIC)
             N_total_y -= 1;
+        }
 
         int k = 0;
         while (N_total_x % grid[X_DIR] != 0)
@@ -589,20 +633,26 @@ namespace FCPIC
         N_int_y = N_total_y / grid[Y_DIR];
         N_y = N_int_y + 2;
 
-        if (bc[X_DIR] != PERIODIC)
+        if (bc != PERIODIC){
             N_total_x += 1;
-        if (bc[X_DIR] != PERIODIC)
             N_total_y += 1;
+        }
+            
 
         N = N_x * N_y;
 
+<<<<<<< HEAD
         dx = xlen / (double)N_total_x;
         dy = aspect * xlen / (double)N_total_y;
+=======
+        dx = xlen / (float)N_total_x;          
+        dy = aspect * xlen / (float)N_total_y;
+>>>>>>> 512cb478441905f8c42fc241d8db70b3b576343f
 
         dt = 1 / (std::max(1., sqrt(vxfluid[0] * vxfluid[0] + vyfluid[0] * vyfluid[0])) * (1 / dx + 1 / dy));
 
-        wrap_around[X_DIR] = bc[X_DIR] == PERIODIC ? 1 : 0;
-        wrap_around[Y_DIR] = bc[Y_DIR] == PERIODIC ? 1 : 0;
+        wrap_around[X_DIR] = bc == PERIODIC ? 1 : 0;
+        wrap_around[Y_DIR] = bc == PERIODIC ? 1 : 0;
     }
 
     void simulation::confirmParams()
@@ -655,11 +705,11 @@ namespace FCPIC
 
         // Datatype for Field's Communication
         // Datatype for horizontal data exchange
-        MPI_Type_vector(N_int_y, 1, N_x, MPI_DOUBLE, &exchange_field_type[X_DIR]);
+        MPI_Type_vector(N_int_y, 1, N_x, MPI_FLOAT, &exchange_field_type[X_DIR]);
         MPI_Type_commit(&exchange_field_type[X_DIR]);
 
         // Datatype for vertical data exchange
-        MPI_Type_vector(N_x, 1, 1, MPI_DOUBLE, &exchange_field_type[Y_DIR]);
+        MPI_Type_vector(N_x, 1, 1, MPI_FLOAT, &exchange_field_type[Y_DIR]);
         MPI_Type_commit(&exchange_field_type[Y_DIR]);
 
         // Datatype for Species's communication
@@ -732,22 +782,22 @@ namespace FCPIC
         int j = 0;
 
         MPI_Sendrecv(&charge->val[NORTH_GUARD], 1, exchange_field_type[Y_DIR], grid_top, 0,
-                     &Y_guard_data[0], N_x, MPI_DOUBLE, grid_bottom, 0, grid_comm, &status_mpi);
+                     &Y_guard_data[0], N_x, MPI_FLOAT, grid_bottom, 0, grid_comm, &status_mpi);
         if (grid_bottom != MPI_PROC_NULL)
             charge->reduceSouthBound(Y_guard_data);
 
         MPI_Sendrecv(&charge->val[SOUTH_GUARD], 1, exchange_field_type[Y_DIR], grid_bottom, 0,
-                     &Y_guard_data[0], N_x, MPI_DOUBLE, grid_top, 0, grid_comm, &status_mpi);
+                     &Y_guard_data[0], N_x, MPI_FLOAT, grid_top, 0, grid_comm, &status_mpi);
         if (grid_top != MPI_PROC_NULL)
             charge->reduceNorthBound(Y_guard_data);
 
         MPI_Sendrecv(&charge->val[WEST_GUARD], 1, exchange_field_type[X_DIR], grid_left, 0,
-                     &X_guard_data[0], N_int_y, MPI_DOUBLE, grid_right, 0, grid_comm, &status_mpi);
+                     &X_guard_data[0], N_int_y, MPI_FLOAT, grid_right, 0, grid_comm, &status_mpi);
         if (grid_right != MPI_PROC_NULL)
             charge->reduceEastBound(X_guard_data);
 
         MPI_Sendrecv(&charge->val[EAST_GUARD], 1, exchange_field_type[X_DIR], grid_right, 0,
-                     &X_guard_data[0], N_int_y, MPI_DOUBLE, grid_left, 0, grid_comm, &status_mpi);
+                     &X_guard_data[0], N_int_y, MPI_FLOAT, grid_left, 0, grid_comm, &status_mpi);
         if (grid_left != MPI_PROC_NULL)
             charge->reduceWestBound(X_guard_data);
     }
@@ -843,9 +893,9 @@ namespace FCPIC
     // Jacobi solver
     void simulation::jacobi(field *phi, field *charge)
     {
-        double res, e;
-        double global_res = 1.0;
-        double tol = 1e-4;
+        float res, e;
+        float global_res = 1.0;
+        float tol = 1e-4;
 
         long int loop = 0;
 
@@ -869,7 +919,7 @@ namespace FCPIC
             for (int i = 1; i <= N_int_y; i++)
                 for (int j = 1; j <= N_int_x; j++)
                 {
-                    if (i == 1 && j == 1 && grid_rank == 0 && bc[0] == PERIODIC)
+                    if (i == 1 && j == 1 && grid_rank == 0 && bc == PERIODIC)
                         temp.val[POSITION] = 0;
                     else
                         temp.val[POSITION] = .25 * (phi->val[NORTH] + phi->val[SOUTH] + phi->val[EAST] + phi->val[WEST] - dx * dx * charge->val[POSITION]);
@@ -885,7 +935,7 @@ namespace FCPIC
                     phi->val[POSITION] = temp.val[POSITION];
 
             if (loop % 10 == 0) // balance to be found...
-                MPI_Allreduce(&res, &global_res, 1, MPI_DOUBLE, MPI_MAX, grid_comm);
+                MPI_Allreduce(&res, &global_res, 1, MPI_FLOAT, MPI_MAX, grid_comm);
 
             loop++;
         }
@@ -906,7 +956,7 @@ namespace FCPIC
 
         if (grid_left == MPI_PROC_NULL)
         {
-            if (bc[X_DIR] == CONDUCTIVE)
+            if (bc == CONDUCTIVE)
             {
                 for (int i = 0; i < N_y; i++)
                 {
@@ -918,7 +968,7 @@ namespace FCPIC
 
         if (grid_right == MPI_PROC_NULL)
         {
-            if (bc[X_DIR] == CONDUCTIVE)
+            if (bc == CONDUCTIVE)
             {
                 for (int i = 0; i < N_y; i++)
                 {
@@ -930,7 +980,7 @@ namespace FCPIC
 
         if (grid_top == MPI_PROC_NULL)
         {
-            if (bc[Y_DIR] == CONDUCTIVE)
+            if (bc == CONDUCTIVE)
             {
                 for (int j = 0; j < N_x; j++)
                 {
@@ -942,7 +992,7 @@ namespace FCPIC
 
         if (grid_bottom == MPI_PROC_NULL)
         {
-            if (bc[Y_DIR] == CONDUCTIVE)
+            if (bc == CONDUCTIVE)
             {
                 for (int j = 0; j < N_x; j++)
                 {
@@ -1187,24 +1237,24 @@ namespace FCPIC
     {
         std::string charge_name = "charge_count_" + std::to_string(counter);
         const char *charge_char = charge_name.c_str();
-        dataset_field = H5Dcreate2(group_charge, charge_char, H5T_NATIVE_DOUBLE, dataspace_field, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        status_h5 = H5Dwrite(dataset_field, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(charge->val[0]));
+        dataset_field = H5Dcreate2(group_charge, charge_char, H5T_NATIVE_FLOAT, dataspace_field, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        status_h5 = H5Dwrite(dataset_field, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(charge->val[0]));
     }
 
     void simulation::writeExHDF5(field *Ex_field, int counter)
     {
         std::string Ex_name = "Ex_count_" + std::to_string(counter);
         const char *Ex_char = Ex_name.c_str();
-        dataset_field = H5Dcreate2(group_Ex, Ex_char, H5T_NATIVE_DOUBLE, dataspace_field, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        status_h5 = H5Dwrite(dataset_field, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(Ex_field->val[0]));
+        dataset_field = H5Dcreate2(group_Ex, Ex_char, H5T_NATIVE_FLOAT, dataspace_field, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        status_h5 = H5Dwrite(dataset_field, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(Ex_field->val[0]));
     }
 
     void simulation::writeEyHDF5(field *Ey_field, int counter)
     {
         std::string Ey_name = "Ey_count_" + std::to_string(counter);
         const char *Ey_char = Ey_name.c_str();
-        dataset_field = H5Dcreate2(group_Ey, Ey_char, H5T_NATIVE_DOUBLE, dataspace_field, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        status_h5 = H5Dwrite(dataset_field, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(Ey_field->val[0]));
+        dataset_field = H5Dcreate2(group_Ey, Ey_char, H5T_NATIVE_FLOAT, dataspace_field, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+        status_h5 = H5Dwrite(dataset_field, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(Ey_field->val[0]));
     }
 
     void simulation::writePartHDF5(std::vector<species> &spec_vec, int counter)
