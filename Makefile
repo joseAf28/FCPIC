@@ -5,7 +5,7 @@ LIBDIR := lib
 CCFLAGS :=  -Wextra -Wfloat-equal -Wundef -Werror -fverbose-asm  -Wshadow -Wpointer-arith -Wcast-align -Wconversion
 DEBUG := -g -pedantic -Wall
 
-CC :=  mpic++ -std=c++14 -o2
+CC :=  mpic++ -std=c++14 -O2
 
 VPATH = main:src
 

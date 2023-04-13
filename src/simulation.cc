@@ -61,7 +61,7 @@ namespace FCPIC
 
         setTime(setup_time);
 
-        //std::cout << "Proc: " << grid_rank << " Top: " << grid_top << "\n\n";
+        // std::cout << "Proc: " << grid_rank << " Top: " << grid_top << "\n\n";
 
         confirmParams();
 
@@ -179,7 +179,8 @@ namespace FCPIC
 
     void simulation::printTime(std::string filename)
     {
-        if (grid_rank == 0){
+        if (grid_rank == 0)
+        {
             std::cout << "  Procs  │  Sim. Setup  │ Particle Push │  Field Solve  │  HDF5 Write  ║   TOTAL  \n";
             std::ofstream outfile(filename + ".txt");
             outfile << "# Procs: Sim. Setup (s), Particle Push (s), Field Solve (s), HDF5 Write (s), TOTAL (s)\n\n";
@@ -413,7 +414,9 @@ namespace FCPIC
             for (char &c : fline)
             {
                 if ((c > 47 && c < 58) || c == '.' || c == '-')
+                {
                     number.push_back(c);
+                }
                 if (c == ',')
                 {
                     numbers.push_back(number);
@@ -805,16 +808,15 @@ namespace FCPIC
         part recv_dummy;
         recv_dummy.ix = -1; // set to -1 as a way to check later if there was "actual" communication
         recv_dummy.iy = -1;
-        int over = 0;
-        lepton->recv_buffer_east.assign(lepton->size_recv_east + over, recv_dummy);
-        lepton->recv_buffer_west.assign(lepton->size_recv_west + over, recv_dummy);
-        lepton->recv_buffer_north.assign(lepton->size_recv_north + over, recv_dummy);
-        lepton->recv_buffer_south.assign(lepton->size_recv_south + over, recv_dummy);
+        lepton->recv_buffer_east.assign(lepton->size_recv_east, recv_dummy);
+        lepton->recv_buffer_west.assign(lepton->size_recv_west, recv_dummy);
+        lepton->recv_buffer_north.assign(lepton->size_recv_north, recv_dummy);
+        lepton->recv_buffer_south.assign(lepton->size_recv_south, recv_dummy);
 
-        lepton->recv_buffer_ne.assign(lepton->size_recv_ne + over, recv_dummy);
-        lepton->recv_buffer_nw.assign(lepton->size_recv_nw + over, recv_dummy);
-        lepton->recv_buffer_se.assign(lepton->size_recv_se + over, recv_dummy);
-        lepton->recv_buffer_sw.assign(lepton->size_recv_sw + over, recv_dummy);
+        lepton->recv_buffer_ne.assign(lepton->size_recv_ne, recv_dummy);
+        lepton->recv_buffer_nw.assign(lepton->size_recv_nw, recv_dummy);
+        lepton->recv_buffer_se.assign(lepton->size_recv_se, recv_dummy);
+        lepton->recv_buffer_sw.assign(lepton->size_recv_sw, recv_dummy);
 
         // Buffers Communication
         // All traffic in direction "top"
@@ -1056,7 +1058,8 @@ namespace FCPIC
         total_time += time2 - time1;
         time1 = time2;
     }
-    void simulation::setTime(){
+    void simulation::setTime()
+    {
         time1 = MPI_Wtime();
     }
 
@@ -1185,7 +1188,7 @@ namespace FCPIC
 
         status_h5 = H5Sclose(dataspace_rank);
         status_h5 = H5Gclose(group_rank);
-        status_h5 = H5Dclose(dataset_rank); 
+        status_h5 = H5Dclose(dataset_rank);
     }
 
     void simulation::closeHDF5()
@@ -1199,14 +1202,14 @@ namespace FCPIC
         for (int i = 0; i < Nspecies; i++)
             status = H5Gclose(h5_vec_group[i]);
 
-         status = H5Tclose(part_id);
-         status = H5Sclose(dataspace_field);
-         status = H5Dclose(dataset_field);
-         status = H5Fclose(file_field);
+        status = H5Tclose(part_id);
+        status = H5Sclose(dataspace_field);
+        status = H5Dclose(dataset_field);
+        status = H5Fclose(file_field);
 
-         status = H5Pclose(group_creation_plist);
+        status = H5Pclose(group_creation_plist);
 
-         h5_vec_group.clear();
+        h5_vec_group.clear();
     }
 
     void simulation::writeChargeHDF5(field *charge, int counter)
@@ -1233,7 +1236,7 @@ namespace FCPIC
         status_h5 = H5Dwrite(dataset_field, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(Ey_field->val[0]));
     }
 
-    void simulation::writePartHDF5(std::vector<species> spec_vec, int counter)
+    void simulation::writePartHDF5(std::vector<species> &spec_vec, int counter)
     {
         for (int i = 0; i < Nspecies; i++)
         {

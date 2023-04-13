@@ -460,7 +460,7 @@ namespace FCPIC
         recv_buffer_south.clear();
         recv_buffer_east.clear();
         recv_buffer_west.clear();
-        //
+
         recv_buffer_ne.clear();
         recv_buffer_se.clear();
         recv_buffer_nw.clear();

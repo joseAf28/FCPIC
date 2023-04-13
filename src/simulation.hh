@@ -55,7 +55,7 @@ namespace FCPIC
         void writeChargeHDF5(field *, int);
         void writeExHDF5(field *, int);
         void writeEyHDF5(field *, int);
-        void writePartHDF5(std::vector<species>, int);
+        void writePartHDF5(std::vector<species> &, int);
 
         void run_simulation(field *, field *, field *, field *, std::vector<species>, std::string);
 
@@ -99,7 +99,7 @@ namespace FCPIC
         // Simulation time variables
         float time1, time2, total_time;
         float setup_time, hdf5_time;
-        float particle_time, field_time; 
+        float particle_time, field_time;
     };
 }
 #endif
