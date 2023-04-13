@@ -6,11 +6,8 @@ int main(int argc, char **argv)
     FCPIC::simulation *sim = new FCPIC::simulation(argc, argv);
 
     if(sim->sim_true){
-        // declaring species object
-        std::string name = "electron";
         int ppc[2] = {1, 1};
-
-        float *vfa = new float[3];
+        float vfa[2] = {0.,0.};
 
         // fields definition
         FCPIC::field *Ex = new FCPIC::field(sim);
@@ -31,7 +28,7 @@ int main(int argc, char **argv)
             vfa[0] = sim->vxfluid[i];
             vfa[1] = sim->vyfluid[i];
             //FCPIC::species test(name, sim->charge[i], sim->mass[i], sim->temp[i], vfa, ppc, sim);
-            FCPIC::species test(name, sim->charge[i], sim->mass[i], sim->temp[i], vfa, sim->Npart[i], sim);
+            FCPIC::species test(sim->charge[i], sim->mass[i], sim->temp[i], vfa, sim->Npart[i], sim);
             spec_vec.push_back(test);
         }
         
@@ -50,7 +47,6 @@ int main(int argc, char **argv)
         delete Ey;
         delete charge, phi;
 
-        delete vfa;
         spec_vec.clear();
     }
 

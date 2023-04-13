@@ -1,3 +1,6 @@
+#include <random>
+#include <algorithm>
+#include <iomanip>
 #include "species.hh"
 #include "math.h"
 #include "mpi.h"
@@ -5,7 +8,7 @@
 namespace FCPIC
 {
 
-    species::species(std::string name_a, float charge, float mass, float temp, float *vf, int *ppc, FCPIC_base const *base) : FCPIC_base(*base), name(name_a), q(charge), m(mass)
+    species::species(float charge, float mass, float temp, float *vf, int *ppc, FCPIC_base const *base) : FCPIC_base(*base), q(charge), m(mass) 
     {
         // initializing vector with set_np_part() number: number of particles
         np = (N_int_x)*ppc[0] * (N_int_y)*ppc[1];
@@ -84,11 +87,10 @@ namespace FCPIC
         {
             vec[i].ux = vf[0] + vth * rand_gauss(rng);
             vec[i].uy = vf[1] + vth * rand_gauss(rng);
-            // vec[i].uz = vf[2] + vth * rand_gauss(rng);
         }
     }
 
-    species::species(std::string name_a, float charge, float mass, float temp, float *vf, int n_part, FCPIC_base const *base) : FCPIC_base(*base), name(name_a), q(charge), m(mass), np_sim(n_part)
+    species::species(float charge, float mass, float temp, float *vf, int n_part, FCPIC_base const *base) : FCPIC_base(*base), q(charge), m(mass), np_sim(n_part)
     {
         // N_procs is the total number of processes split into processes along the x and y direction
         // proc_index is the number of the respective process split into the x and y direction. eg: process 0 = (0,0), process 1 = (0,1)...
@@ -172,61 +174,7 @@ namespace FCPIC
         recv_buffer_sw.clear();
         recv_buffer_nw.clear();
     }
-    /*
-    void species::field_interpolate(field *Ex, field *Ey, float &Ex_i, float &Ey_i, part *prt)
-    {
-        int i = prt->iy;
-        int j = prt->ix;
-
-        float wx = prt->x;
-        float wy = prt->y;
-
-        float A_pos = (dx - wx) * (dy - wy);
-        float A_e = wx * (dy - wy);
-        float A_n = (dx - wx) * wy;
-        float A_ne = wx * wy;
-
-        Ex_i = A_pos * Ex->val[POSITION] + A_e * Ex->val[EAST] + A_n * Ex->val[NORTH] + A_ne * Ex->val[NORTHEAST];
-
-        Ey_i = A_pos * Ey->val[POSITION] + A_e * Ey->val[EAST] + A_n * Ey->val[NORTH] + A_ne * Ey->val[NORTHEAST];
-
-        Ex_i /= (dx * dy);
-        Ey_i /= (dx * dy);
-    }
-
-    void species::init_pusher(field *Ex, field *Ey)
-    {
-
-        for (int i = 0; i < np; i++)
-        {
-            float Ex_i = 0.f;
-            float Ey_i = 0.f;
-
-            field_interpolate(Ex, Ey, Ex_i, Ey_i, &vec[i]);
-
-            vec[i].ux = vec[i].ux - 0.5 * q / m * Ex_i * dt;
-            vec[i].uy = vec[i].uy - 0.5 * q / m * Ey_i * dt;
-        }
-    }
-
-    void species::particle_pusher(field *Ex, field *Ey)
-    {
-
-        for (int i = 0; i < np; i++)
-        {
-            float Ex_i = 0.f;
-            float Ey_i = 0.f;
-
-            field_interpolate(Ex, Ey, Ex_i, Ey_i, &vec[i]);
-
-            vec[i].ux = vec[i].ux + q / m * Ex_i * dt;
-            vec[i].uy = vec[i].uy + q / m * Ey_i * dt;
-
-            vec[i].x = vec[i].x + vec[i].ux * dt;
-            vec[i].y = vec[i].y + vec[i].uy * dt;
-        }
-    }
-    */
+    
     int species::advance_cell(int *ranks_mpi)
     { // ranks_mpi[0] - rank, ranks_mpi[1] - top, ranks_mpi[2] - bottom,
         //  ranks_mpi[3] - right, ranks_mpi[4] - left

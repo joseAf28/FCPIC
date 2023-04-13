@@ -93,7 +93,7 @@ number_ranks = 4
 grid_x_max = 2
 grid_y_max = 2
 
-counter = 300
+counter = 104
 
 #lx = 34./3.
 #ly = 14./3.
