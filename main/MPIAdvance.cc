@@ -5,16 +5,10 @@ int main(int argc, char **argv)
     // initializaing simulation fields and MPI
     FCPIC::simulation *sim = new FCPIC::simulation(argc, argv);
 
-<<<<<<< HEAD
     if (sim->sim_true)
     {
-        int ppc[2] = {1, 1};
-        float vfa[2] = {0., 0.};
-=======
-    if(sim->sim_true){
         int ppd[2] = {0, 0};
-        float vfa[2] = {0.,0.};
->>>>>>> 512cb478441905f8c42fc241d8db70b3b576343f
+        float vfa[2] = {0., 0.};
 
         // fields definition
         FCPIC::field *Ex = new FCPIC::field(sim);
@@ -34,22 +28,18 @@ int main(int argc, char **argv)
         {
             vfa[0] = sim->vxfluid[i];
             vfa[1] = sim->vyfluid[i];
-<<<<<<< HEAD
-            // FCPIC::species test(name, sim->charge[i], sim->mass[i], sim->temp[i], vfa, ppc, sim);
-            FCPIC::species test(sim->charge[i], sim->mass[i], sim->temp[i], vfa, sim->Npart[i], sim);
-            spec_vec.push_back(test);
-=======
-            if(sim->rand_true[i]){
+            if (sim->rand_true[i])
+            {
                 FCPIC::species test(sim->charge[i], sim->mass[i], sim->temp[i], vfa, sim->Npart[i], sim);
                 spec_vec.push_back(test);
             }
-            else{
+            else
+            {
                 ppd[0] = sim->Nxpart[i];
                 ppd[1] = sim->Nypart[i];
                 FCPIC::species test(sim->charge[i], sim->mass[i], sim->temp[i], vfa, ppd, sim);
                 spec_vec.push_back(test);
             }
->>>>>>> 512cb478441905f8c42fc241d8db70b3b576343f
         }
 
         for (int i = 0; i < nb_spec; i++)

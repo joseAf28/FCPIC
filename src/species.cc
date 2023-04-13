@@ -8,59 +8,65 @@
 namespace FCPIC
 {
 
-    species::species(float charge, float mass, float temp, float *vf, int *ppd, FCPIC_base const *base) : FCPIC_base(*base), q(charge), m(mass) 
+    species::species(float charge, float mass, float temp, float *vf, int *ppd, FCPIC_base const *base) : FCPIC_base(*base), q(charge), m(mass)
     {
         // initializing vector with set_np_part() number: number of particles
-        np_sim = ppd[0] *ppd[1];
+        np_sim = ppd[0] * ppd[1];
 
-        float d_part_x = (dx*((float) N_total_x))/((float) ppd[0]);
-        float d_part_y = (dy*((float) N_total_y))/((float) ppd[1]);
+        float d_part_x = (dx * ((float)N_total_x)) / ((float)ppd[0]);
+        float d_part_y = (dy * ((float)N_total_y)) / ((float)ppd[1]);
 
         std::vector<float> x_aux, y_aux;
         x_aux.clear();
         y_aux.clear();
 
-        if(bc==PERIODIC){
+        if (bc == PERIODIC)
+        {
             float local_val;
             float L_int_x = ((float)N_int_x) * dx;
             float L_int_y = ((float)N_int_y) * dy;
 
-            for(int i = 0; i < ppd[0]; i++){
-                local_val = (((float) i) + .5) * d_part_x - ((float)grid_coord[0]) * L_int_x;
-                if(local_val >= 0. && local_val < L_int_x)
+            for (int i = 0; i < ppd[0]; i++)
+            {
+                local_val = (((float)i) + .5) * d_part_x - ((float)grid_coord[0]) * L_int_x;
+                if (local_val >= 0. && local_val < L_int_x)
                     x_aux.push_back(local_val);
             }
 
-            for(int i = 0; i < ppd[1]; i++){
-                local_val = (((float) i) + .5) * d_part_y - ((float)grid_coord[1]) * L_int_y;
-                if(local_val >= 0. && local_val < L_int_y)
+            for (int i = 0; i < ppd[1]; i++)
+            {
+                local_val = (((float)i) + .5) * d_part_y - ((float)grid_coord[1]) * L_int_y;
+                if (local_val >= 0. && local_val < L_int_y)
                     y_aux.push_back(local_val);
             }
         }
 
-        else{
+        else
+        {
             float local_val;
             float L_int_x = ((float)N_int_x) * dx;
             float L_int_y = ((float)N_int_y) * dy;
 
-            for(int i = 0; i < ppd[0]; i++){
-                local_val = (((float) i) + .5) * d_part_x - ((float)grid_coord[0]) * L_int_x - dx;
-                if(local_val >= 0. && local_val < L_int_x)
+            for (int i = 0; i < ppd[0]; i++)
+            {
+                local_val = (((float)i) + .5) * d_part_x - ((float)grid_coord[0]) * L_int_x - dx;
+                if (local_val >= 0. && local_val < L_int_x)
                     x_aux.push_back(local_val);
-                else if(grid_coord[0]==0 && local_val<0.)
+                else if (grid_coord[0] == 0 && local_val < 0.)
                     x_aux.push_back(local_val);
             }
 
-            for(int i = 0; i < ppd[1]; i++){
-                local_val = (((float) i) + .5) * d_part_y - ((float)grid_coord[1]) * L_int_y - dy;
-                if(local_val >= 0. && local_val < L_int_y)
+            for (int i = 0; i < ppd[1]; i++)
+            {
+                local_val = (((float)i) + .5) * d_part_y - ((float)grid_coord[1]) * L_int_y - dy;
+                if (local_val >= 0. && local_val < L_int_y)
                     y_aux.push_back(local_val);
-                else if(grid_coord[1]==0 && local_val<0.)
+                else if (grid_coord[1] == 0 && local_val < 0.)
                     y_aux.push_back(local_val);
             }
         }
 
-        np = x_aux.size()*y_aux.size();
+        np = x_aux.size() * y_aux.size();
 
         // reserve space for the arrays of particles
         part A;
@@ -97,7 +103,7 @@ namespace FCPIC
         int n_a = 0;
 
         for (int i = 0; i < y_aux.size(); i++)
-            for(int j = 0; j < x_aux.size(); j++)
+            for (int j = 0; j < x_aux.size(); j++)
             {
                 vec.at(n_a).x = x_aux[j];
                 vec.at(n_a).y = y_aux[i];
@@ -105,8 +111,8 @@ namespace FCPIC
                 vec.at(n_a).iy = 1;
                 vec.at(n_a).ux = vf[0] + vth * rand_gauss(rng);
                 vec.at(n_a).uy = vf[1] + vth * rand_gauss(rng);
-                n_a+=1;
-        }
+                n_a += 1;
+            }
 
         x_aux.clear();
         y_aux.clear();
@@ -196,7 +202,7 @@ namespace FCPIC
         recv_buffer_sw.clear();
         recv_buffer_nw.clear();
     }
-    
+
     int species::advance_cell(int *ranks_mpi)
     { // ranks_mpi[0] - rank, ranks_mpi[1] - top, ranks_mpi[2] - bottom,
         //  ranks_mpi[3] - right, ranks_mpi[4] - left

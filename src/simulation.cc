@@ -53,16 +53,18 @@ namespace FCPIC
     std::string simulation::print_SI(float x, int precision)
     {
         int sign = 0;
-        if(x < 0){
+        if (x < 0)
+        {
             sign = 1;
             x = -x;
         }
 
-        int exponent = x==0? 0 : floor(log10(x));
+        int exponent = x == 0 ? 0 : floor(log10(x));
         exponent -= (exponent % 3 + 3) % 3;
         float mantissa = x / pow(10., exponent);
 
-        if(sign == 1) mantissa = -mantissa;
+        if (sign == 1)
+            mantissa = -mantissa;
 
         std::string output = std::to_string(mantissa);
         output = output.substr(0, output.find(".") + precision + 1);
@@ -122,15 +124,16 @@ namespace FCPIC
                   << (int)(simtime / dt) << " time steps)\n";
         std::cout << "MPI process grid: " << n_Procs << " processes ("
                   << grid[X_DIR] << "x" << grid[Y_DIR] << ")\n";
-        std::cout << "Boundary condition: " << ((bc == 1)? "periodic\n": "conductive\n");
+        std::cout << "Boundary condition: " << ((bc == 1) ? "periodic\n" : "conductive\n");
         std::cout << "Electron Debye length: " << print_SI(Lref, 3) << "m\n";
         std::cout << "Plasma frequency: " << print_SI(1 / Tref, 3) << "Hz\n";
         std::cout << "\n";
-        for(int i=0; i<Nspecies; i++){
+        for (int i = 0; i < Nspecies; i++)
+        {
             std::cout << "Species " << i << ": " << Npart[i] << " particles, ";
-            std::cout << ((rand_true[i] == 1)? "random uniform dist.\n  ": "evenly distributed\n  ");
-            std::cout << "q = " << charge[i] << " e, m = " << mass[i] << " me, T = " << print_SI(temp[i]*Tempref,3) << "eV";
-            std::cout << " , fluid velocity = (" << print_SI(vxfluid[i]*Vref,3) << "m/s, " << print_SI(vyfluid[i]*Vref,3) << "m/s)\n";
+            std::cout << ((rand_true[i] == 1) ? "random uniform dist.\n  " : "evenly distributed\n  ");
+            std::cout << "q = " << charge[i] << " e, m = " << mass[i] << " me, T = " << print_SI(temp[i] * Tempref, 3) << "eV";
+            std::cout << " , fluid velocity = (" << print_SI(vxfluid[i] * Vref, 3) << "m/s, " << print_SI(vyfluid[i] * Vref, 3) << "m/s)\n";
         }
         std::cout << "\n";
     }
@@ -368,15 +371,20 @@ namespace FCPIC
         if (def_values[0])
             Npart.push_back(1000);
         if (def_values[1])
-            for(auto &v : Npart) charge.push_back(-1.);
+            for (auto &v : Npart)
+                charge.push_back(-1.);
         if (def_values[2])
-            for(auto &v : Npart) mass.push_back(1.);
+            for (auto &v : Npart)
+                mass.push_back(1.);
         if (def_values[3])
-            for(auto &v : Npart) temp.push_back(1.);
+            for (auto &v : Npart)
+                temp.push_back(1.);
         if (def_values[4])
-            for(auto &v : Npart) vxfluid.push_back(0.);
+            for (auto &v : Npart)
+                vxfluid.push_back(0.);
         if (def_values[5])
-            for(auto &v : Npart) vyfluid.push_back(0.);
+            for (auto &v : Npart)
+                vyfluid.push_back(0.);
         if (def_values[6])
             xlen = 1;
         if (def_values[7])
@@ -388,7 +396,8 @@ namespace FCPIC
         if (def_values[10])
             bc = PERIODIC;
         if (def_values[11])
-            for(auto &v : Npart) rand_true.push_back(1);
+            for (auto &v : Npart)
+                rand_true.push_back(1);
     }
 
     void simulation::getParamsfromFile(std::string filename, std::vector<bool> *def_values)
@@ -576,17 +585,19 @@ namespace FCPIC
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
 
-        for(int i = 0; i<Nspecies; i++){
-            if(rand_true[i]==0){
-                Nxpart.push_back(round(sqrt(((float)Npart[i])/aspect)));
-                Nypart.push_back(round(sqrt(((float)Npart[i])*aspect)));
-                Npart[i] = Nxpart[i]*Nypart[i];
+        for (int i = 0; i < Nspecies; i++)
+        {
+            if (rand_true[i] == 0)
+            {
+                Nxpart.push_back(round(sqrt(((float)Npart[i]) / aspect)));
+                Nypart.push_back(round(sqrt(((float)Npart[i]) * aspect)));
+                Npart[i] = Nxpart[i] * Nypart[i];
             }
         }
 
         // All norms are done in reference to the first species temperature and density
         Vref = 419382.88 * sqrt(temp[0]);                    // Normalizing speeds to Vthermal of 1st species (m/s)
-        Nref = (float)Npart[0] / (aspect * xlen * xlen);    // 2D Density (m^-2)
+        Nref = (float)Npart[0] / (aspect * xlen * xlen);     // 2D Density (m^-2)
         Lref = sqrt(55263494.06 * temp[0] / pow(Nref, 1.5)); // Normalizing lengths to electron Debye length (m)
         Tref = Lref / Vref;                                  // Normalizing times to electron inverse plasma frequency (s)
         Tempref = temp[0];
@@ -608,7 +619,8 @@ namespace FCPIC
 
         grid[Y_DIR] = n_Procs / grid[X_DIR];
 
-        if (bc != PERIODIC){
+        if (bc != PERIODIC)
+        {
             N_total_x -= 1;
             N_total_y -= 1;
         }
@@ -633,21 +645,16 @@ namespace FCPIC
         N_int_y = N_total_y / grid[Y_DIR];
         N_y = N_int_y + 2;
 
-        if (bc != PERIODIC){
+        if (bc != PERIODIC)
+        {
             N_total_x += 1;
             N_total_y += 1;
         }
-            
 
         N = N_x * N_y;
 
-<<<<<<< HEAD
-        dx = xlen / (double)N_total_x;
-        dy = aspect * xlen / (double)N_total_y;
-=======
-        dx = xlen / (float)N_total_x;          
+        dx = xlen / (float)N_total_x;
         dy = aspect * xlen / (float)N_total_y;
->>>>>>> 512cb478441905f8c42fc241d8db70b3b576343f
 
         dt = 1 / (std::max(1., sqrt(vxfluid[0] * vxfluid[0] + vyfluid[0] * vyfluid[0])) * (1 / dx + 1 / dy));
 
@@ -1086,7 +1093,7 @@ namespace FCPIC
 
     void simulation::run_simulation(field *Ex, field *Ey,
                                     field *phi, field *charge,
-                                    std::vector<species> spec_vec, std::string filename)
+                                    std::vector<species> &spec_vec, std::string filename)
     {
         setupHDF5(filename);
 

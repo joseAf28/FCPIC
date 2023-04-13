@@ -54,7 +54,7 @@ namespace FCPIC
         void writeEyHDF5(field *, int);
         void writePartHDF5(std::vector<species> &, int);
 
-        void run_simulation(field *, field *, field *, field *, std::vector<species>, std::string);
+        void run_simulation(field *, field *, field *, field *, std::vector<species> &, std::string);
 
         // MPI variables
         int grid_rank, rank;                              // rank of the current proces in the virtual grid
