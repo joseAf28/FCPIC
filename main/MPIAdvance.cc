@@ -5,18 +5,10 @@ int main(int argc, char **argv)
     // initializaing simulation fields and MPI
     FCPIC::simulation *sim = new FCPIC::simulation(argc, argv);
 
-<<<<<<< HEAD
     if (sim->sim_true)
     {
-        // declaring species object
-        std::string name = "electron";
-
-        float *vfa = new float[3];
-=======
-    if(sim->sim_true){
         int ppc[2] = {1, 1};
-        float vfa[2] = {0.,0.};
->>>>>>> aa19ac4e31ba0afb55bc2780dd1f293ffa39f9b1
+        float vfa[2] = {0., 0.};
 
         // fields definition
         FCPIC::field *Ex = new FCPIC::field(sim);
@@ -36,13 +28,8 @@ int main(int argc, char **argv)
         {
             vfa[0] = sim->vxfluid[i];
             vfa[1] = sim->vyfluid[i];
-<<<<<<< HEAD
             // FCPIC::species test(name, sim->charge[i], sim->mass[i], sim->temp[i], vfa, ppc, sim);
-            FCPIC::species test(name, sim->charge[i], sim->mass[i], sim->temp[i], vfa, sim->Npart[i], sim);
-=======
-            //FCPIC::species test(name, sim->charge[i], sim->mass[i], sim->temp[i], vfa, ppc, sim);
             FCPIC::species test(sim->charge[i], sim->mass[i], sim->temp[i], vfa, sim->Npart[i], sim);
->>>>>>> aa19ac4e31ba0afb55bc2780dd1f293ffa39f9b1
             spec_vec.push_back(test);
         }
 
