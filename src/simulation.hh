@@ -48,7 +48,7 @@ namespace FCPIC
         void particle_pusher(field *, field *, species *);
 
         void setupHDF5(std::string);
-        void closeHDF5();
+        void closeHDF5(std::string);
         void writeChargeHDF5(field *, int);
         void writeExHDF5(field *, int);
         void writeEyHDF5(field *, int);
