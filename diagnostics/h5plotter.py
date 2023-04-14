@@ -104,6 +104,9 @@ ly = 18./3.
 dx = 1/3.
 dy = 1/3.
 
+dt = 0.1
+
+
 bc = 1
 #name_output = "electron_anim_"
 name_output = "electron_anim_small_"
@@ -190,6 +193,8 @@ def Ey2Anim(file_vec, counter, Ey_data):
             Ey_data.append(Ey_aux)
 
 
+print(list_indx)
+
 def Charge2Anim(file_vec, counter, charge_data):
     charge_field = []
     for i in range(0, len(file_vec)):
@@ -197,10 +202,10 @@ def Charge2Anim(file_vec, counter, charge_data):
 
     for indy in range(0, grid_y_max):
         for i in range(len(charge_field[2])-2, 0, -1):
-            # charge_aux = np.concatenate((charge_field[list_indx[indy][0]][i][1:-2], charge_field[list_indx[indy][1]][i][1:-2]))
+            # charge_aux = np.concatenate((np.transpose(charge_field[list_indx[indy][0]][i][1:-2]), np.transpose(charge_field[list_indx[indy][1]][i][1:-2]), np.transpose(charge_field[list_indx[indy][2]][i][1:-2]), np.transpose(charge_field[list_indx[indy][3]][i][1:-2])))
 
-            charge_aux = (charge_field[list_indx[indy][0]][i][1:-2])
-            charge_data.append(charge_aux)
+            charge_aux = (charge_field[list_indx[0][indy]][i][1:-2])
+            charge_data.append(np.transpose(charge_aux))
 
 
 def animate_particles(counter):
@@ -262,6 +267,70 @@ Particle2Anim(filename_vec, 0, snapshot_x, snapshot_y, snapshot_vx, snapshot_vy)
 charge_data = []
 Charge2Anim(filename_vec, 1, charge_data)
 
+###!! Snapshots_Energy 
+
+def snapshot_kinetic_energy(counter):
+    x_data = []
+    y_data = []
+    vx_data = []
+    vy_data = []
+    Particle2Anim(filename_vec, counter, x_data, y_data, vx_data, vy_data)
+    
+    value_aux = 0
+    time = dt*counter
+
+    for i in range(0, len(vx_data)):
+        v2 = vx_data[i]*vx_data[i] + vy_data[i]*vy_data[i]
+        # print(v2)
+        value_aux = value_aux + 0.5*v2
+    
+    return [value_aux, time]
+
+
+def snapshot_field_energy(counter):
+    Ex_data = []
+    Ex2Anim(filename_vec, counter, Ex_data)
+    
+    Ey_data = []
+    Ey2Anim(filename_vec, counter, Ey_data)
+
+    Ex2_aux = 0
+    Ey2_aux = 0
+
+    time = dt*counter
+
+    for i in range(0, len(Ex_data)):
+        for j in range(0, len(Ex_data[i])):
+            Ex2_aux = Ex2_aux + 0.5*Ex_data[i][j]*Ex_data[i][j]
+            Ey2_aux = Ey2_aux + 0.5*Ey_data[i][j]*Ey_data[i][j]
+
+    return[Ex2_aux + Ey2_aux, time]
+
+
+time_array = []
+kinetic_energy = []
+field_energy = []
+
+time_aux = 0
+kinetic_aux = 0
+
+for i in range(0, counter):
+    result_part = snapshot_kinetic_energy(i)
+    result_field = snapshot_field_energy(i)
+    # print(result)
+
+    time_array.append(result_part[1])
+    kinetic_energy.append(result_part[0])
+    field_energy.append(result_field[0])
+
+plt.figure(30)
+plt.plot(time_array, kinetic_energy)
+plt.savefig("energy_part.png")
+
+
+plt.figure(31)
+plt.plot(time_array, field_energy)
+plt.savefig("energy_field.png")
 
 
 # # ##! Particle animation
@@ -347,7 +416,8 @@ print('Y Phase Space Anim Done!')
 # # #     plt.colorbar()
 # # #     plt.savefig(results_path + "plots/Ey_field_2species_"+ str(count_plot) +"_2.png")
 
-# # # # ##!Charge Animation
+
+# # # ##!Charge Animation
 fps = 10
 nSeconds = math.floor(counter/fps)
 print(nSeconds)
