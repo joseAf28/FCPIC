@@ -26,13 +26,14 @@ run the following command in the bin folder
 
 ``mpirun ./filename.exe`` 
 
-
 There is already a cpp file, called main.cpp in the mai folder with everything needed to compile and run the program.
 
 
 ## Initial conditions set up
 
 To change the  initial conditions for the simulation, there is an input file called test.txt where there are examples of already given initial conditions:
+
+i
 
 1. -npart=nn1,nn2,...    Particle number for all species
 2. -rand=rr1,rr2,...     Type of distribution (0->uniform grid, 1->uniform random)
@@ -46,3 +47,5 @@ To change the  initial conditions for the simulation, there is an input file cal
 10. -aspect=aaa           Box aspect ratio
 11. -simtime=ttt          Simulation time (in secs)
 12. -boundcond=bbb        Boundary condition (1->periodic, 2->conductive)
+
+To access the help menu of the code to consult all the possible setup configurations, we need to run the executable command in the bin folder with the flag ``-help`` at the end of the command
