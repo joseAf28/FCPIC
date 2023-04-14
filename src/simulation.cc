@@ -139,7 +139,7 @@ namespace FCPIC
                         temp.val[POSITION] = 0;
                     //Application of the Jacobi iteration formula
                     else
-                        temp.val[POSITION] = .25 * (phi->val[NORTH] + phi->val[SOUTH] + phi->val[EAST] + phi->val[WEST] - dx * dx * charge->val[POSITION]);
+                        temp.val[POSITION] = .25 * (phi->val[NORTH] + phi->val[SOUTH] + phi->val[EAST] + phi->val[WEST] + dx * dx * charge->val[POSITION]);
 
                     //Getting local max deviation between iterations
                     e = fabs(temp.val[POSITION] - phi->val[POSITION]);

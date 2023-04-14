@@ -1,6 +1,13 @@
 #ifndef _FIELD_
 #define _FIELD_
 
+//FCPIC - 2D Particle-in-Cell code using MPI
+//Guilherme Crispim, João Palma, José Afonso
+//Advanced Topics in Computational Physics, 2023, IST
+
+//File field.hh:
+//Declaration of class Field 
+
 #include <iostream>
 #include <vector>
 #include "FCPIC_base.hh"
@@ -39,7 +46,7 @@
 
 namespace FCPIC
 {
-    // Boundary condition type
+    //Boundary condition type
     typedef enum
     {
         TBD,
@@ -47,19 +54,26 @@ namespace FCPIC
         CONDUCTIVE,
     } BC_type;
 
-    // Direction
+    //Direction
     typedef enum
     {
         X_DIR,
         Y_DIR
     } Direction;
 
-    // Field class
+    //Class field
+    //Includes all memory info of a discrete field inside the current process domain.
+    //It can be used to hold electric field components, electric potential or charge
+    //density.
+    //Its constructors are responsible for initializing the field with provided values.
+    //It includes auxiliary functions to set guard and boundary cells, as received by 
+    //MPI comms. It derives from a provided FCPIC_base object, as to have consistent
+    //parameters with the remaining simulation
     class field : public FCPIC_base
     {
     public:
-        // Constructors
-        // allocates memory to the field variables equal to the number of cells in the domain
+        //Constructors
+        //Allocate memory to the field variables equal to the number of cells in the domain
         field(FCPIC_base const *);
         field(float *, FCPIC_base const *);
         field(std::vector<float> &, FCPIC_base const *);
@@ -80,7 +94,7 @@ namespace FCPIC
 
         void print_field(std::ostream &);
 
-        std::vector<float> val;
+        std::vector<float> val; //Vector with the info of the field
     };
 }
 

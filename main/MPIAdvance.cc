@@ -41,7 +41,6 @@ int main(int argc, char **argv)
                 spec_vec.push_back(test);
             }
         }
-
         for (int i = 0; i < nb_spec; i++)
         {
             while (spec_vec[i].advance_cell(flags_coords_mpi))

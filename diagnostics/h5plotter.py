@@ -106,7 +106,6 @@ dy = 1/3.
 
 dt = 0.1
 
-
 bc = 1
 #name_output = "electron_anim_"
 name_output = "electron_anim_small_"
