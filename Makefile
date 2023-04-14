@@ -17,7 +17,11 @@ LIBH5 := -L/usr/lib/x86_64-linux-gnu/hdf5/serial /usr/lib/x86_64-linux-gnu/hdf5/
 INCH5 := -I/usr/include/hdf5/serial -Wdate-time -D_FORTIFY_SOURCE=2 -fdebug-prefix-map=/build/hdf5-X9JKIg/hdf5-1.10.0-patch1+docs=. -fstack-protector-strong -Wformat -Werror=format-security -Wl,-Bsymbolic-functions -Wl,-z,relro -lpthread -lsz -lz -ldl -lm -Wl,-rpath -Wl,/usr/lib/x86_64-linux-gnu/hdf5/serial -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent -I/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include -I/usr/lib/x86_64-linux-gnu/openmpi/include -pthread
 
 mpiAd: MPIAdvance.exe
+<<<<<<< HEAD
 	@cd bin; mpirun -np 3 ./MPIAdvance.exe -infile=test.txt
+=======
+	@cd bin; mpirun -np 4 ./MPIAdvance.exe -infile=test.txt
+>>>>>>> aa432872bef6583f71cb98d590b82718efe7fe4a
 
 lib: $(LIBDIR)/libPIC.a
 

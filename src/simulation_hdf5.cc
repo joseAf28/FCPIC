@@ -1,10 +1,10 @@
-//FCPIC - 2D Particle-in-Cell code using MPI
-//Guilherme Crispim, João Palma, José Afonso
-//Advanced Topics in Computational Physics, 2023, IST
+// FCPIC - 2D Particle-in-Cell code using MPI
+// Guilherme Crispim, João Palma, José Afonso
+// Advanced Topics in Computational Physics, 2023, IST
 
-//File simulation_hdf5.cc:
-//Implementation of all HDF5 related functions in the class
-//Simulation
+// File simulation_hdf5.cc:
+// Implementation of all HDF5 related functions in the class
+// Simulation
 
 #include "simulation.hh"
 #include <fstream>
@@ -15,11 +15,24 @@
 
 namespace FCPIC
 {
+    /*
+    Function setupHDF5
+    Function setupHDF5
+    Inputs: source name of the hdf5 output file created. For each rank is created as an output file
+    (the rank number is printed in the name) that stores the data from its domain.
+    + The hdf5 structure of each file is as follows:
+    - group charge where the charge field is recorded at each timestep;
+    - group Ex and the group Ey where the x and y  field components are stored at each iteration;
+    - group  part_i (i is the species counter) where the struct Part information of each particle of the species i is stored
+    - group rank where the grid coordinates of the  MPI virtual topology are stored
+    */
+
     void simulation::setupHDF5(std::string filename)
     {
         std::string h5_name = "../results/" + filename + "_rank_" + std::to_string(grid_rank) + ".h5";
         const char *h5_char = h5_name.c_str();
 
+        // datatype creation to handle the struct Part
         part_id = H5Tcreate(H5T_COMPOUND, sizeof(FCPIC::part));
         H5Tinsert(part_id, "ix", HOFFSET(FCPIC::part, ix), H5T_NATIVE_INT);
         H5Tinsert(part_id, "iy", HOFFSET(FCPIC::part, iy), H5T_NATIVE_INT);
@@ -31,11 +44,15 @@ namespace FCPIC
 
         file_field = H5Fcreate(h5_char, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
-        hsize_t dims[2];
-        dims[0] = N_x;
-        dims[1] = N_y;
+        hsize_t dims[1];
+        dims[0] = N_x * N_y;
 
-        dataspace_field = H5Screate_simple(2, dims, nullptr);
+        if (grid_rank == 0)
+        {
+            std::cout << "N_x: " << N_x << " N_y: " << N_y << std::endl;
+        }
+
+        dataspace_field = H5Screate_simple(1, dims, nullptr);
 
         group_creation_plist = H5Pcreate(H5P_GROUP_CREATE);
         status_h5 = H5Pset_link_creation_order(group_creation_plist, H5P_CRT_ORDER_TRACKED | H5P_CRT_ORDER_INDEXED);
@@ -66,6 +83,11 @@ namespace FCPIC
         status_h5 = H5Dclose(dataset_rank);
     }
 
+    /*
+    Function closeHDF5
+    + Closes all the HDF5 objects created
+    */
+
     void simulation::closeHDF5(std::string filename)
     {
         hid_t status;
@@ -86,11 +108,18 @@ namespace FCPIC
 
         h5_vec_group.clear();
 
-        if(grid_rank == 0){
-            std::cout << "Data written to HDF5 files " << filename << "_rank_[N].h5\n" << std::endl;
+        if (grid_rank == 0)
+        {
+            std::cout << "Data written to HDF5 files " << filename << "_rank_[N].h5\n"
+                      << std::endl;
         }
     }
 
+    /*
+    Functions writeChargeHDF5, writeExHDF5, writeEyHDF5, writePartHDF5
+    Inputs: pointer to the object that stores the relevant quantity to store and the number of the simulation's iteration
+    + The number of the iteration is used to create distinct datasets that are easy to distinguish
+    */
     void simulation::writeChargeHDF5(field *charge, int counter)
     {
         std::string charge_name = "charge_count_" + std::to_string(counter);
@@ -98,7 +127,6 @@ namespace FCPIC
         dataset_field = H5Dcreate2(group_charge, charge_char, H5T_NATIVE_FLOAT, dataspace_field, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
         status_h5 = H5Dwrite(dataset_field, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(charge->val[0]));
     }
-
     void simulation::writeExHDF5(field *Ex_field, int counter)
     {
         std::string Ex_name = "Ex_count_" + std::to_string(counter);
