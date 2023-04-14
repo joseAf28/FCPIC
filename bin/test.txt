@@ -42,8 +42,8 @@
 npart = 1000
 rand = 0
 xlen=0.000005
-vxfluid= 5.
+vxfluid= 10.1
 boundcond= 1
 nxproc=4
 aspect=.1
-simtime=.000000000002
+simtime=.0000000000003

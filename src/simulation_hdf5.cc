@@ -44,11 +44,15 @@ namespace FCPIC
 
         file_field = H5Fcreate(h5_char, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
-        hsize_t dims[2];
-        dims[0] = N_x;
-        dims[1] = N_y;
+        hsize_t dims[1];
+        dims[0] = N_x * N_y;
 
-        dataspace_field = H5Screate_simple(2, dims, nullptr);
+        if (grid_rank == 0)
+        {
+            std::cout << "N_x: " << N_x << " N_y: " << N_y << std::endl;
+        }
+
+        dataspace_field = H5Screate_simple(1, dims, nullptr);
 
         group_creation_plist = H5Pcreate(H5P_GROUP_CREATE);
         status_h5 = H5Pset_link_creation_order(group_creation_plist, H5P_CRT_ORDER_TRACKED | H5P_CRT_ORDER_INDEXED);

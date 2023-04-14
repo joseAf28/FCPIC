@@ -369,6 +369,7 @@ namespace FCPIC
             get_charge(charge, &spec_vec[i]);
 
         exchange_charge_buffers(charge);
+
         jacobi(phi, charge);
         set_E_value(phi, Ex, Ey);
 
