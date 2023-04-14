@@ -42,7 +42,7 @@
 npart = 1000
 rand = 0
 xlen=0.000005
-vxfluid= 9.
+vxfluid= 5.
 boundcond= 1
 nxproc=4
 aspect=.1

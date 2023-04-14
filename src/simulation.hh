@@ -1,6 +1,13 @@
 #ifndef _SIMULATION_
 #define _SIMULATION_
 
+//FCPIC - 2D Particle-in-Cell code using MPI
+//Guilherme Crispim, João Palma, José Afonso
+//Advanced Topics in Computational Physics, 2023, IST
+
+//File simulation.hh:
+//Declaration of class simulation
+
 #include "mpi.h"
 #include "hdf5.h"
 #include "species.hh"
@@ -9,12 +16,21 @@
 
 namespace FCPIC
 {
+    //Class simulation
+    //Includes all numerical methods for evolving the simulation variables,
+    //IO interaction with the user, all input handling and setting of the 
+    //parameters, all MPI communication and writing of the data to HDF5 files,
+    //for diagnostics. It derives from an FCPIC_base object, which is empty and
+    //written with all parameters of the simulation. This FCPIC_base object is
+    //thus sent to all other simulation objects, for consistency of all elements
     class simulation : public FCPIC_base
     {
     public:
+        // Constructor/destructor
         simulation(int, char **);
         ~simulation() override;
 
+        //IO handling
         void readArgs(int, char **);
         void getParamsfromFile(std::string, std::vector<bool> *);
         void setParams();
@@ -25,19 +41,19 @@ namespace FCPIC
         void printProgress(float);
         void printTime(std::string);
 
+        //Time functions
         void setTime(float &);
         void setTime();
 
-        // Creates a virtual cartesian topology and creates MPI Datatypes
+        //MPI functions
         void setup_proc_grid();
         void get_diagonal_rank(int *, int &);
 
-        // exchanges data between processes
         void exchange_phi_buffers(field *);
         void exchange_charge_buffers(field *);
         void exchange_particles_buffers(species *);
 
-        // Jacobi solver
+        //Numerical methods
         void get_charge(field *, species *);
         void jacobi(field *, field *);
 
@@ -47,6 +63,7 @@ namespace FCPIC
         void init_pusher(field *, field *, species *);
         void particle_pusher(field *, field *, species *);
 
+        //HDF5 functions
         void setupHDF5(std::string);
         void closeHDF5(std::string);
         void writeChargeHDF5(field *, int);
@@ -54,9 +71,10 @@ namespace FCPIC
         void writeEyHDF5(field *, int);
         void writePartHDF5(std::vector<species> &, int);
 
+        //Function progressing the simulation
         void run_simulation(field *, field *, field *, field *, std::vector<species> &, std::string);
 
-        // MPI variables
+        //MPI variables
         int grid_rank, rank;                              // rank of the current proces in the virtual grid
         int grid_top, grid_bottom, grid_left, grid_right; // ranks of the neighbouring processes
         int grid_ne, grid_se, grid_nw, grid_sw;           // ranks of diagonal processes: NE, SE, NW, SW
@@ -65,7 +83,7 @@ namespace FCPIC
         std::vector<int> Npart, Nypart, Nxpart, rand_true;
         std::vector<float> charge, mass, temp, vxfluid, vyfluid;
 
-        // HDF5 variables
+        //HDF5 variables
         hid_t file_field, dataset_field, dataspace_field;
         hid_t group_rank, dataset_rank, dataspace_rank;
         hid_t dataspace_part, dataset_part;

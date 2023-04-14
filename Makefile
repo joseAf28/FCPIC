@@ -19,15 +19,6 @@ INCH5 := -I/usr/include/hdf5/serial -Wdate-time -D_FORTIFY_SOURCE=2 -fdebug-pref
 mpiAd: MPIAdvance.exe
 	@cd bin; mpirun -np 4 ./MPIAdvance.exe -infile=test.txt
 
-Advance: Advancetest.exe
-	@cd bin; echo 'running program...\n \nOutput Results:'; ./Advancetest.exe;
-
-test: test.exe
-	@cd bin; echo "running program... \n Output Results:" ; mpirun ./test.exe;
-
-Ctest: Ctest.exe
-	@cd bin; echo 'running program...\nOutput Results:'; mpirun -np 4 ./Ctest.exe;
-
 lib: $(LIBDIR)/libPIC.a
 
 $(LIBDIR)/libPIC.a: $(OBJ) 

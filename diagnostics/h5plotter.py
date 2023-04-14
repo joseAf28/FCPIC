@@ -92,7 +92,7 @@ number_ranks = 4
 grid_x_max = 4
 grid_y_max = 1
 
-counter = 200
+counter = 300
 
 lx = 15./3.
 ly = 15./3.
@@ -105,7 +105,6 @@ dy = 1/3.
 
 
 dt = 0.1
-
 
 bc = 1
 #name_output = "electron_anim_"
@@ -221,6 +220,7 @@ def animate_particles(counter):
     vx_data = []
     vy_data = []
     Particle2Anim(filename_vec, counter, x_data, y_data, vx_data, vy_data)
+    print(len(x_data))
     im.set_offsets(np.transpose([x_data, y_data]))
     return [im]
 
@@ -418,16 +418,16 @@ fps = 10
 nSeconds = math.floor(counter/fps)
 print(nSeconds)
 
-fig = plt.figure( figsize=(6,8) )
+fig = plt.figure()
 
 charge_data = []
 Charge2Anim(filename_vec, 0, charge_data)
 a = charge_data
-im = plt.imshow(a, interpolation='spline16')
+im = plt.imshow(a, interpolation='nearest')
 plt.xlabel(r"$x$")
 plt.ylabel(r"$y$")
 plt.title(r"$\rho$")
-plt.colorbar()
+# plt.colorbar()
 
 def animate_charge(counter):
     charge_data = []
