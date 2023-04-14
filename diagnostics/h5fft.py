@@ -146,40 +146,7 @@ for i in range(0, counter):
     Ex_dummy_fft =  []
     Ex2Anim(filename_vec, i, Ex_dummy_fft)
     snapshots_Ex.append(Ex_dummy_fft[10])
-# print(filename_vec)
 
-print(snapshots_Ex[0])
-
-print(len(snapshots_Ex))
-print(len(snapshots_Ex[0]))
-
-
-# [i][j][k] ; i - time, j - y cell, k - x cell
-
-# print(len(snapshots_Ex))
-# print("***************************")
-# print(len(snapshots_Ex[1]))
-# print("***************************")
-# print(len(snapshots_Ex[0][1]))
-# print("***************************")
-# print(len(snapshots_Ex[0][10]))
-# print("***************************")
-# print(len(snapshots_Ex))
-
-
-# xfield_Ex_wind = []
-
-# for i in range(0, len(snapshots_Ex)):
-#     xfield_Ex_wind.append(snapshots_Ex[i][10])
-
-# # print(xfield_Ex_wind[0])
-# # print(xfield_Ex_wind[10])
-
-# # plt.plot(xfield_Ex_wind[0])
-# # plt.plot(xfield_Ex_wind[10])
-# # plt.plot(xfield_Ex_wind[20])
-# # plt.plot(xfield_Ex_wind[30])
-# # plt.savefig("ex_test.png")
 
 fftSol = np.abs(np.fft.fft2(snapshots_Ex))
 
@@ -195,27 +162,9 @@ timefrequencies = np.fft.fftfreq(len(snapshots_Ex), d=dtime)
 kmax = spatialfrequencies.max()
 wmax = timefrequencies.max()
 
-# print("kmax")
-# print(kmax)
-
-# print("wmax")
-# print(wmax*1e-9)
-
-
-
-# # print(dspatial)
-# # print(1./dspatial)
-
-# # print("************")
-
-# # print(dtime)
-# # print(1./dtime)
-
-# # print("omega")
-# # print(timefrequencies)
 
 index_vec = round(len(fftSol[1, :])/2)
-c = plt.imshow(fftSol[::-1, :-index_vec], origin="lower", extent=[0, 10, 0, 10])
+c = plt.imshow(fftSol[::-1, :-index_vec], origin="lower", extent=[0, 10, 0, 10], vmin=0, vmax=20)
 plt.colorbar(c)
 plt.xlabel(r'$k $')
 plt.ylabel(r'$\omega$')
