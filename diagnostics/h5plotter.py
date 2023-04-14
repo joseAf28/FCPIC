@@ -93,7 +93,7 @@ number_ranks = 4
 grid_x_max = 4
 grid_y_max = 1
 
-counter = 60
+counter = 200
 
 #lx = 34./3.
 #ly = 14./3.
@@ -122,7 +122,7 @@ rank_id = []
 vec_part = []
 
 for i in range(0, number_ranks):
-    filename = results_path + "final_sim_small_rank_" + str(i) + ".h5"
+    filename = results_path + "final_sim_np4_rank_" + str(i) + ".h5"
     filename_vec.append(filename)
 
 # print(filename_vec)
