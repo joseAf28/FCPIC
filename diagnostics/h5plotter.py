@@ -4,58 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation 
 
-def readH5(filename, Ex_field, Ey_field, charge_field, rank_id, vec_part):
-    f = h5py.File(filename, "r")
-    first_key = list(f.keys())
-    Ex_key = list(f[first_key[0]].keys())
-    Ey_key = list(f[first_key[1]].keys())
-    charge_key = list(f[first_key[2]].keys())
-    particles_key = []
-    for i in range(3, len(first_key)-1):
-        particles_key_aux = list(f[first_key[i]].keys())
-        particles_key.append(particles_key_aux)
-
-    rank_id_key = list(f[first_key[-1]].keys())
-    Ex_field_aux = []
-    Ey_field_aux = []
-    charge_field_aux = []
-    vec_part_aux = []
-
-    for i in range(0, len(Ex_key)):
-        Ex_field_aux.append(f[first_key[0]][Ex_key[i]][()])
-
-    for i in range(0, len(Ey_key)):
-        Ey_field_aux.append(f[first_key[1]][Ey_key[i]][()])
-
-    for i in range(0, len(charge_key)):
-        charge_field_aux.append(f[first_key[2]][charge_key[i]][()])
-
-    for i in range(0, len(particles_key)):
-        veci_particles_aux = []
-        for j in range(0, len(particles_key[i])):
-                veci_particles_aux.append(f[first_key[i+3]][particles_key[i][j]][()])
-        vec_part_aux.append(veci_particles_aux)
-
-
-    Ex_field.append(Ex_field_aux)
-    Ey_field.append(Ey_field_aux)
-    charge_field.append(charge_field_aux)
-    rank_id.append(f[first_key[4]][rank_id_key[0]][()])
-    vec_part.append(vec_part_aux)
-
-
-# def H5readEy(filename, Ey_field, counter):
-#     f = h5py.File(filename, "r")
-#     first_key = list(f.keys())
-#     Ey_key = list(f[first_key[1]].keys())
-#     Ey_field.append(f[first_key[1]][Ey_key[counter]][()])
-
-# def H5readCharge(filename, Ey_field, counter):
-#     f = h5py.File(filename, "r")
-#     first_key = list(f.keys())
-#     Ey_key = list(f[first_key[2]].keys())
-#     Ey_field.append(f[first_key[2]][Ey_key[counter]][()])
-
 def H5readParticles(filename, vec_part, counter):
     f = h5py.File(filename, "r")
     first_key = list(f.keys())

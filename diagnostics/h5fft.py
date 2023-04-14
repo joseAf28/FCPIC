@@ -4,122 +4,155 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-def readH5(filename, Ex_field, Ey_field, charge_field, rank_id, vec_part1, vec_part2):
+def H5readRank(filename, rank_id):
     f = h5py.File(filename, "r")
-
     first_key = list(f.keys())
-    print(first_key)
-    Ex_key = list(f[first_key[0]].keys())
-    Ey_key = list(f[first_key[1]].keys())
-    charge_key = list(f[first_key[2]].keys())
-
-    rank_id_key = list(f[first_key[4]].keys())
-    print(rank_id_key)
-
-    particles_1_key = list(f[first_key[3]].keys())
-    # particles_2_key = list(f[first_key[4]].keys())
-
-    Ex_field_aux = []
-    Ey_field_aux = []
-    charge_field_aux = []
-    vec_particles_1_aux = []
-    vec_particles_2_aux = []
-
-    for i in range(0, len(Ex_key)):
-        Ex_field_aux.append(f[first_key[0]][Ex_key[i]][()])
-
-    for i in range(0, len(Ey_key)):
-        Ey_field_aux.append(f[first_key[1]][Ey_key[i]][()])
-
-    for i in range(0, len(Ex_key)):
-        charge_field_aux.append(f[first_key[2]][charge_key[i]][()])
-
-    for i in range(0, len(Ex_key)):
-        vec_particles_1_aux.append(f[first_key[3]][particles_1_key[i]][()])
-    
-    # for i in range(0, len(Ex_key)):
-    #     vec_particles_2_aux.append(f[first_key[4]][particles_2_key[i]][()])
-
-    rank_id.append(f[first_key[4]][rank_id_key[0]][()])
-
-    Ex_field.append(Ex_field_aux)
-    Ey_field.append(Ey_field_aux)
-    charge_field.append(charge_field_aux)
-    vec_part1.append(vec_particles_1_aux)
-    # vec_part2.append(vec_particles_2_aux)
+    rank_id_key = list(f[first_key[-1]].keys())
+    rank_id.append(f[first_key[-1]][rank_id_key[0]][()])
 
 
 ##########! varibles to change 
-results_path = "/home/jose/Desktop/FCPIC/results/"
+results_path = "../results/"
 number_ranks = 4
-counter = 100
 
-counter_space = 700
-lx = 16./3.
-ly = 16./3.
+grid_x_max = 4
+grid_y_max = 1
 
-dx = 1/3
-dy = 1/3
+counter = 91
+
+N_x = 47
+N_y = 20
+
+
+lx = 15.
+ly = 15.
+
+# lx = 45./3.
+# ly = 18./3.
+
+dx = 1.
+dy = 1.
+
+
+dt = 0.1
+
+bc = 1
+#name_output = "electron_anim_"
+name_output = "final_sim_small_rank"
 
 ##########! 
 
 filename_vec = []
-
 Ex_field = []
 Ey_field = []
 charge_field = []
+
 rank_id = []
-vec_part1 = []
-vec_part2 = []
+vec_part = []
 
 for i in range(0, number_ranks):
-    filename = results_path + "final_sim_rank_" + str(i) + ".h5"
+    filename = results_path + "final_sim_small_rank_" + str(i) + ".h5"
     filename_vec.append(filename)
 
-# print(filename_vec)
 
-for i in range(0, number_ranks):
-    readH5(filename_vec[i], Ex_field, Ey_field, charge_field, rank_id, vec_part1, vec_part2)
+for i in range(0, len(filename_vec)):
+    H5readRank(filename_vec[i], rank_id)
 
-snapshots_charge = []
-snapshots_Ex = []
-snapshots_Ey = []
+
+def H5readEy(filename, Ey_real_field, N_x, N_y, counter):
+    f = h5py.File(filename, "r")
+    first_key = list(f.keys())
+    Ey_key = list(f[first_key[1]].keys())
+    Ey_field = []
+    Ey_field.append(f[first_key[1]][Ey_key[counter]][()])
+
+    Ey_real_field_aux = []
+    for i in range(1, N_y-1):
+        Ey_real_y_aux = []
+        for j in range(0, N_x):
+            Ey_real_y_aux.append(Ey_field[0][j + i*N_x])
+        Ey_real_field_aux.append(Ey_real_y_aux)
+
+    Ey_real_field.append(Ey_real_field_aux)
+
+
+def H5readEx(filename, Ex_real_field, N_x, N_y, counter):
+    f = h5py.File(filename, "r")
+    first_key = list(f.keys())
+    Ex_key = list(f[first_key[0]].keys())
+    Ex_field = []
+    Ex_field.append(f[first_key[0]][Ex_key[counter]][()])
+
+    Ex_real_field_aux = []
+    for i in range(1, N_y-1):
+        Ex_real_y_aux = []
+        for j in range(0, N_x):
+            Ex_real_y_aux.append(Ex_field[0][j + i*N_x])
+        Ex_real_field_aux.append(Ex_real_y_aux)
+
+    Ex_real_field.append(Ex_real_field_aux)
+
+
+def H5readCharge(filename, charge_real_field, N_x, N_y, counter):
+    f = h5py.File(filename, "r")
+    first_key = list(f.keys())
+    charge_key = list(f[first_key[2]].keys())
+    charge_field = []
+    charge_field.append(f[first_key[2]][charge_key[counter]][()])
+
+    charge_real_field_aux = []
+    for i in range(1, N_y-1):
+        charge_real_y_aux = []
+        for j in range(0, N_x):
+            charge_real_y_aux.append(charge_field[0][j + i*N_x])
+        charge_real_field_aux.append(charge_real_y_aux)
+
+    charge_real_field.append(charge_real_field_aux)
+
+
+list_indx = []
+for indx in range(0, grid_x_max):
+    list_indx_x = []
+    for indy in range(0, grid_y_max):
+        for n_proc in range(0, grid_x_max*grid_y_max):
+            if (rank_id[n_proc][1] == indy and rank_id[n_proc][0] == indx):
+                list_indx_x.append(n_proc)
+    
+    list_indx.append(list_indx_x)
 
 print(rank_id)
+print(list_indx)
 
-### rank - counter - line_field - cells that count
-# image_counter = 0
-for count_plot in range(0, len(Ex_field[0])):
-    big_charge_dummy = []
-    Ex_dummy = []
-    Ey_dummy = []
-    phase_dummy = []
 
-    for i in range(len(charge_field[2][count_plot])-1, 0, -1):
-    # for i in range(0, len(charge_field[2][count_plot])):
-        charge_aux = np.concatenate((charge_field[2][count_plot][i][0:-2], charge_field[3][count_plot][i][0:-2]))
-        big_charge_dummy.append(charge_aux)
 
-        Ex_aux = np.concatenate((Ex_field[2][count_plot][i][0:-2], Ex_field[3][count_plot][i][0:-2]))
-        Ex_dummy.append(Ex_aux)
+def Ex2Anim(file_vec, counter, Ex_data):
+    Ex_field = []
+    for i in range(0, len(file_vec)):
+        H5readEx(file_vec[i], Ex_field, N_x, N_y, counter)
 
-        Ey_aux = np.concatenate((Ey_field[2][count_plot][i][0:-2], Ey_field[3][count_plot][i][0:-2]))
-        Ey_dummy.append(Ey_aux)
+    for indy in range(0, grid_y_max):
+        for i in range(len(Ex_field[2])-2, 0, -1):            
+            #4x1
+            Ex_aux = np.concatenate((Ex_field[list_indx[0][indy]][i][1:-1], Ex_field[list_indx[1][indy]][i][1:-1], Ex_field[list_indx[2][indy]][i][1:-1], Ex_field[list_indx[3][indy]][i][1:-1]))
 
-    for i in range(len(charge_field[0][count_plot])-1, 0, -1):
-    # for i in range(0, len(charge_field[0][count_plot])):
-        charge_aux = np.concatenate((charge_field[0][count_plot][i][0:-2], charge_field[1][count_plot][i][0:-2]))
-        big_charge_dummy.append(charge_aux)
+            #2x2
+            # Ex_aux = np.concatenate((Ex_field[list_indx[indy][0]][i][1:-2], Ex_field[list_indx[indy][1]][i][1:-2]))
 
-        Ex_aux = np.concatenate((Ex_field[0][count_plot][i][0:-2], Ex_field[1][count_plot][i][0:-2]))
-        Ex_dummy.append(Ex_aux)
+            Ex_data.append(Ex_aux)
 
-        Ey_aux = np.concatenate((Ey_field[0][count_plot][i][0:-2], Ey_field[1][count_plot][i][0:-2]))
-        Ey_dummy.append(Ey_aux)
+snapshots_Ex = []
 
-    snapshots_charge.append(big_charge_dummy)
-    snapshots_Ex.append(Ex_dummy)
-    snapshots_Ey.append(Ey_dummy)
+for i in range(0, counter):
+    Ex_dummy_fft =  []
+    Ex2Anim(filename_vec, i, Ex_dummy_fft)
+    snapshots_Ex.append(Ex_dummy_fft[10])
+# print(filename_vec)
+
+print(snapshots_Ex[0])
+
+print(len(snapshots_Ex))
+print(len(snapshots_Ex[0]))
+
 
 # [i][j][k] ; i - time, j - y cell, k - x cell
 
@@ -148,19 +181,19 @@ for count_plot in range(0, len(Ex_field[0])):
 # # plt.plot(xfield_Ex_wind[30])
 # # plt.savefig("ex_test.png")
 
-# fftSol = np.abs(np.fft.fft2(xfield_Ex_wind))
+fftSol = np.abs(np.fft.fft2(snapshots_Ex))
 
-# N = 5e-6
-# T =.0000000001
+N = 180
+T =.0000000000003
 
-# dspatial = N/len(snapshots_Ex[10][1])
-# dtime =  T/len(snapshots_Ex)
-# spatialfrequencies = np.fft.fftfreq(len(snapshots_Ex[10][1]), d=dspatial)
-# timefrequencies = np.fft.fftfreq(len(snapshots_Ex), d=dtime)
+dspatial = N/len(snapshots_Ex[10])
+dtime =  T/len(snapshots_Ex)
+spatialfrequencies = np.fft.fftfreq(len(snapshots_Ex[10]), d=dspatial)
+timefrequencies = np.fft.fftfreq(len(snapshots_Ex), d=dtime)
 
 
-# kmax = spatialfrequencies.max()
-# wmax = timefrequencies.max()
+kmax = spatialfrequencies.max()
+wmax = timefrequencies.max()
 
 # print("kmax")
 # print(kmax)
@@ -181,9 +214,9 @@ for count_plot in range(0, len(Ex_field[0])):
 # # print("omega")
 # # print(timefrequencies)
 
-# index_vec = round(len(fftSol[1, :])/2)
-# c = plt.imshow(fftSol[::-1, :-index_vec], origin="lower", extent=[0, 10, 0, 10], vmin = 0, vmax = 100)
-# plt.colorbar(c)
-# plt.xlabel(r'$k $')
-# plt.ylabel(r'$\omega$')
-# plt.savefig("structure2_S.png")
+index_vec = round(len(fftSol[1, :])/2)
+c = plt.imshow(fftSol[::-1, :-index_vec], origin="lower", extent=[0, 10, 0, 10])
+plt.colorbar(c)
+plt.xlabel(r'$k $')
+plt.ylabel(r'$\omega$')
+plt.savefig("structure2_S.png")
