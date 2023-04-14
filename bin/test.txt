@@ -39,7 +39,7 @@
 #aspect=.1
 #simtime=.0000000001
 
-npart = 1000
+npart = 3500
 rand = 0
 xlen=0.000005
 vxfluid= 10.1

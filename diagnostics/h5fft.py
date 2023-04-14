@@ -18,10 +18,10 @@ number_ranks = 4
 grid_x_max = 4
 grid_y_max = 1
 
-counter = 91
+counter = 238
 
-N_x = 47
-N_y = 20
+N_x = 119
+N_y = 49
 
 
 lx = 15.
@@ -150,7 +150,7 @@ for i in range(0, counter):
 
 fftSol = np.abs(np.fft.fft2(snapshots_Ex))
 
-N = 180
+N = 500e-9
 T =.0000000000003
 
 dspatial = N/len(snapshots_Ex[10])
@@ -164,8 +164,8 @@ wmax = timefrequencies.max()
 
 
 index_vec = round(len(fftSol[1, :])/2)
-c = plt.imshow(fftSol[::-1, :-index_vec], origin="lower", extent=[0, 10, 0, 10], vmin=0, vmax=20)
+c = plt.imshow(fftSol[::-5, :-index_vec], origin="lower", extent=[0, kmax*1e-8, 0, wmax*1e-14], vmin=0, vmax=100)
 plt.colorbar(c)
-plt.xlabel(r'$k $')
-plt.ylabel(r'$\omega$')
+plt.xlabel(r'$k [m^{-1}]   10^{8}$ ')
+plt.ylabel(r'$\omega [s^{-1}]   10^{14}$')
 plt.savefig("structure2_S.png")
