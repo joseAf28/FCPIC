@@ -1,3 +1,10 @@
+//FCPIC - 2D Particle-in-Cell code using MPI
+//Guilherme Crispim, João Palma, José Afonso
+//Advanced Topics in Computational Physics, 2023, IST
+
+//File field.cc:
+//Implementation of all methods of class Species
+
 #include <random>
 #include <algorithm>
 #include <iomanip>
@@ -7,7 +14,6 @@
 
 namespace FCPIC
 {
-
     species::species(float charge, float mass, float temp, float *vf, int *ppd, FCPIC_base const *base) : FCPIC_base(*base), q(charge), m(mass)
     {
         // initializing vector with set_np_part() number: number of particles
