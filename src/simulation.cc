@@ -129,6 +129,11 @@ namespace FCPIC
             // Exchanges buffer cells to include information of the adjacent processes
             exchange_phi_buffers(phi);
 
+            float dx2 = dx*dx;
+            float dy2 = dy*dy;
+            float d2 = dx2*dy2;
+            float invd2 = .5/(dx2+dy2);
+
             for (int i = 1; i <= N_int_y; i++)
                 for (int j = 1; j <= N_int_x; j++)
                 {
@@ -139,7 +144,8 @@ namespace FCPIC
                         temp.val[POSITION] = 0;
                     // Application of the Jacobi iteration formula
                     else
-                        temp.val[POSITION] = .25 * (phi->val[NORTH] + phi->val[SOUTH] + phi->val[EAST] + phi->val[WEST] + dx * dx * charge->val[POSITION]);
+                        //temp.val[POSITION] = .25 * (phi->val[NORTH] + phi->val[SOUTH] + phi->val[EAST] + phi->val[WEST] + dx * dx * charge->val[POSITION]);
+                        temp.val[POSITION] = invd2 * (dy2*(phi->val[NORTH] + phi->val[SOUTH]) + dx2*(phi->val[EAST] + phi->val[WEST]) + d2 * charge->val[POSITION]);
 
                     // Getting local max deviation between iterations
                     e = fabs(temp.val[POSITION] - phi->val[POSITION]);

@@ -26,10 +26,25 @@ def H5readRank(filename, rank_id):
     rank_id_key = list(f[first_key[-1]].keys())
     rank_id.append(f[first_key[-1]][rank_id_key[0]][()])
 
-
 ##########! varibles to change 
+
+Nx = 73
+Ny = 73
+
+counter = 1224
+
+grid_x_max = 2
+grid_y_max = 2
+
+bc = 2
+
+name_output = "final_sim_small_rank_"
+
+##########! 
+
+
+
 results_path = "../results/"
-number_ranks = 4
 
 grid_x_max = 4
 grid_y_max = 1
@@ -171,10 +186,10 @@ def Ex2Anim(file_vec, counter, Ex_data):
     for indy in range(0, grid_y_max):
         for i in range(len(Ex_field[2])-2, 0, -1):            
             #4x1
-            Ex_aux = np.concatenate((Ex_field[list_indx[0][indy]][i][1:-1], Ex_field[list_indx[1][indy]][i][1:-1], Ex_field[list_indx[2][indy]][i][1:-1], Ex_field[list_indx[3][indy]][i][1:-1]))
+            # Ex_aux = np.concatenate((Ex_field[list_indx[0][indy]][i][1:-1], Ex_field[list_indx[1][indy]][i][1:-1], Ex_field[list_indx[2][indy]][i][1:-1], Ex_field[list_indx[3][indy]][i][1:-1]))
 
             #2x2
-            # Ex_aux = np.concatenate((Ex_field[list_indx[indy][0]][i][1:-2], Ex_field[list_indx[indy][1]][i][1:-2]))
+            Ex_aux = np.concatenate((Ex_field[list_indx[indy][0]][i][1:-2], Ex_field[list_indx[indy][1]][i][1:-2]))
 
             Ex_data.append(Ex_aux)
 
@@ -188,10 +203,10 @@ def Ey2Anim(file_vec, counter, Ey_data):
         for i in range(len(Ey_field[2])-2, 0, -1):
             
             #4x1
-            Ey_aux = np.concatenate((Ey_field[list_indx[0][indy]][i][1:-1], Ey_field[list_indx[1][indy]][i][1:-1], Ey_field[list_indx[2][indy]][i][1:-1], Ey_field[list_indx[3][indy]][i][1:-1]))
+            # Ey_aux = np.concatenate((Ey_field[list_indx[0][indy]][i][1:-1], Ey_field[list_indx[1][indy]][i][1:-1], Ey_field[list_indx[2][indy]][i][1:-1], Ey_field[list_indx[3][indy]][i][1:-1]))
             
             #2x2
-            # Ey_aux = np.concatenate((Ey_field[list_indx[indy][0]][i][1:-2], Ey_field[list_indx[indy][1]][i][1:-2]))
+            Ey_aux = np.concatenate((Ey_field[list_indx[indy][0]][i][1:-2], Ey_field[list_indx[indy][1]][i][1:-2]))
             Ey_data.append(Ey_aux)
 
 def Charge2Anim(file_vec, counter, charge_data):
@@ -203,7 +218,7 @@ def Charge2Anim(file_vec, counter, charge_data):
         for i in range(len(charge_field[2])-2, 0, -1):
             
             #4x1
-            charge_aux = np.concatenate((charge_field[list_indx[0][indy]][i][1:-1], charge_field[list_indx[1][indy]][i][1:-1], charge_field[list_indx[2][indy]][i][1:-1], charge_field[list_indx[3][indy]][i][1:-1]))
+            #charge_aux = np.concatenate((charge_field[list_indx[0][indy]][i][1:-2], charge_field[list_indx[1][indy]][i][1:-2], charge_field[list_indx[2][indy]][i][1:-2], charge_field[list_indx[3][indy]][i][1:-2]))
 
             #2x2
             # charge_aux = np.concatenate((charge_field[list_indx[indy][0]][i][1:-2], charge_field[list_indx[indy][1]][i][1:-2]))
